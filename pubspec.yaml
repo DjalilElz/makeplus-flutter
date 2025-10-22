@@ -15,6 +15,7 @@ dependencies:
   flutter_bloc: ^8.1.6
   equatable: ^2.0.7
 
+
   # Networking
   dio: ^5.7.0
   pretty_dio_logger: ^1.4.0
@@ -33,7 +34,6 @@ dependencies:
   # QR Code
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.2.3
-  qr_code_scanner: ^1.0.1
 
   # Intl & Localization
   intl: ^0.20.2
@@ -88,13 +88,14 @@ flutter:
     - assets/animations/
 
   # Fonts
-  fonts:
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700
+  # TODO: Add Poppins font files to assets/fonts/ directory
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #       - asset: assets/fonts/Poppins-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Poppins-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #         weight: 700
