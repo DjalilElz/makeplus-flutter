@@ -1,54 +1,27 @@
 // lib/data/repositories/auth_repository.dart
 
 import '../models/user_model.dart';
-import '../services/supabase_auth_service.dart';
-import '../services/django_api_service.dart';
+import '../services/django_auth_service.dart';
 
 class AuthRepository {
-  final SupabaseAuthService authService;
-  final DjangoApiService apiService;
+  final DjangoAuthService _authService;
 
-  AuthRepository({
-    required this.authService,
-    required this.apiService,
-  });
+  AuthRepository({DjangoAuthService? authService})
+      : _authService = authService ?? DjangoAuthService();
 
-  // Get current user
-  Future<UserModel?> getCurrentUser() async {
-    try {
-      final user = await authService.getCurrentUserProfile();
-      return user;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Login
+  /// Login with email and password
   Future<UserModel> login({
     required String email,
     required String password,
   }) async {
     try {
-      // Sign in with Supabase
-      final user = await authService.signIn(
-        email: email,
-        password: password,
-      );
-
-      // Set Django API token
-      final supabaseUser = authService.currentUser;
-      if (supabaseUser != null) {
-        final session = supabaseUser.id;
-        apiService.setAuthToken(session);
-      }
-
-      return user;
+      return await _authService.login(email, password);
     } catch (e) {
-      throw Exception('Login failed: $e');
+      rethrow;
     }
   }
 
-  // Sign up
+  /// Sign up a new user
   Future<UserModel> signup({
     required String email,
     required String password,
@@ -56,69 +29,41 @@ class AuthRepository {
     required String role,
   }) async {
     try {
-      // Sign up with Supabase
-      final user = await authService.signUp(
+      return await _authService.signup(
         email: email,
         password: password,
         name: name,
         role: role,
       );
-
-      // Set Django API token
-      final supabaseUser = authService.currentUser;
-      if (supabaseUser != null) {
-        final session = supabaseUser.id;
-        apiService.setAuthToken(session);
-      }
-
-      return user;
     } catch (e) {
-      throw Exception('Signup failed: $e');
+      rethrow;
     }
   }
 
-  // Logout
+  /// Logout current user
   Future<void> logout() async {
     try {
-      await authService.signOut();
-      // Clear Django API token
-      apiService.setAuthToken('');
+      await _authService.logout();
     } catch (e) {
-      throw Exception('Logout failed: $e');
+      rethrow;
     }
   }
 
-  // Reset password
+  /// Get currently authenticated user
+  Future<UserModel?> getCurrentUser() async {
+    try {
+      return await _authService.getCurrentUser();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Request password reset
   Future<void> resetPassword(String email) async {
     try {
-      await authService.resetPassword(email);
+      await _authService.resetPassword(email);
     } catch (e) {
-      throw Exception('Password reset failed: $e');
+      rethrow;
     }
-  }
-
-  // Update profile
-  Future<UserModel> updateProfile({
-    required String userId,
-    String? name,
-    String? phone,
-    String? photoUrl,
-  }) async {
-    try {
-      final updatedUser = await authService.updateProfile(
-        userId: userId,
-        name: name,
-        phone: phone,
-        photoUrl: photoUrl,
-      );
-      return updatedUser;
-    } catch (e) {
-      throw Exception('Profile update failed: $e');
-    }
-  }
-
-  // Check if user is authenticated
-  bool isAuthenticated() {
-    return authService.currentUser != null;
   }
 }

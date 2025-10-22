@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/theme/app_theme.dart';
 import 'data/repositories/auth_repository.dart';
-import 'data/services/supabase_auth_service.dart';
+import 'data/services/django_auth_service.dart';
 import 'data/services/django_api_service.dart';
 import 'logic/authentication/auth_bloc.dart';
 import 'logic/authentication/auth_event.dart';
@@ -33,15 +33,14 @@ class MakePlusApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider(
-          create: (context) => SupabaseAuthService(),
+          create: (context) => DjangoAuthService(),
         ),
         RepositoryProvider(
           create: (context) => DjangoApiService(),
         ),
         RepositoryProvider(
           create: (context) => AuthRepository(
-            authService: context.read<SupabaseAuthService>(),
-            apiService: context.read<DjangoApiService>(),
+            authService: context.read<DjangoAuthService>(),
           ),
         ),
       ],

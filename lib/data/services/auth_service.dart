@@ -127,12 +127,12 @@ class AuthService {
   }
 
   /// Get current user profile
-  Future<User> getProfile() async {
+  Future<UserModel> getProfile() async {
     try {
       final response = await _apiClient.get(ApiConstants.profile);
 
       if (response.statusCode == 200) {
-        return User.fromJson(response.data);
+        return UserModel.fromJson(response.data);
       } else {
         throw Exception('Failed to load profile');
       }
@@ -145,7 +145,7 @@ class AuthService {
   }
 
   /// Update user profile
-  Future<User> updateProfile({
+  Future<UserModel> updateProfile({
     String? email,
     String? firstName,
     String? lastName,
@@ -162,7 +162,7 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        return User.fromJson(response.data);
+        return UserModel.fromJson(response.data);
       } else {
         throw Exception('Failed to update profile');
       }

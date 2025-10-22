@@ -1,7 +1,11 @@
 // lib/presentation/screens/organizer/organizer_home_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/theme/app_colors.dart';
+import '../../../logic/authentication/auth_bloc.dart';
+import '../../../logic/authentication/auth_state.dart';
+import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 
 class OrganizerHomeScreen extends StatefulWidget {
@@ -16,85 +20,93 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event,
-                    size: 20,
-                    color: AppColors.primary,
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        final user = authState.user;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Group 100000...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.event,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'MakePlus 2025',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, '/notifications');
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRouter.notifications);
+                },
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Event Header
+                _buildEventHeader(user),
+                const SizedBox(height: 24),
+
+                // Quick Stats
+                _buildQuickStats(),
+                const SizedBox(height: 24),
+
+                // Ongoing Sessions
+                _buildSectionTitle('Sessions en cours', onViewAll: () {
+                  Navigator.pushNamed(context, AppRouter.roomsList);
+                }),
+                const SizedBox(height: 12),
+                _buildOngoingSession(),
+                const SizedBox(height: 24),
+
+                // Participants List
+                _buildSectionTitle('Suivi des participants', viewAllText: 'Voir tout'),
+                const SizedBox(height: 12),
+                _buildParticipantsList(),
+              ],
+            ),
+          ),
+          bottomNavigationBar: BottomNavBar(
+            currentIndex: _currentIndex,
+            userRole: 'organizer',
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
             },
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Event Header
-            _buildEventHeader(),
-            const SizedBox(height: 24),
-
-            // Quick Stats
-            _buildQuickStats(),
-            const SizedBox(height: 24),
-
-            // Ongoing Sessions
-            _buildSectionTitle('Sessions en cours', onViewAll: () {}),
-            const SizedBox(height: 12),
-            _buildOngoingSession(),
-            const SizedBox(height: 24),
-
-            // Participants List
-            _buildSectionTitle('Suivi des participants', viewAllText: 'Voir tout'),
-            const SizedBox(height: 12),
-            _buildParticipantsList(),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        userRole: 'organizer',
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildEventHeader() {
+  Widget _buildEventHeader(user) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -117,9 +129,9 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
                   fontSize: 16,
                 ),
               ),
-              const Text(
-                'Arslene,',
-                style: TextStyle(
+              Text(
+                user != null ? '${user.firstName},' : 'Invité,',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -128,9 +140,9 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Rôle: Organisateur',
-            style: TextStyle(
+          Text(
+            'Rôle: ${user?.role.toUpperCase() ?? 'N/A'}',
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),

@@ -1,122 +1,95 @@
-/// User Model
-class User {
+// lib/data/models/user_model.dart
+
+import 'package:equatable/equatable.dart';
+
+class UserModel extends Equatable {
   final int id;
-  final String username;
   final String email;
   final String firstName;
   final String lastName;
-  final String fullName;
-  final bool isStaff;
-  final String? role;
-  final String? photoUrl;
-  final List<UserAssignment>? assignments;
+  final String? username;
+  final String role;
+  final String? profilePhotoUrl;
+  final bool? isActive;
 
-  User({
+  const UserModel({
     required this.id,
-    required this.username,
     required this.email,
     required this.firstName,
     required this.lastName,
-    required this.fullName,
-    this.isStaff = false,
-    this.role,
-    this.photoUrl,
-    this.assignments,
+    this.username,
+    required this.role,
+    this.profilePhotoUrl,
+    this.isActive,
   });
 
-  // Getter for backward compatibility
-  String get name => fullName;
+  String get fullName => '$firstName $lastName';
 
-  factory User.fromJson(Map<String, dynamic> json) {
-    // Handle both int and String IDs (for Django and Supabase compatibility)
-    final dynamic idValue = json['id'];
-    final int id = idValue is int ? idValue : int.tryParse(idValue.toString()) ?? 0;
+  String get displayName => fullName.trim().isEmpty ? email : fullName;
 
-    return User(
-      id: id,
-      username: json['username'] as String,
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as int,
       email: json['email'] as String,
       firstName: json['first_name'] as String? ?? '',
       lastName: json['last_name'] as String? ?? '',
-      fullName: json['full_name'] as String? ?? '',
-      isStaff: json['is_staff'] as bool? ?? false,
-      role: json['role'] as String?,
-      photoUrl: json['photo_url'] as String?,
-      assignments: json['assignments'] != null
-          ? (json['assignments'] as List)
-              .map((a) => UserAssignment.fromJson(a))
-              .toList()
-          : null,
+      username: json['username'] as String?,
+      role: json['role'] as String? ?? 'participant',
+      profilePhotoUrl: json['profile_photo_url'] as String?,
+      isActive: json['is_active'] as bool?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'username': username,
       'email': email,
       'first_name': firstName,
       'last_name': lastName,
-      'full_name': fullName,
-      'is_staff': isStaff,
+      'username': username,
       'role': role,
-      'photo_url': photoUrl,
+      'profile_photo_url': profilePhotoUrl,
+      'is_active': isActive,
     };
   }
 
-  String getDisplayName() {
-    if (firstName.isNotEmpty && lastName.isNotEmpty) {
-      return '$firstName $lastName';
-    }
-    return username;
-  }
-}
-
-/// User Assignment (Event Role)
-class UserAssignment {
-  final String eventId;
-  final String eventName;
-  final String role;
-  final DateTime assignedAt;
-
-  UserAssignment({
-    required this.eventId,
-    required this.eventName,
-    required this.role,
-    required this.assignedAt,
-  });
-
-  factory UserAssignment.fromJson(Map<String, dynamic> json) {
-    return UserAssignment(
-      eventId: json['event_id'] as String,
-      eventName: json['event_name'] as String,
-      role: json['role'] as String,
-      assignedAt: DateTime.parse(json['assigned_at'] as String),
+  UserModel copyWith({
+    int? id,
+    String? email,
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? role,
+    String? profilePhotoUrl,
+    bool? isActive,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      username: username ?? this.username,
+      role: role ?? this.role,
+      profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
+      isActive: isActive ?? this.isActive,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'event_id': eventId,
-      'event_name': eventName,
-      'role': role,
-      'assigned_at': assignedAt.toIso8601String(),
-    };
-  }
+  @override
+  List<Object?> get props => [id, email, firstName, lastName, username, role, profilePhotoUrl, isActive];
 }
 
-/// Auth Tokens Model
-class AuthTokens {
+class TokenPair extends Equatable {
   final String access;
   final String refresh;
 
-  AuthTokens({
+  const TokenPair({
     required this.access,
     required this.refresh,
   });
 
-  factory AuthTokens.fromJson(Map<String, dynamic> json) {
-    return AuthTokens(
+  factory TokenPair.fromJson(Map<String, dynamic> json) {
+    return TokenPair(
       access: json['access'] as String,
       refresh: json['refresh'] as String,
     );
@@ -128,58 +101,24 @@ class AuthTokens {
       'refresh': refresh,
     };
   }
+
+  @override
+  List<Object?> get props => [access, refresh];
 }
 
-/// Event Info (minimal)
-class EventInfo {
-  final String id;
-  final String name;
+class AuthResponse extends Equatable {
+  final UserModel user;
+  final TokenPair tokens;
 
-  EventInfo({
-    required this.id,
-    required this.name,
-  });
-
-  factory EventInfo.fromJson(Map<String, dynamic> json) {
-    return EventInfo(
-      id: json['id'] as String,
-      name: json['name'] as String,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
-  }
-}
-
-/// Auth Response Model (Login/Register response)
-class AuthResponse {
-  final User user;
-  final AuthTokens tokens;
-  final String role;
-  final EventInfo? event;
-  final String? message;
-
-  AuthResponse({
+  const AuthResponse({
     required this.user,
     required this.tokens,
-    required this.role,
-    this.event,
-    this.message,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     return AuthResponse(
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
-      tokens: AuthTokens.fromJson(json['tokens'] as Map<String, dynamic>),
-      role: json['role'] as String,
-      event: json['event'] != null
-          ? EventInfo.fromJson(json['event'] as Map<String, dynamic>)
-          : null,
-      message: json['message'] as String?,
+      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
+      tokens: TokenPair.fromJson(json['tokens'] as Map<String, dynamic>),
     );
   }
 
@@ -187,13 +126,9 @@ class AuthResponse {
     return {
       'user': user.toJson(),
       'tokens': tokens.toJson(),
-      'role': role,
-      'event': event?.toJson(),
-      'message': message,
     };
   }
-}
 
-// Type alias for compatibility with existing code
-typedef UserModel = User;
-typedef TokenModel = AuthTokens;
+  @override
+  List<Object?> get props => [user, tokens];
+}

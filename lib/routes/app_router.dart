@@ -6,6 +6,9 @@ import '../presentation/screens/splash/splash_screen.dart';
 import '../presentation/screens/organizer/orgniser_home_screen.dart';
 import '../presentation/screens/organizer/room_management/rooms_list_screen.dart';
 import '../presentation/screens/organizer/room_management/room_detail_screen.dart';
+import '../presentation/screens/participant/participant_home_screen.dart';
+import '../presentation/screens/controller/controller_home_screen.dart';
+import '../presentation/screens/exhibitor/exhibitor_home_screen.dart';
 import '../presentation/screens/shared/permission_denied_screen.dart';
 
 class AppRouter {
@@ -83,7 +86,19 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => RoomDetailScreen(roomId: roomId ?? ''),
         );
-      
+
+      // Participant routes
+      case participantHome:
+        return MaterialPageRoute(builder: (_) => const ParticipantHomeScreen());
+
+      // Controller routes
+      case controllerHome:
+        return MaterialPageRoute(builder: (_) => const ControllerHomeScreen());
+
+      // Exhibitor routes
+      case exhibitorHome:
+        return MaterialPageRoute(builder: (_) => const ExhibitorHomeScreen());
+
       // Permission denied
       case permissionDenied:
         return MaterialPageRoute(builder: (_) => const PermissionDeniedScreen());

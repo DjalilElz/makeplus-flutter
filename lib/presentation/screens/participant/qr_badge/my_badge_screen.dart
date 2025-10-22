@@ -54,9 +54,9 @@ class _MyBadgeScreenState extends State<MyBadgeScreen> {
                 // Badge Display
                 QRDisplayWidget(
                   data: qrData,
-                  userName: user.name,
+                  userName: user.displayName,
                   userRole: _getUserRoleDisplay(user.role),
-                  userPhoto: user.photoUrl,
+                  userPhoto: user.profilePhotoUrl,
                 ),
 
                 const SizedBox(height: 24),
