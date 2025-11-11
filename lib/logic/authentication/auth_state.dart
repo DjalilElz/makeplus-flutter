@@ -15,12 +15,14 @@ class AuthState extends Equatable {
   final AuthStatus status;
   final UserModel? user;
   final String? role;
+  final EventModel? event;
   final String? errorMessage;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.user,
     this.role,
+    this.event,
     this.errorMessage,
   });
 
@@ -28,21 +30,23 @@ class AuthState extends Equatable {
     AuthStatus? status,
     UserModel? user,
     String? role,
+    EventModel? event,
     String? errorMessage,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       role: role ?? this.role,
+      event: event ?? this.event,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, user, role, errorMessage];
+  List<Object?> get props => [status, user, role, event, errorMessage];
 
   @override
   String toString() {
-    return 'AuthState(status: $status, user: ${user?.email}, role: $role, error: $errorMessage)';
+    return 'AuthState(status: $status, user: ${user?.email}, role: $role, event: ${event?.name}, error: $errorMessage)';
   }
 }

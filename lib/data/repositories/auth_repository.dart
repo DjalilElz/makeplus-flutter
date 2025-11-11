@@ -10,7 +10,7 @@ class AuthRepository {
       : _authService = authService ?? DjangoAuthService();
 
   /// Login with email and password
-  Future<UserModel> login({
+  Future<LoginResponse> login({
     required String email,
     required String password,
   }) async {
@@ -22,7 +22,7 @@ class AuthRepository {
   }
 
   /// Sign up a new user
-  Future<UserModel> signup({
+  Future<LoginResponse> signup({
     required String email,
     required String password,
     required String name,

@@ -49,15 +49,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
 
     try {
-      final user = await authRepository.login(
+      final loginResponse = await authRepository.login(
         email: event.email,
         password: event.password,
       );
 
+      print('🔐 AUTH BLOC - Login successful');
+      print('👤 User: ${loginResponse.user.email}');
+      print('🎭 Role: ${loginResponse.user.role}');
+      print('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
+
       emit(state.copyWith(
         status: AuthStatus.authenticated,
-        user: user,
-        role: user.role,
+        user: loginResponse.user,
+        role: loginResponse.user.role,
+        event: loginResponse.event,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -74,7 +80,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
 
     try {
-      final user = await authRepository.signup(
+      final signupResponse = await authRepository.signup(
         email: event.email,
         password: event.password,
         name: event.fullName,
@@ -83,8 +89,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       emit(state.copyWith(
         status: AuthStatus.authenticated,
-        user: user,
-        role: user.role,
+        user: signupResponse.user,
+        role: signupResponse.user.role,
+        event: signupResponse.event,
       ));
     } catch (e) {
       emit(state.copyWith(

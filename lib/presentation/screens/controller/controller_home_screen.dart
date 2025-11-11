@@ -361,7 +361,7 @@ class _ControllerHomeScreenState extends State<ControllerHomeScreen> {
         (index) => _buildScanCard(
           'Amina BENDJEBBAR',
           'Participant Salle ${index + 1} - Conférencier',
-          '${(8 + index).toString().padLeft(2, '0')}:0${index}',
+          '${(8 + index).toString().padLeft(2, '0')}:0$index',
           index % 2 == 0,
         ),
       ),

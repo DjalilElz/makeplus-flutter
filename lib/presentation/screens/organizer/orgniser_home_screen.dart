@@ -23,6 +23,14 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         final user = authState.user;
+        final event = authState.event;
+
+        // Debug logs
+        if (event != null) {
+          print('🏠 ORGANIZER HOME - Event: ${event.name}');
+          print('📅 Dates: ${event.startDate ?? "N/A"} to ${event.endDate ?? "N/A"}');
+          print('📍 Location: ${event.location ?? "N/A"}');
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -42,12 +50,15 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
                         color: AppColors.primary,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'MakePlus 2025',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          event?.name ?? 'MakePlus',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[800],
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -70,7 +81,7 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Event Header
-                _buildEventHeader(user),
+                _buildEventHeader(user, event),
                 const SizedBox(height: 24),
 
                 // Quick Stats
@@ -106,7 +117,7 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
     );
   }
 
-  Widget _buildEventHeader(user) {
+  Widget _buildEventHeader(user, event) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -122,15 +133,17 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
         children: [
           Row(
             children: [
-              const Text(
-                'Bonjour ',
-                style: TextStyle(
-                  color: Colors.white70,
+              
+              Text(
+                user != null ? '${user.firstName} ' : 'Invité,',
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                user != null ? '${user.firstName},' : 'Invité,',
+                user != null ? '${user.lastName}' : 'Invité,',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -141,16 +154,16 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Rôle: ${user?.role.toUpperCase() ?? 'N/A'}',
+            '${user?.role.toUpperCase() ?? 'N/A'}',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'MakePlus 2025',
-            style: TextStyle(
+          Text(
+            event?.name ?? 'MakePlus 2025',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -165,11 +178,15 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
                 size: 16,
               ),
               const SizedBox(width: 8),
-              const Text(
-                '12-14 Novembre 2025',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
+              Expanded(
+                child: Text(
+                  event?.startDate != null && event?.endDate != null
+                      ? '${event!.startDate} - ${event.endDate}'
+                      : event?.startDate ?? 'Date à confirmer',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
@@ -183,10 +200,10 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
                 size: 16,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Centre des Congrès, Alger',
-                  style: TextStyle(
+                  event?.location ?? 'Lieu à confirmer',
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
                   ),

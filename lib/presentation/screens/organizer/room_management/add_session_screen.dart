@@ -193,7 +193,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: 'Participants',
+              initialValue: 'Participants',
               decoration: const InputDecoration(),
               items: ['Participants', 'Exposants', 'Tous']
                   .map((target) => DropdownMenuItem(
@@ -215,7 +215,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: 'Dr M. Ali',
+              initialValue: 'Dr M. Ali',
               decoration: const InputDecoration(),
               items: ['Dr M. Ali', 'Prof. Sarah', 'Dr. Ahmed']
                   .map((speaker) => DropdownMenuItem(
@@ -237,7 +237,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedRoom,
+              initialValue: _selectedRoom,
               decoration: const InputDecoration(),
               items: _rooms
                   .map((room) => DropdownMenuItem(
@@ -263,7 +263,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedTheme,
+              initialValue: _selectedTheme,
               decoration: const InputDecoration(),
               items: _themes
                   .map((theme) => DropdownMenuItem(

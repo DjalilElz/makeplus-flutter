@@ -132,3 +132,59 @@ class AuthResponse extends Equatable {
   @override
   List<Object?> get props => [user, tokens];
 }
+
+class EventModel extends Equatable {
+  final String id;
+  final String name;
+  final String? description;
+  final String? startDate;
+  final String? endDate;
+  final String? location;
+
+  const EventModel({
+    required this.id,
+    required this.name,
+    this.description,
+    this.startDate,
+    this.endDate,
+    this.location,
+  });
+
+  factory EventModel.fromJson(Map<String, dynamic> json) {
+    return EventModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      startDate: json['start_date'] as String?,
+      endDate: json['end_date'] as String?,
+      location: json['location'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'start_date': startDate,
+      'end_date': endDate,
+      'location': location,
+    };
+  }
+
+  @override
+  List<Object?> get props => [id, name, description, startDate, endDate, location];
+}
+
+class LoginResponse extends Equatable {
+  final UserModel user;
+  final EventModel? event;
+
+  const LoginResponse({
+    required this.user,
+    this.event,
+  });
+
+  @override
+  List<Object?> get props => [user, event];
+}
