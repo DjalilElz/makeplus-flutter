@@ -8,6 +8,7 @@ import '../../../core/constants/theme/app_colors.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_event.dart';
 import '../../../logic/authentication/auth_state.dart';
+import 'event_selection_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,6 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
             // Navigate to role-specific home screen
             Navigator.of(context).pushReplacementNamed(
               AppRouter.getRoleHomeRoute(state.role ?? 'participant'),
+            );
+          } else if (state.status == AuthStatus.requiresEventSelection) {
+            // Navigate to event selection screen
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => EventSelectionScreen(
+                  availableEvents: state.availableEvents ?? [],
+                ),
+              ),
             );
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(

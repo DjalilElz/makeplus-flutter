@@ -76,7 +76,16 @@ class UserModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, email, firstName, lastName, username, role, profilePhotoUrl, isActive];
+  List<Object?> get props => [
+        id,
+        email,
+        firstName,
+        lastName,
+        username,
+        role,
+        profilePhotoUrl,
+        isActive
+      ];
 }
 
 class TokenPair extends Equatable {
@@ -137,9 +146,11 @@ class EventModel extends Equatable {
   final String id;
   final String name;
   final String? description;
-  final String? startDate;
-  final String? endDate;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final String? location;
+  final String? role; // User's role in this event
+  final String? status; // Event status: upcoming, ongoing, completed
 
   const EventModel({
     required this.id,
@@ -148,6 +159,8 @@ class EventModel extends Equatable {
     this.startDate,
     this.endDate,
     this.location,
+    this.role,
+    this.status,
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -155,9 +168,15 @@ class EventModel extends Equatable {
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String?,
-      startDate: json['start_date'] as String?,
-      endDate: json['end_date'] as String?,
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'] as String)
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'] as String)
+          : null,
       location: json['location'] as String?,
+      role: json['role'] as String?,
+      status: json['status'] as String?,
     );
   }
 
@@ -166,25 +185,33 @@ class EventModel extends Equatable {
       'id': id,
       'name': name,
       'description': description,
-      'start_date': startDate,
-      'end_date': endDate,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
       'location': location,
+      'role': role,
+      'status': status,
     };
   }
 
   @override
-  List<Object?> get props => [id, name, description, startDate, endDate, location];
+  List<Object?> get props =>
+      [id, name, description, startDate, endDate, location, role, status];
 }
 
 class LoginResponse extends Equatable {
   final UserModel user;
   final EventModel? event;
+  final bool requiresEventSelection;
+  final List<EventModel>? availableEvents;
 
   const LoginResponse({
     required this.user,
     this.event,
+    this.requiresEventSelection = false,
+    this.availableEvents,
   });
 
   @override
-  List<Object?> get props => [user, event];
+  List<Object?> get props =>
+      [user, event, requiresEventSelection, availableEvents];
 }

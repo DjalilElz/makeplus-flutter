@@ -70,7 +70,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     try {
       final newRoom = await roomRepository.createRoom(event.roomData);
       final updatedRooms = List<RoomModel>.from(state.rooms)..add(newRoom);
-      
+
       emit(state.copyWith(
         status: RoomStatus.created,
         rooms: updatedRooms,
@@ -94,7 +94,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
         event.roomId,
         event.updates,
       );
-      
+
       final updatedRooms = state.rooms.map((room) {
         return room.id == event.roomId ? updatedRoom : room;
       }).toList();
@@ -120,10 +120,9 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
 
     try {
       await roomRepository.deleteRoom(event.roomId);
-      
-      final updatedRooms = state.rooms
-          .where((room) => room.id != event.roomId)
-          .toList();
+
+      final updatedRooms =
+          state.rooms.where((room) => room.id != event.roomId).toList();
 
       emit(state.copyWith(
         status: RoomStatus.deleted,
@@ -145,21 +144,22 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
 
     try {
       final newSession = await roomRepository.createSession(event.sessionData);
-      
+
       // Update the room with the new session
       if (state.selectedRoom != null) {
         final updatedSessions = List<SessionModel>.from(
           state.selectedRoom!.sessions,
         )..add(newSession);
-        
+
         final updatedRoom = RoomModel(
           id: state.selectedRoom!.id,
           name: state.selectedRoom!.name,
           description: state.selectedRoom!.description,
           capacity: state.selectedRoom!.capacity,
-          location: state.selectedRoom!.location,
+          eventId: state.selectedRoom!.eventId,
           sessions: updatedSessions,
           currentParticipants: state.selectedRoom!.currentParticipants,
+          isActive: state.selectedRoom!.isActive,
         );
 
         emit(state.copyWith(
@@ -185,7 +185,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
 
     try {
       await roomRepository.updateSession(event.sessionId, event.updates);
-      
+
       // Refresh the room data
       if (state.selectedRoom != null) {
         add(RoomFetchRequested(state.selectedRoom!.id));
@@ -206,7 +206,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
 
     try {
       await roomRepository.deleteSession(event.sessionId);
-      
+
       // Refresh the room data
       if (state.selectedRoom != null) {
         add(RoomFetchRequested(state.selectedRoom!.id));

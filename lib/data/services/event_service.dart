@@ -32,7 +32,7 @@ class EventService {
       if (response.statusCode == 200) {
         final data = response.data;
         final results = data['results'] ?? data;
-        
+
         if (results is List) {
           return results.map((e) => EventModel.fromJson(e)).toList();
         }
@@ -101,7 +101,7 @@ class EventService {
       if (response.statusCode == 200) {
         final data = response.data;
         final results = data['results'] ?? data;
-        
+
         if (results is List) {
           return results.map((e) => Room.fromJson(e)).toList();
         }
@@ -202,7 +202,7 @@ class EventService {
       if (response.statusCode == 200) {
         final data = response.data;
         final results = data['results'] ?? data;
-        
+
         if (results is List) {
           return results.map((e) => Session.fromJson(e)).toList();
         }
@@ -305,6 +305,63 @@ class EventService {
         return response.data as Map<String, dynamic>;
       } else {
         throw Exception('Failed to load dashboard statistics');
+      }
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  // ==================== MULTI-EVENT SUPPORT ====================
+
+  /// Get user's events (events where user has assignments)
+  Future<List<EventModel>> getMyEvents() async {
+    try {
+      final response = await _apiClient.get('/auth/my-events/');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return data.map((e) => EventModel.fromJson(e)).toList();
+        }
+        return [];
+      } else {
+        throw Exception('Failed to load user events');
+      }
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  /// Select event during login (returns updated token with event context)
+  Future<Map<String, dynamic>> selectEvent(String eventId) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/select-event/',
+        data: {'event_id': eventId},
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to select event');
+      }
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  /// Switch to a different event (returns updated token with new event context)
+  Future<Map<String, dynamic>> switchEvent(String eventId) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/switch-event/',
+        data: {'event_id': eventId},
+      );
+
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to switch event');
       }
     } on DioException catch (e) {
       throw Exception(_handleError(e));

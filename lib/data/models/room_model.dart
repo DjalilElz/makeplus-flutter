@@ -2,23 +2,31 @@
 
 import 'package:equatable/equatable.dart';
 
+enum SessionStatus {
+  notStarted, // Pas encore commencé
+  inProgress, // En cours
+  finished, // Terminé
+}
+
 class RoomModel extends Equatable {
   final String id;
   final String name;
   final String? description;
   final int capacity;
-  final String location;
+  final String eventId;
   final List<SessionModel> sessions;
   final int currentParticipants;
+  final bool isActive;
 
   const RoomModel({
     required this.id,
     required this.name,
     this.description,
     required this.capacity,
-    required this.location,
+    required this.eventId,
     this.sessions = const [],
     this.currentParticipants = 0,
+    this.isActive = true,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -27,12 +35,13 @@ class RoomModel extends Equatable {
       name: json['name'] ?? '',
       description: json['description'],
       capacity: json['capacity'] ?? 0,
-      location: json['location'] ?? '',
+      eventId: json['event']?.toString() ?? '',
       sessions: (json['sessions'] as List<dynamic>?)
               ?.map((s) => SessionModel.fromJson(s))
               .toList() ??
           [],
       currentParticipants: json['current_participants'] ?? 0,
+      isActive: json['is_active'] ?? true,
     );
   }
 
@@ -42,9 +51,10 @@ class RoomModel extends Equatable {
       'name': name,
       'description': description,
       'capacity': capacity,
-      'location': location,
+      'event': eventId,
       'sessions': sessions.map((s) => s.toJson()).toList(),
       'current_participants': currentParticipants,
+      'is_active': isActive,
     };
   }
 
@@ -54,9 +64,10 @@ class RoomModel extends Equatable {
         name,
         description,
         capacity,
-        location,
+        eventId,
         sessions,
         currentParticipants,
+        isActive,
       ];
 }
 
@@ -67,10 +78,16 @@ class SessionModel extends Equatable {
   final DateTime startTime;
   final DateTime endTime;
   final String roomId;
+  final String eventId;
   final String? speakerName;
   final String? speakerTitle;
   final String? theme;
   final bool isLive;
+  final SessionStatus status;
+  final String sessionType; // 'conference' or 'atelier'
+  final bool isPaid;
+  final double? price;
+  final String? youtubeLiveUrl;
 
   const SessionModel({
     required this.id,
@@ -79,39 +96,89 @@ class SessionModel extends Equatable {
     required this.startTime,
     required this.endTime,
     required this.roomId,
+    required this.eventId,
     this.speakerName,
     this.speakerTitle,
     this.theme,
     this.isLive = false,
+    this.status = SessionStatus.notStarted,
+    this.sessionType = 'conference',
+    this.isPaid = false,
+    this.price,
+    this.youtubeLiveUrl,
   });
 
   factory SessionModel.fromJson(Map<String, dynamic> json) {
+    SessionStatus status = SessionStatus.notStarted;
+    if (json['status'] != null) {
+      switch (json['status'].toString().toLowerCase()) {
+        case 'in_progress':
+        case 'en_cours':
+          status = SessionStatus.inProgress;
+          break;
+        case 'finished':
+        case 'termine':
+          status = SessionStatus.finished;
+          break;
+        case 'pas_encore':
+        case 'not_started':
+        default:
+          status = SessionStatus.notStarted;
+      }
+    }
+
     return SessionModel(
       id: json['id'].toString(),
       title: json['title'] ?? '',
       description: json['description'],
       startTime: DateTime.parse(json['start_time']),
       endTime: DateTime.parse(json['end_time']),
-      roomId: json['room_id'].toString(),
+      roomId: json['room']?.toString() ?? json['room_id']?.toString() ?? '',
+      eventId: json['event']?.toString() ?? '',
       speakerName: json['speaker_name'],
       speakerTitle: json['speaker_title'],
       theme: json['theme'],
-      isLive: json['is_live'] ?? false,
+      isLive: json['is_live'] ?? status == SessionStatus.inProgress,
+      status: status,
+      sessionType: json['session_type'] ?? 'conference',
+      isPaid: json['is_paid'] ?? false,
+      price: json['price'] != null
+          ? double.tryParse(json['price'].toString())
+          : null,
+      youtubeLiveUrl: json['youtube_live_url'],
     );
   }
 
   Map<String, dynamic> toJson() {
+    String statusString;
+    switch (status) {
+      case SessionStatus.inProgress:
+        statusString = 'en_cours';
+        break;
+      case SessionStatus.finished:
+        statusString = 'termine';
+        break;
+      default:
+        statusString = 'pas_encore';
+    }
+
     return {
       'id': id,
       'title': title,
       'description': description,
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
-      'room_id': roomId,
+      'room': roomId,
+      'event': eventId,
       'speaker_name': speakerName,
       'speaker_title': speakerTitle,
       'theme': theme,
       'is_live': isLive,
+      'status': statusString,
+      'session_type': sessionType,
+      'is_paid': isPaid,
+      'price': price?.toString(),
+      'youtube_live_url': youtubeLiveUrl,
     };
   }
 
@@ -123,9 +190,15 @@ class SessionModel extends Equatable {
         startTime,
         endTime,
         roomId,
+        eventId,
         speakerName,
         speakerTitle,
         theme,
         isLive,
+        status,
+        sessionType,
+        isPaid,
+        price,
+        youtubeLiveUrl,
       ];
 }

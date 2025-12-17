@@ -16,162 +16,165 @@ class BottomNavBar extends StatelessWidget {
   });
 
   List<BottomNavigationBarItem> _getNavItems() {
-    switch (userRole) {
-      case 'organizer':
-        return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.campaign_outlined),
-            activeIcon: Icon(Icons.campaign),
-            label: 'annonces',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner,
-                color: Colors.white,
-              ),
-            ),
-            label: '',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.meeting_room_outlined),
-            activeIcon: Icon(Icons.meeting_room),
-            label: 'Salles',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            activeIcon: Icon(Icons.help),
-            label: 'Questions',
-          ),
-        ];
+    // Normalize role name
+    final normalizedRole =
+        userRole.toLowerCase().replaceAll(' ', '_').replaceAll('-', '_');
 
-      case 'controller':
-        return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.campaign_outlined),
-            activeIcon: Icon(Icons.campaign),
-            label: 'annonces',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner,
-                color: Colors.white,
-              ),
+    // Handle Organisateur Gestion des Salles (Room Manager)
+    if (normalizedRole.contains('gestion') ||
+        normalizedRole.contains('room_manager') ||
+        normalizedRole == 'organizer') {
+      return [
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.campaign_outlined),
+          activeIcon: Icon(Icons.campaign),
+          label: 'annonces',
+        ),
+        BottomNavigationBarItem(
+          icon: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
             ),
-            label: '',
+            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Programme',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
-        ];
-
-      case 'participant':
-        return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Programme',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.qr_code,
-                color: Colors.white,
-              ),
-            ),
-            label: '',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Guide',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.store_outlined),
-            activeIcon: Icon(Icons.store),
-            label: 'Exposants',
-          ),
-        ];
-
-      case 'exhibitor':
-        return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Plan',
-          ),
-          BottomNavigationBarItem(
-            icon: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner,
-                color: Colors.white,
-              ),
-            ),
-            label: '',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Notifications',
-          ),
-        ];
-
-      default:
-        return [];
+          label: '',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.meeting_room_outlined),
+          activeIcon: Icon(Icons.meeting_room),
+          label: 'Salle',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.settings_outlined),
+          activeIcon: Icon(Icons.settings),
+          label: 'Paramètres',
+        ),
+      ];
     }
+
+    // Handle Organisateur Contrôleur de Badge (Badge Controller)
+    if (normalizedRole.contains('controleur') ||
+        normalizedRole.contains('controlleur') ||
+        normalizedRole.contains('badge_controller') ||
+        normalizedRole == 'controller') {
+      return [
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.campaign_outlined),
+          activeIcon: Icon(Icons.campaign),
+          label: 'Annonces',
+        ),
+        BottomNavigationBarItem(
+          icon: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+          ),
+          label: '',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_today_outlined),
+          activeIcon: Icon(Icons.calendar_today),
+          label: 'Programme',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          activeIcon: Icon(Icons.bar_chart),
+          label: 'Stats',
+        ),
+      ];
+    }
+
+    // Handle Participant
+    if (normalizedRole == 'participant') {
+      return [
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_today_outlined),
+          activeIcon: Icon(Icons.calendar_today),
+          label: 'Programme',
+        ),
+        BottomNavigationBarItem(
+          icon: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.person, color: Colors.white),
+          ),
+          label: '',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.map_outlined),
+          activeIcon: Icon(Icons.map),
+          label: 'Guide',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.campaign_outlined),
+          activeIcon: Icon(Icons.campaign),
+          label: 'Annonces',
+        ),
+      ];
+    }
+
+    // Handle Exposant (Exhibitor)
+    if (normalizedRole == 'exposant' || normalizedRole == 'exhibitor') {
+      return [
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.map_outlined),
+          activeIcon: Icon(Icons.map),
+          label: 'Plan',
+        ),
+        BottomNavigationBarItem(
+          icon: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+          ),
+          label: '',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          activeIcon: Icon(Icons.bar_chart),
+          label: 'Stats',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.campaign_outlined),
+          activeIcon: Icon(Icons.campaign),
+          label: 'Annonces',
+        ),
+      ];
+    }
+
+    // Default fallback
+    return [];
   }
 
   @override

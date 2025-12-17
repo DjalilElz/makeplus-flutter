@@ -11,6 +11,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({required this.authRepository}) : super(const AuthState()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
+    on<AuthEventSelectionRequested>(_onAuthEventSelectionRequested);
     on<AuthSignupRequested>(_onAuthSignupRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
     on<AuthPasswordResetRequested>(_onAuthPasswordResetRequested);
@@ -23,18 +24,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(status: AuthStatus.loading));
 
     try {
-      final user = await authRepository.getCurrentUser();
+      final loginResponse = await authRepository.getCurrentUserWithEvent();
 
-      if (user != null) {
+      if (loginResponse?.user != null) {
+        final user = loginResponse!.user;
+        print('🔐 AUTH CHECK - User session restored');
+        print('👤 User: ${user.email}');
+        print('🎭 Role: ${user.role}');
+        print('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
+
         emit(state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
           role: user.role,
+          event: loginResponse.event,
         ));
       } else {
+        print('🔐 AUTH CHECK - No saved session, showing login');
         emit(state.copyWith(status: AuthStatus.unauthenticated));
       }
     } catch (e) {
+      print('❌ AUTH CHECK ERROR: $e');
       emit(state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: e.toString(),
@@ -54,6 +64,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
 
+      // Check if user needs to select an event
+      if (loginResponse.requiresEventSelection) {
+        print('🔄 MULTI-EVENT USER - Showing event selection');
+        emit(state.copyWith(
+          status: AuthStatus.requiresEventSelection,
+          user: loginResponse.user,
+          availableEvents: loginResponse.availableEvents,
+        ));
+        return;
+      }
+
       print('🔐 AUTH BLOC - Login successful');
       print('👤 User: ${loginResponse.user.email}');
       print('🎭 Role: ${loginResponse.user.role}');
@@ -64,6 +85,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         user: loginResponse.user,
         role: loginResponse.user.role,
         event: loginResponse.event,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onAuthEventSelectionRequested(
+    AuthEventSelectionRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+
+    try {
+      final loginResponse = await authRepository.selectEvent(event.eventId);
+
+      print('🔐 AUTH BLOC - Event selected successfully');
+      print('👤 User: ${loginResponse.user.email}');
+      print('🎭 Role: ${loginResponse.user.role}');
+      print('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
+
+      emit(state.copyWith(
+        status: AuthStatus.authenticated,
+        user: loginResponse.user,
+        role: loginResponse.user.role,
+        event: loginResponse.event,
+        availableEvents: null, // Clear available events after selection
       ));
     } catch (e) {
       emit(state.copyWith(

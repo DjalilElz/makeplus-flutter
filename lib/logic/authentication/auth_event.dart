@@ -55,3 +55,12 @@ class AuthPasswordResetRequested extends AuthEvent {
   @override
   List<Object?> get props => [email];
 }
+
+class AuthEventSelectionRequested extends AuthEvent {
+  final String eventId;
+
+  const AuthEventSelectionRequested({required this.eventId});
+
+  @override
+  List<Object?> get props => [eventId];
+}

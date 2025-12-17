@@ -8,6 +8,7 @@ enum AuthStatus {
   loading,
   authenticated,
   unauthenticated,
+  requiresEventSelection, // New state for multi-event users
   error,
 }
 
@@ -16,6 +17,7 @@ class AuthState extends Equatable {
   final UserModel? user;
   final String? role;
   final EventModel? event;
+  final List<EventModel>? availableEvents; // Available events for selection
   final String? errorMessage;
 
   const AuthState({
@@ -23,6 +25,7 @@ class AuthState extends Equatable {
     this.user,
     this.role,
     this.event,
+    this.availableEvents,
     this.errorMessage,
   });
 
@@ -31,6 +34,7 @@ class AuthState extends Equatable {
     UserModel? user,
     String? role,
     EventModel? event,
+    List<EventModel>? availableEvents,
     String? errorMessage,
   }) {
     return AuthState(
@@ -38,15 +42,17 @@ class AuthState extends Equatable {
       user: user ?? this.user,
       role: role ?? this.role,
       event: event ?? this.event,
+      availableEvents: availableEvents ?? this.availableEvents,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, user, role, event, errorMessage];
+  List<Object?> get props =>
+      [status, user, role, event, availableEvents, errorMessage];
 
   @override
   String toString() {
-    return 'AuthState(status: $status, user: ${user?.email}, role: $role, event: ${event?.name}, error: $errorMessage)';
+    return 'AuthState(status: $status, user: ${user?.email}, role: $role, event: ${event?.name}, availableEvents: ${availableEvents?.length}, error: $errorMessage)';
   }
 }

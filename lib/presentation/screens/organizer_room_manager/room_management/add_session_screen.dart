@@ -20,7 +20,6 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
   String _selectedTheme = 'Santé';
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
-  String? _selectedImage;
 
   final List<String> _announcementTypes = [
     'Changement de salle',
@@ -310,9 +309,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                     onPressed: () => _selectTime(context, false),
                     icon: const Icon(Icons.access_time),
                     label: Text(
-                      _endTime != null
-                          ? _endTime!.format(context)
-                          : '12:00',
+                      _endTime != null ? _endTime!.format(context) : '12:00',
                     ),
                   ),
                 ),

@@ -3,9 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/theme/app_colors.dart';
-import '../../../../logic/organizer/room_management/room_bloc.dart';
-import '../../../../logic/organizer/room_management/room_event.dart';
-import '../../../../logic/organizer/room_management/room_state.dart';
+import '../../../../logic/organizer_room_manager/room_management/room_bloc.dart';
+import '../../../../logic/organizer_room_manager/room_management/room_event.dart';
+import '../../../../logic/organizer_room_manager/room_management/room_state.dart';
 import '../../../../logic/event/event_bloc.dart';
 import '../../../../logic/event/event_state.dart' as event_state;
 
@@ -35,7 +35,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   void _handleCreate() {
     if (_formKey.currentState!.validate()) {
       final eventId = context.read<EventBloc>().state.currentEvent?.id;
-      
+
       if (eventId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -47,15 +47,15 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
       }
 
       context.read<RoomBloc>().add(
-        RoomCreateRequested({
-          'event_id': eventId,
-          'name': _nameController.text.trim(),
-          'description': _descriptionController.text.trim(),
-          'capacity': int.parse(_capacityController.text),
-          'location': _locationController.text.trim(),
-          'is_active': true,
-        }),
-      );
+            RoomCreateRequested({
+              'event_id': eventId,
+              'name': _nameController.text.trim(),
+              'description': _descriptionController.text.trim(),
+              'capacity': int.parse(_capacityController.text),
+              'location': _locationController.text.trim(),
+              'is_active': true,
+            }),
+          );
     }
   }
 
@@ -82,7 +82,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           } else if (state.status == RoomStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.errorMessage ?? 'Erreur lors de la création'),
+                content:
+                    Text(state.errorMessage ?? 'Erreur lors de la création'),
                 backgroundColor: AppColors.error,
               ),
             );

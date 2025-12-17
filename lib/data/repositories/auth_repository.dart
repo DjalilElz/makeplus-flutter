@@ -21,6 +21,15 @@ class AuthRepository {
     }
   }
 
+  /// Select event after login (for multi-event users)
+  Future<LoginResponse> selectEvent(String eventId) async {
+    try {
+      return await _authService.selectEvent(eventId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Sign up a new user
   Future<LoginResponse> signup({
     required String email,
@@ -53,6 +62,15 @@ class AuthRepository {
   Future<UserModel?> getCurrentUser() async {
     try {
       return await _authService.getCurrentUser();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get currently authenticated user with event data
+  Future<LoginResponse?> getCurrentUserWithEvent() async {
+    try {
+      return await _authService.getCurrentUserWithEvent();
     } catch (e) {
       return null;
     }
