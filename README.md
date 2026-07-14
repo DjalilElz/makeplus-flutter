@@ -39,6 +39,7 @@ A comprehensive event management application built with **Flutter**, **Django RE
 ## 🏗️ Architecture
 
 ### Tech Stack
+
 - **Frontend**: Flutter (Dart)
 - **Backend**: Django REST Framework
 - **Database**: Supabase (PostgreSQL)
@@ -104,12 +105,14 @@ lib/
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/yourusername/makeplus.git
 cd makeplus
 ```
 
 2. **Install dependencies**
+
 ```bash
 flutter pub get
 ```
@@ -117,6 +120,7 @@ flutter pub get
 3. **Configure Supabase**
 
 Create a Supabase project and update `lib/main.dart`:
+
 ```dart
 await Supabase.initialize(
   url: 'YOUR_SUPABASE_URL',
@@ -127,11 +131,13 @@ await Supabase.initialize(
 4. **Configure Django Backend**
 
 Update `lib/data/services/django_api_service.dart`:
+
 ```dart
 static const String baseUrl = 'https://your-django-backend.com/api';
 ```
 
 5. **Run the app**
+
 ```bash
 flutter run
 ```
@@ -141,6 +147,7 @@ flutter run
 ### Tables Schema
 
 **users**
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -155,6 +162,7 @@ CREATE TABLE users (
 ```
 
 **notifications**
+
 ```sql
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -168,6 +176,7 @@ CREATE TABLE notifications (
 ```
 
 **favorites**
+
 ```sql
 CREATE TABLE favorites (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -181,11 +190,13 @@ CREATE TABLE favorites (
 ## 🔧 Django REST API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/login/` - User login
 - `POST /api/auth/register/` - User registration
 - `POST /api/auth/logout/` - User logout
 
 ### Rooms Management
+
 - `GET /api/rooms/` - List all rooms
 - `POST /api/rooms/` - Create room
 - `GET /api/rooms/{id}/` - Get room details
@@ -193,24 +204,29 @@ CREATE TABLE favorites (
 - `DELETE /api/rooms/{id}/` - Delete room
 
 ### Sessions
+
 - `GET /api/sessions/` - List sessions
 - `POST /api/sessions/` - Create session
 - `PATCH /api/sessions/{id}/` - Update session
 - `DELETE /api/sessions/{id}/` - Delete session
 
 ### Participants
+
 - `GET /api/participants/` - List participants
-- `POST /api/participants/verify/` - Verify badge
+- `POST /api/participants/scan/` - Scan participant badge (for badge controllers)
 
 ### Events
+
 - `GET /api/events/` - List events
 - `GET /api/events/{id}/` - Event details
 
 ### Announcements
+
 - `GET /api/announcements/` - List announcements
 - `POST /api/announcements/` - Create announcement
 
 ### Exhibitors
+
 - `GET /api/exhibitors/` - List exhibitors
 - `GET /api/exhibitors/{id}/` - Exhibitor details
 
@@ -238,13 +254,13 @@ Both Light and Dark themes supported.
 
 ```yaml
 dependencies:
-  flutter_bloc: ^8.1.3           # State management
-  supabase_flutter: ^2.0.0       # Supabase client
-  dio: ^5.3.3                    # HTTP client
-  qr_code_scanner: ^1.0.1        # QR scanning
-  qr_flutter: ^4.1.0             # QR generation
-  equatable: ^2.0.5              # Value equality
-  cached_network_image: ^3.3.0   # Image caching
+  flutter_bloc: ^8.1.3 # State management
+  supabase_flutter: ^2.0.0 # Supabase client
+  dio: ^5.3.3 # HTTP client
+  qr_code_scanner: ^1.0.1 # QR scanning
+  qr_flutter: ^4.1.0 # QR generation
+  equatable: ^2.0.5 # Value equality
+  cached_network_image: ^3.3.0 # Image caching
 ```
 
 ## 🔐 Authentication Flow
@@ -285,6 +301,7 @@ flutter drive --target=test_driver/app.dart
 ## 📝 Next Steps
 
 ### Currently Implemented
+
 ✅ Project structure  
 ✅ Authentication (Login screen, BLoC)  
 ✅ Organizer home screen  
@@ -292,9 +309,10 @@ flutter drive --target=test_driver/app.dart
 ✅ Add session screen  
 ✅ QR Scanner & Display widgets  
 ✅ Theme and styling  
-✅ Navigation system  
+✅ Navigation system
 
 ### TODO
+
 - [ ] Controller screens (Badge scanner, Stats)
 - [ ] Participant screens (Program, My Badge, Guide, Exhibitors)
 - [ ] Exhibitor screens (Booth, Scanner, Stats)

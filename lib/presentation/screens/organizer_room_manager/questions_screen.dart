@@ -1,9 +1,11 @@
 // lib/presentation/screens/organizer_room_manager/questions_screen.dart
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
-import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../../routes/app_router.dart';
+import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class QuestionsScreen extends StatefulWidget {
   const QuestionsScreen({super.key});
@@ -92,135 +94,127 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
         return timeB.compareTo(timeA); // Descending order
       });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.organizerRoomManagerHome);
-            }
-          },
-        ),
-        title: const Text(
-          'Questions - Salle 3',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return RootTabPopScope(
+      homeRoute: AppRouter.organizerRoomManagerHome,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.organizerRoomManagerHome);
+              }
+            },
           ),
+          title: const Text('Questions - Salle 3'),
         ),
-      ),
-      body: Column(
-        children: [
-          // Room Info Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            color: AppColors.primary.withOpacity(0.05),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+        body: Column(
+          children: [
+            // Room Info Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              color: AppColors.primary.withValues(alpha: 0.05),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.meeting_room,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.meeting_room,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Salle 3 - Conférences',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_questions.length} questions',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Questions List
-          Expanded(
-            child: _questions.isEmpty
-                ? Center(
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.question_answer_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
                         Text(
-                          'Aucune question pour le moment',
+                          'Salle 3 - Conférences',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${_questions.length} questions',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: sortedQuestions.length,
-                    itemBuilder: (context, index) {
-                      final question = sortedQuestions[index];
-                      return _buildQuestionCard(question);
-                    },
                   ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _getCurrentIndex(context),
-        userRole: 'organizer',
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.organizerRoomManagerHome);
-              break;
-            case 1:
-              Navigator.pushReplacementNamed(context, AppRouter.announcements);
-              break;
-            case 2:
-              // Scanner
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(context, AppRouter.roomsList);
-              break;
-            case 4:
-              // Already on Questions
-              break;
-          }
-        },
+                ],
+              ),
+            ),
+
+            // Questions List
+            Expanded(
+              child: _questions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.question_answer_outlined,
+                            size: 64,
+                            color: AppColors.textHint(context),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucune question pour le moment',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: sortedQuestions.length,
+                      itemBuilder: (context, index) {
+                        final question = sortedQuestions[index];
+                        return _buildQuestionCard(question);
+                      },
+                    ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _getCurrentIndex(context),
+          userRole: 'organizer',
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.organizerRoomManagerHome);
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.announcements);
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, AppRouter.roomsList);
+                break;
+              case 3:
+                // Already on Questions/Settings
+                break;
+            }
+          },
+        ),
       ),
     );
   }
@@ -235,8 +229,8 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isAnswered
-              ? AppColors.success.withOpacity(0.3)
-              : Colors.grey[200]!,
+              ? AppColors.success.withValues(alpha: 0.3)
+              : AppColors.borderColor(context),
           width: 1,
         ),
       ),
@@ -250,8 +244,8 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               children: [
                 CircleAvatar(
                   backgroundColor: question['askerType'] == 'Exposant'
-                      ? AppColors.accent.withOpacity(0.2)
-                      : AppColors.primary.withOpacity(0.2),
+                      ? AppColors.accent.withValues(alpha: 0.2)
+                      : AppColors.primary.withValues(alpha: 0.2),
                   radius: 20,
                   child: Text(
                     question['asker'][0],
@@ -285,8 +279,8 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: question['askerType'] == 'Exposant'
-                                  ? AppColors.accent.withOpacity(0.1)
-                                  : AppColors.primary.withOpacity(0.1),
+                                  ? AppColors.accent.withValues(alpha: 0.1)
+                                  : AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -304,14 +298,14 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                           Icon(
                             Icons.access_time,
                             size: 12,
-                            color: Colors.grey[600],
+                            color: AppColors.textSecondary(context),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             question['timestamp'],
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -326,7 +320,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
+                      color: AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -356,14 +350,15 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: AppColors.surfaceContainer(context),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 question['question'],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.4,
+                  color: AppColors.textPrimary(context),
                 ),
               ),
             ),
@@ -377,22 +372,8 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                   // TODO: Implement show question detail/answer logic
                   _showQuestionDetailDialog(question);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 icon: const Icon(Icons.visibility, size: 18),
-                label: const Text(
-                  'Afficher',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                label: const Text('Afficher'),
               ),
             ),
           ],
@@ -432,7 +413,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                 'Type: ${question['askerType']}',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[700],
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -440,7 +421,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                 'Heure: ${question['timestamp']}',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[700],
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(height: 16),

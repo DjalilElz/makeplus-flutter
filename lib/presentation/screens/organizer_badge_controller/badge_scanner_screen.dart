@@ -1,13 +1,16 @@
-// lib/presentation/screens/organizer_badge_controller/badge_scanner_screen.dart
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
-import '../../../logic/authentication/auth_bloc.dart';
+import '../../../data/services/room_service.dart';
 import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
+import 'participant_verification_result_screen.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class BadgeScannerScreen extends StatefulWidget {
   const BadgeScannerScreen({super.key});
@@ -17,44 +20,8 @@ class BadgeScannerScreen extends StatefulWidget {
 }
 
 class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
-  MobileScannerController cameraController = MobileScannerController();
   bool _isProcessing = false;
-  late ApiClient _apiClient;
-  String? _currentRoomId;
-
-  @override
-  void initState() {
-    super.initState();
-    _apiClient = ApiClient();
-    _loadCurrentRoom();
-  }
-
-  Future<void> _loadCurrentRoom() async {
-    try {
-      final authState = context.read<AuthBloc>().state;
-      final userId = authState.user?.id;
-
-      if (userId == null) return;
-
-      // Get user's current room assignment
-      final response = await _apiClient.get(
-        '/room-assignments/',
-        queryParameters: {
-          'user_id': userId.toString(),
-          'current': 'true',
-        },
-      );
-
-      final assignments = response.data['results'] as List?;
-      if (assignments != null && assignments.isNotEmpty) {
-        setState(() {
-          _currentRoomId = assignments.first['room'] as String?;
-        });
-      }
-    } catch (e) {
-      print('❌ ERROR LOADING ROOM: $e');
-    }
-  }
+  final RoomService _roomService = RoomService(ApiClient());
 
   int _getCurrentIndex(BuildContext context) {
     final route = ModalRoute.of(context)?.settings.name;
@@ -74,245 +41,124 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    cameraController.dispose();
-    super.dispose();
-  }
-
-  void _onBarcodeDetect(BarcodeCapture capture) {
+  void _onDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
 
-    final List<Barcode> barcodes = capture.barcodes;
-    if (barcodes.isEmpty) return;
+    final barcode = capture.barcodes.first;
+    final value = barcode.rawValue;
 
-    final String? code = barcodes.first.rawValue;
-    if (code == null) return;
+    if (value == null || value.isEmpty) return;
 
     setState(() {
       _isProcessing = true;
     });
 
-    // Verify access via API
-    _verifyAccess(code);
+    _verifyAccess(value);
   }
 
   Future<void> _verifyAccess(String qrData) async {
-    if (_currentRoomId == null) {
-      _showErrorDialog('Aucune salle assignée',
-          'Impossible de vérifier l\'accès sans salle assignée.');
-      setState(() => _isProcessing = false);
-      return;
-    }
-
     try {
-      final response = await _apiClient.post(
-        '/rooms/$_currentRoomId/verify_access/',
-        data: {'qr_data': qrData},
-      );
+      AppLogger.d('═══════════════════════════════════════════════════════');
+      AppLogger.d('🔍 RAW QR CODE DATA:');
+      AppLogger.d(qrData);
+      AppLogger.d('═══════════════════════════════════════════════════════');
 
-      final data = response.data;
-      final status = data['status'];
+      Map<String, dynamic>? qrDataMap;
 
-      if (status == 'granted') {
-        _showAccessGrantedDialog(data);
-      } else {
-        _showAccessDeniedDialog(data);
+      try {
+        qrDataMap = jsonDecode(qrData) as Map<String, dynamic>?;
+
+        AppLogger.d('✅ QR CODE PARSED SUCCESSFULLY');
+        AppLogger.d('📋 PARSED DATA:');
+        AppLogger.d('   - user_id: ${qrDataMap?['user_id']}');
+        AppLogger.d('   - badge_id: ${qrDataMap?['badge_id']}');
+        AppLogger.d('   - email: ${qrDataMap?['email']}');
+        AppLogger.d('   - first_name: ${qrDataMap?['first_name']}');
+        AppLogger.d('   - last_name: ${qrDataMap?['last_name']}');
+        AppLogger.d('═══════════════════════════════════════════════════════');
+      } catch (e) {
+        AppLogger.d('❌ ERROR PARSING QR CODE: $e');
+        _showErrorDialog('Erreur', 'Format QR invalide.');
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      if (qrDataMap == null) {
+        AppLogger.d('❌ QR DATA MAP IS NULL');
+        _showErrorDialog('Erreur', 'Données QR invalides');
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      // NEW SIMPLIFIED APPROACH: No room selection needed
+      // Controllers can scan badges anywhere and see ALL paid items
+
+      AppLogger.d('🌐 CALLING NEW SCAN API - User ID: ${qrDataMap['user_id']}');
+
+      try {
+        final response = await _roomService.scanParticipant(
+          qrData: qrData,
+        );
+
+        AppLogger.d('✅ API RESPONSE RECEIVED');
+        AppLogger.d('   - status: ${response['status']}');
+
+        if (response['status'] == 'success') {
+          // Map API response to dialog format
+          final participant = response['participant'] as Map<String, dynamic>;
+          final event = response['event'] as Map<String, dynamic>?;
+          final paidItems = response['paid_items'] as List? ?? [];
+
+          AppLogger.d('💰 PAID ITEMS FROM DATABASE: ${paidItems.length}');
+          AppLogger.d('💵 TOTAL AMOUNT: ${response['total_amount']}');
+          if (event != null) {
+            AppLogger.d('🎉 EVENT: ${event['name']}');
+          }
+
+          // Create data structure for dialog
+          final dialogData = {
+            'full_name': participant['name'],
+            'email': participant['email'],
+            'badge_id': participant['badge_id'],
+            'paid_items': paidItems,
+            'free_items': [], // No free items in new response
+            'total_paid_items':
+                response['total_paid_items'] ?? paidItems.length,
+            'total_free_items': 0,
+            'total_amount': response['total_amount'] ?? 0.0,
+            'event_name': event?['name'],
+          };
+
+          if (mounted) {
+            ParticipantVerificationDialog.show(context, dialogData);
+
+            // Reset after delay
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              if (mounted) {
+                setState(() => _isProcessing = false);
+              }
+            });
+          }
+        } else if (response['status'] == 'error') {
+          _showErrorDialog(
+              'Erreur',
+              response['message'] ??
+                  'Participant non enregistré pour cet événement');
+          setState(() => _isProcessing = false);
+        } else {
+          _showErrorDialog('Erreur', 'QR code invalide');
+          setState(() => _isProcessing = false);
+        }
+      } catch (e) {
+        AppLogger.d('❌ API CALL FAILED: $e');
+        _showErrorDialog('Erreur', 'Impossible de vérifier l\'accès: $e');
+        setState(() => _isProcessing = false);
       }
     } catch (e) {
-      print('❌ ERROR VERIFYING ACCESS: $e');
-      _showErrorDialog('Erreur', 'Impossible de vérifier l\'accès: $e');
+      AppLogger.d('❌ EXCEPTION IN _verifyAccess: $e');
+      _showErrorDialog('Erreur', 'Erreur inattendue: $e');
       setState(() => _isProcessing = false);
     }
-  }
-
-  void _showAccessGrantedDialog(Map<String, dynamic> data) {
-    final participant = data['participant'] as Map<String, dynamic>?;
-    final access = data['access'] as Map<String, dynamic>?;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: AppColors.success,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Accès autorisé',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (participant != null) ...[
-                _buildInfoRow('Nom', participant['name'] ?? 'N/A'),
-                _buildInfoRow('Email', participant['email'] ?? 'N/A'),
-                _buildInfoRow('Badge', participant['badge_id'] ?? 'N/A'),
-              ],
-              if (access != null) ...[
-                _buildInfoRow('Salle', access['room_name'] ?? 'N/A'),
-                _buildInfoRow('Statut', 'Accès accordé',
-                    color: AppColors.success),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _isProcessing = false;
-                });
-              },
-              child: const Text('Scanner un autre'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerBadgeControllerHome);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Retour à l\'accueil'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showAccessDeniedDialog(Map<String, dynamic> data) {
-    final message = data['message'] ?? 'Accès refusé';
-    final participant = data['participant'] as Map<String, dynamic>?;
-    final user = data['user'] as Map<String, dynamic>?;
-    final session = data['session'] as Map<String, dynamic>?;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.block,
-                  color: AppColors.error,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Accès refusé',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                message,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.error,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (participant != null) ...[
-                _buildInfoRow('Nom', participant['name'] ?? 'N/A'),
-                _buildInfoRow('Badge', participant['badge_id'] ?? 'N/A'),
-              ] else if (user != null) ...[
-                _buildInfoRow('Nom', user['name'] ?? 'N/A'),
-                _buildInfoRow('Email', user['email'] ?? 'N/A'),
-              ],
-              if (session != null) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Session:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                _buildInfoRow('Titre', session['title'] ?? 'N/A'),
-                _buildInfoRow('Prix', '${session['price']} DA',
-                    color: AppColors.error),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _isProcessing = false;
-                });
-              },
-              child: const Text('Scanner un autre'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerBadgeControllerHome);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Retour à l\'accueil'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   void _showErrorDialog(String title, String message) {
@@ -330,7 +176,6 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                setState(() => _isProcessing = false);
               },
               child: const Text('OK'),
             ),
@@ -340,177 +185,130 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color ?? Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return RootTabPopScope(
+      homeRoute: AppRouter.organizerBadgeControllerHome,
+      child: Scaffold(
         backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Scanner un badge',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              cameraController.torchEnabled ? Icons.flash_on : Icons.flash_off,
-              color: Colors.white,
-            ),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
-              cameraController.toggleTorch();
-              setState(() {});
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.flip_camera_ios, color: Colors.white),
-            onPressed: () {
-              cameraController.switchCamera();
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Camera View
-          MobileScanner(
-            controller: cameraController,
-            onDetect: _onBarcodeDetect,
-          ),
-
-          // Overlay with scanning area
-          CustomPaint(
-            painter: ScannerOverlay(),
-            child: Container(),
-          ),
-
-          // Instructions at bottom
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Placez le QR code du badge dans le cadre',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _getCurrentIndex(context),
-        userRole: 'organizer_badge_controller',
-        onTap: (index) {
-          switch (index) {
-            case 0:
               Navigator.pushReplacementNamed(
                   context, AppRouter.organizerBadgeControllerHome);
-              break;
-            case 1:
-              Navigator.pushReplacementNamed(
-                context,
-                AppRouter.badgeControllerAnnouncements,
-              );
-              break;
-            case 2:
-              // Already on scanner
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.badgeControllerProgram);
-              break;
-            case 4:
-              // Questions
-              break;
-          }
-        },
+            },
+          ),
+          title: const Text(
+            'Scanner un badge',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        body: Stack(
+          children: [
+            MobileScanner(
+              onDetect: _onDetect,
+            ),
+            // Custom overlay
+            CustomPaint(
+              painter: _ScannerOverlay(),
+              child: Container(),
+            ),
+            // Instructions
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Placez le QR code du badge dans le cadre',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _getCurrentIndex(context),
+          userRole: 'organizer_badge_controller',
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.organizerBadgeControllerHome);
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(
+                  context,
+                  AppRouter.badgeControllerAnnouncements,
+                );
+                break;
+              case 2:
+                break;
+              case 3:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.badgeControllerProgram);
+                break;
+              case 4:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.badgeControllerStats);
+                break;
+            }
+          },
+        ),
       ),
     );
   }
 }
 
-// Custom painter for scanner overlay
-class ScannerOverlay extends CustomPainter {
+class _ScannerOverlay extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final double scanAreaSize = size.width * 0.7;
     final double left = (size.width - scanAreaSize) / 2;
     final double top = (size.height - scanAreaSize) / 2;
 
-    // Draw semi-transparent overlay
+    // Semi-transparent overlay
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
 
-    // Top
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, top), paint);
-    // Left
     canvas.drawRect(Rect.fromLTWH(0, top, left, scanAreaSize), paint);
-    // Right
     canvas.drawRect(
         Rect.fromLTWH(left + scanAreaSize, top, left, scanAreaSize), paint);
-    // Bottom
     canvas.drawRect(
         Rect.fromLTWH(0, top + scanAreaSize, size.width,
             size.height - top - scanAreaSize),
         paint);
 
-    // Draw corner borders
+    // Corner borders
     final borderPaint = Paint()
       ..color = AppColors.primary
       ..style = PaintingStyle.stroke
@@ -518,25 +316,25 @@ class ScannerOverlay extends CustomPainter {
 
     final cornerLength = 30.0;
 
-    // Top-left corner
+    // Top-left
     canvas.drawLine(
         Offset(left, top), Offset(left + cornerLength, top), borderPaint);
     canvas.drawLine(
         Offset(left, top), Offset(left, top + cornerLength), borderPaint);
 
-    // Top-right corner
+    // Top-right
     canvas.drawLine(Offset(left + scanAreaSize - cornerLength, top),
         Offset(left + scanAreaSize, top), borderPaint);
     canvas.drawLine(Offset(left + scanAreaSize, top),
         Offset(left + scanAreaSize, top + cornerLength), borderPaint);
 
-    // Bottom-left corner
+    // Bottom-left
     canvas.drawLine(Offset(left, top + scanAreaSize - cornerLength),
         Offset(left, top + scanAreaSize), borderPaint);
     canvas.drawLine(Offset(left, top + scanAreaSize),
         Offset(left + cornerLength, top + scanAreaSize), borderPaint);
 
-    // Bottom-right corner
+    // Bottom-right
     canvas.drawLine(
         Offset(left + scanAreaSize, top + scanAreaSize - cornerLength),
         Offset(left + scanAreaSize, top + scanAreaSize),

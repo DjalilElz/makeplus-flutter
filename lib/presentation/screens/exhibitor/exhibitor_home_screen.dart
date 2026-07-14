@@ -1,8 +1,10 @@
 // lib/presentation/screens/exhibitor/exhibitor_home_screen.dart
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class ExhibitorHomeScreen extends StatefulWidget {
   const ExhibitorHomeScreen({super.key});
@@ -16,74 +18,78 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Accueil',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return RootTabPopScope(
+      homeRoute: '/exhibitor/home',
+      isHome: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Accueil',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, '/notifications');
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Event Header
-            _buildEventHeader(),
-            const SizedBox(height: 24),
-
-            // Quick Stats
-            _buildQuickStats(),
-            const SizedBox(height: 24),
-
-            // Event Info
-            _buildEventInfo(),
-            const SizedBox(height: 24),
-
-            // Committee Section
-            _buildCommitteeSection(),
-            const SizedBox(height: 24),
-
-            // Featured Image
-            _buildFeaturedImage(),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                Navigator.pushNamed(context, '/notifications');
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () {
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/exhibitor/scanner');
-        },
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.qr_code_scanner),
-        label: const Text('Scanner'),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        userRole: 'exhibitor',
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
-    );
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Event Header
+              _buildEventHeader(),
+              const SizedBox(height: 24),
+
+              // Quick Stats
+              _buildQuickStats(),
+              const SizedBox(height: 24),
+
+              // Event Info
+              _buildEventInfo(),
+              const SizedBox(height: 24),
+
+              // Committee Section
+              _buildCommitteeSection(),
+              const SizedBox(height: 24),
+
+              // Featured Image
+              _buildFeaturedImage(),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.pushNamed(context, '/exhibitor/scanner');
+          },
+          backgroundColor: AppColors.primary,
+          icon: const Icon(Icons.qr_code_scanner),
+          label: const Text('Scanner'),
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _currentIndex,
+          userRole: 'exhibitor',
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+        ),
+      ), // End Scaffold
+    ); // End RootTabPopScope
   }
 
   Widget _buildEventHeader() {
@@ -208,9 +214,9 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -230,7 +236,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
               height: 1.3,
             ),
           ),
@@ -243,18 +249,19 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
+        color: AppColors.surfaceContainer(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderColor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Sur l\'événement',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 12),
@@ -267,7 +274,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
             '• Robotique',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: AppColors.textSecondary(context),
               height: 1.6,
             ),
           ),
@@ -282,8 +289,8 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primaryLight.withOpacity(0.05),
+            AppColors.primary.withValues(alpha: 0.1),
+            AppColors.primaryLight.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -293,11 +300,12 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Mot des présidents / comité',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 12),
@@ -309,7 +317,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
             'fructueux et porteurs de collaborations durables.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: AppColors.textSecondary(context),
               height: 1.6,
             ),
           ),
@@ -353,13 +361,13 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
           Container(
             height: 200,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: AppColors.surfaceContainerHigh(context),
             ),
             child: Center(
               child: Icon(
                 Icons.image,
                 size: 80,
-                color: Colors.grey[400],
+                color: AppColors.textHint(context),
               ),
             ),
           ),
@@ -368,11 +376,12 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Bienvenue à MakePlus 2025',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -382,7 +391,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
                   'professionnels.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary(context),
                     height: 1.5,
                   ),
                 ),

@@ -2,10 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class ExposantHomeScreen extends StatefulWidget {
   const ExposantHomeScreen({super.key});
@@ -20,7 +22,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
     switch (route) {
       case '/exposant/home':
         return 0;
-      case '/exposant/plan':
+      case '/exposant/guide':
         return 1;
       case '/exposant/scanner':
         return 2;
@@ -35,73 +37,77 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Accueil',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return RootTabPopScope(
+      homeRoute: '/exposant/home',
+      isHome: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Accueil',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Event Header
-            _buildEventHeader(),
-            const SizedBox(height: 24),
-
-            // Event Overview
-            _buildEventOverview(),
-            const SizedBox(height: 24),
-
-            // President's Message
-            _buildPresidentMessage(),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () {
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _getCurrentIndex(context),
-        userRole: 'exposant',
-        onTap: (index) {
-          // Navigate based on index
-          switch (index) {
-            case 0:
-              // Already on Home
-              break;
-            case 1:
-              // Plan
-              Navigator.pushReplacementNamed(context, '/exposant/plan');
-              break;
-            case 2:
-              // QR Scanner (center button)
-              Navigator.pushNamed(context, '/exposant/scanner');
-              break;
-            case 3:
-              // Stats
-              Navigator.pushReplacementNamed(context, '/exposant/stats');
-              break;
-            case 4:
-              // Annonces
-              Navigator.pushReplacementNamed(
-                  context, '/exposant/announcements');
-              break;
-          }
-        },
-      ),
-    );
-  }
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Event Header
+              _buildEventHeader(),
+              const SizedBox(height: 24),
+
+              // Event Overview
+              _buildEventOverview(context),
+              const SizedBox(height: 24),
+
+              // President's Message
+              _buildPresidentMessage(context),
+            ],
+          ),
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _getCurrentIndex(context),
+          userRole: 'exposant',
+          onTap: (index) {
+            // Navigate based on index
+            switch (index) {
+              case 0:
+                // Already on Home
+                break;
+              case 1:
+                // Plan
+                Navigator.pushReplacementNamed(context, '/exposant/plan');
+                break;
+              case 2:
+                // QR Scanner (center button)
+                Navigator.pushNamed(context, '/exposant/scanner');
+                break;
+              case 3:
+                // Stats
+                Navigator.pushReplacementNamed(context, '/exposant/stats');
+                break;
+              case 4:
+                // Annonces
+                Navigator.pushReplacementNamed(
+                    context, '/exposant/announcements');
+                break;
+            }
+          },
+        ),
+      ), // End Scaffold
+    ); // End RootTabPopScope
+  } // End build method
 
   Widget _buildEventHeader() {
     return BlocBuilder<AuthBloc, AuthState>(
@@ -110,7 +116,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
         final eventName = authState.event?.name ?? 'MakePlus 2025';
         final eventLocation =
             authState.event?.location ?? 'Centre de Conférences';
-        final eventDates = _formatEventDates(
+        final eventDates = formatEventDates(
             authState.event?.startDate, authState.event?.endDate);
 
         return Container(
@@ -199,6 +205,28 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/event-details');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white70),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: const Text(
+                    'Voir les details',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -206,7 +234,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
     );
   }
 
-  String _formatEventDates(DateTime? startDate, DateTime? endDate) {
+  String formatEventDates(DateTime? startDate, DateTime? endDate) {
     if (startDate == null || endDate == null) {
       return 'Dates à confirmer';
     }
@@ -235,22 +263,23 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
     }
   }
 
-  Widget _buildEventOverview() {
+  Widget _buildEventOverview(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
+        color: AppColors.surfaceContainer(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderColor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Sur l\'événement',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 12),
@@ -263,7 +292,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
             '• Réseaux & communications',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: AppColors.textSecondary(context),
               height: 1.6,
             ),
           ),
@@ -273,7 +302,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
             'Présence de centres de recherche innovants.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
               height: 1.5,
             ),
           ),
@@ -282,7 +311,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
     );
   }
 
-  Widget _buildPresidentMessage() {
+  Widget _buildPresidentMessage(BuildContext context) {
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +320,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
           Container(
             height: 200,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: AppColors.surfaceContainerHigh(context),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -301,7 +330,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
               child: Icon(
                 Icons.person,
                 size: 80,
-                color: Colors.grey[400],
+                color: AppColors.textHint(context),
               ),
             ),
           ),
@@ -311,11 +340,12 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Mot du Président',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -328,7 +358,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
                   'et technologique qui façonnera l\'avenir.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    color: AppColors.textSecondary(context),
                     height: 1.6,
                   ),
                 ),

@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
-import 'api_client.dart';
+
 import '../../core/constants/api_constants.dart';
 import '../models/user_model.dart';
+import 'api_client.dart';
 
 /// Authentication Service
 /// Handles all authentication-related API calls
@@ -18,31 +19,31 @@ class AuthService {
   }) async {
     try {
       final response = await _apiClient.post(
-        ApiConstants.login,
+        ApiConstants.tokenLogin,
         data: {
-          'username': username,
+          'email': username,
           'password': password,
         },
       );
 
       if (response.statusCode == 200) {
         final authResponse = AuthResponse.fromJson(response.data);
-        
+
         // Save tokens
         await _apiClient.saveTokens(
           authResponse.tokens.access,
           authResponse.tokens.refresh,
         );
-        
+
         return authResponse;
       } else {
         throw Exception('Login failed');
       }
     } on DioException catch (e) {
       if (e.response != null) {
-        final errorMessage = e.response?.data['message'] ?? 
-                            e.response?.data['detail'] ?? 
-                            'Login failed';
+        final errorMessage = e.response?.data['message'] ??
+            e.response?.data['detail'] ??
+            'Login failed';
         throw Exception(errorMessage);
       }
       throw Exception('Network error. Please check your connection.');
@@ -50,7 +51,8 @@ class AuthService {
   }
 
   /// Register new user
-  /// Returns AuthResponse containing user data and tokens
+  /// NOTE: Registration is NOT available in mobile app per backend specification
+  /// Users are created by administrators only
   Future<AuthResponse> register({
     required String username,
     required String email,
@@ -59,71 +61,16 @@ class AuthService {
     required String password,
     required String confirmPassword,
   }) async {
-    try {
-      final response = await _apiClient.post(
-        ApiConstants.register,
-        data: {
-          'username': username,
-          'email': email,
-          'first_name': firstName,
-          'last_name': lastName,
-          'password': password,
-          'password2': confirmPassword,
-        },
-      );
-
-      if (response.statusCode == 201) {
-        final authResponse = AuthResponse.fromJson(response.data);
-        
-        // Save tokens
-        await _apiClient.saveTokens(
-          authResponse.tokens.access,
-          authResponse.tokens.refresh,
-        );
-        
-        return authResponse;
-      } else {
-        throw Exception('Registration failed');
-      }
-    } on DioException catch (e) {
-      if (e.response != null) {
-        final data = e.response?.data;
-        if (data is Map) {
-          // Handle validation errors
-          final errors = <String>[];
-          data.forEach((key, value) {
-            if (value is List) {
-              errors.addAll(value.map((e) => e.toString()));
-            } else {
-              errors.add(value.toString());
-            }
-          });
-          throw Exception(errors.join('\n'));
-        }
-        throw Exception(data['message'] ?? 'Registration failed');
-      }
-      throw Exception('Network error. Please check your connection.');
-    }
+    throw Exception('Registration is not available in the mobile app. '
+        'Users must be created by event administrators.');
   }
 
   /// Logout user
-  /// Blacklists refresh token on backend and clears local tokens
+  /// NOTE: Logout endpoint is NOT available in mobile app per backend specification
+  /// Only clears local tokens (no backend blacklist)
   Future<void> logout() async {
-    try {
-      final refreshToken = await _apiClient.getRefreshToken();
-      
-      if (refreshToken != null) {
-        await _apiClient.post(
-          ApiConstants.logout,
-          data: {'refresh_token': refreshToken},
-        );
-      }
-    } catch (e) {
-      // Continue with logout even if API call fails
-    } finally {
-      // Always clear local tokens
-      await _apiClient.clearTokens();
-    }
+    // Clear local tokens only - no API call needed
+    await _apiClient.clearTokens();
   }
 
   /// Get current user profile
@@ -138,7 +85,8 @@ class AuthService {
       }
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to load profile');
+        throw Exception(
+            e.response?.data['message'] ?? 'Failed to load profile');
       }
       throw Exception('Network error. Please check your connection.');
     }
@@ -168,47 +116,23 @@ class AuthService {
       }
     } on DioException catch (e) {
       if (e.response != null) {
-        throw Exception(e.response?.data['message'] ?? 'Failed to update profile');
+        throw Exception(
+            e.response?.data['message'] ?? 'Failed to update profile');
       }
       throw Exception('Network error. Please check your connection.');
     }
   }
 
   /// Change user password
+  /// NOTE: Change password is NOT available in mobile app per backend specification
+  /// Password changes must be done through the admin dashboard
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
     required String confirmNewPassword,
   }) async {
-    try {
-      final response = await _apiClient.post(
-        ApiConstants.changePassword,
-        data: {
-          'old_password': oldPassword,
-          'new_password': newPassword,
-          'new_password2': confirmNewPassword,
-        },
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to change password');
-      }
-    } on DioException catch (e) {
-      if (e.response != null) {
-        final data = e.response?.data;
-        if (data is Map && data.containsKey('details')) {
-          final errors = <String>[];
-          (data['details'] as Map).forEach((key, value) {
-            if (value is List) {
-              errors.addAll(value.map((e) => e.toString()));
-            }
-          });
-          throw Exception(errors.join('\n'));
-        }
-        throw Exception(data['message'] ?? 'Failed to change password');
-      }
-      throw Exception('Network error. Please check your connection.');
-    }
+    throw Exception('Password change is not available in the mobile app. '
+        'Please contact event administrators to change your password.');
   }
 
   /// Verify if token is still valid

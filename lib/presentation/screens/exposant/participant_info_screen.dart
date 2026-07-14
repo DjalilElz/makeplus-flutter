@@ -47,22 +47,12 @@ class ParticipantInfoScreen extends StatelessWidget {
           };
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Information du visiteur',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Information du visiteur'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -74,7 +64,7 @@ class ParticipantInfoScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -91,64 +81,66 @@ class ParticipantInfoScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.cardBackground(context),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: AppColors.borderColor(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Informations du participant',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 20),
                   _buildInfoRow(
+                    context,
                     'Nom complet',
                     participantData['nom']!,
                     Icons.person,
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
+                    context,
                     'Email',
                     participantData['email']!,
                     Icons.email,
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
+                    context,
                     'Téléphone',
                     participantData['telephone']!,
                     Icons.phone,
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
+                    context,
                     'Organisation',
                     participantData['organisation']!,
                     Icons.business,
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
+                    context,
                     'Type',
                     participantData['type']!,
                     Icons.badge,
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
+                    context,
                     'Code badge',
                     participantData['badge']!,
                     Icons.qr_code,
                   ),
                   const Divider(height: 24),
                   _buildInfoRow(
+                    context,
                     'Statut',
                     participantData['statut']!,
                     Icons.check_circle,
@@ -224,8 +216,8 @@ class ParticipantInfoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon,
-      {Color? valueColor}) {
+  Widget _buildInfoRow(BuildContext context, String label, String value,
+      IconData icon, {Color? valueColor}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,9 +233,9 @@ class ParticipantInfoScreen extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey,
+                  color: AppColors.textSecondary(context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -253,7 +245,7 @@ class ParticipantInfoScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: valueColor ?? Colors.black87,
+                  color: valueColor ?? AppColors.textPrimary(context),
                 ),
               ),
             ],

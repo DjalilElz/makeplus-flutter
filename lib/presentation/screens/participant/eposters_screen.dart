@@ -86,44 +86,24 @@ class _EpostersScreenState extends State<EpostersScreen> {
     final filteredEposters = _getFilteredEposters();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'E-Posters',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('E-Posters'),
       ),
       body: Column(
         children: [
           // Search Bar
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            color: AppColors.cardBackground(context),
             child: TextField(
               controller: _searchController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Rechercher un poster...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.grey[100],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                prefixIcon: Icon(Icons.search),
               ),
               onChanged: (value) {
                 setState(() {
@@ -143,14 +123,14 @@ class _EpostersScreenState extends State<EpostersScreen> {
                         Icon(
                           Icons.article_outlined,
                           size: 64,
-                          color: Colors.grey[300],
+                          color: AppColors.textHint(context),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Aucun poster trouvé',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[500],
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -184,8 +164,8 @@ class _EpostersScreenState extends State<EpostersScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary.withOpacity(0.7),
-                  AppColors.accent.withOpacity(0.7),
+                  AppColors.primary.withValues(alpha: 0.7),
+                  AppColors.accent.withValues(alpha: 0.7),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -211,7 +191,7 @@ class _EpostersScreenState extends State<EpostersScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -237,9 +217,10 @@ class _EpostersScreenState extends State<EpostersScreen> {
                 // Title
                 Text(
                   poster['title'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -247,10 +228,10 @@ class _EpostersScreenState extends State<EpostersScreen> {
                 // Authors
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.people,
                       size: 16,
-                      color: Colors.grey,
+                      color: AppColors.textSecondary(context),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -258,7 +239,7 @@ class _EpostersScreenState extends State<EpostersScreen> {
                         poster['authors'],
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey[700],
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ),

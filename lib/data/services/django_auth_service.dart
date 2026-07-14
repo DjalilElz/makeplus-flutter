@@ -1,12 +1,20 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:makeplus/core/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/user_model.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
+
+String? _emptyToNull(String? value) =>
+    (value == null || value.isEmpty) ? null : value;
 
 class DjangoAuthService {
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: 'https://makeplus-django-5.onrender.com/api',
+      baseUrl: ApiConstants.baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
@@ -20,11 +28,19 @@ class DjangoAuthService {
   DjangoAuthService() {
     _initPrefs();
 
+    // Longer connection timeout: Render cold starts + slow DNS on mobile networks.
+    (_dio.httpClientAdapter as IOHttpClientAdapter).onHttpClientCreate =
+        (client) {
+      client.connectionTimeout = const Duration(seconds: 30);
+      return client;
+    };
+
     // Add interceptor to remove auth header from public endpoints
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
         // Remove Authorization header for public endpoints
         final publicEndpoints = [
+          '/auth/token/',
           '/auth/login/',
           '/auth/register/',
           '/auth/password-reset/'
@@ -37,13 +53,15 @@ class DjangoAuthService {
       },
     ));
 
-    // Add logging interceptor for debugging
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      error: true,
-      requestHeader: true,
-    ));
+    // Debug only: this logs Authorization headers and login payloads.
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        error: true,
+        requestHeader: true,
+      ));
+    }
   }
 
   Future<void> _initPrefs() async {
@@ -57,18 +75,18 @@ class DjangoAuthService {
   /// Login with email and password
   Future<LoginResponse> login(String email, String password) async {
     try {
-      print('🔵 LOGIN - Starting login for: $email');
+      AppLogger.d('🔵 LOGIN - Starting login for: $email');
 
-      final response = await _dio.post(
-        '/auth/login/',
+      final response = await _postWithDnsFallback(
+        '/auth/token/',
         data: {
           'email': email,
           'password': password,
         },
       );
 
-      print('✅ LOGIN - Response: ${response.statusCode}');
-      print('📦 LOGIN - Data: ${response.data}');
+      AppLogger.d('✅ LOGIN - Response: ${response.statusCode}');
+      AppLogger.d('📦 LOGIN - Data: ${response.data}');
 
       // Check if user needs to select an event
       final requiresEventSelection =
@@ -76,7 +94,7 @@ class DjangoAuthService {
 
       if (requiresEventSelection == true) {
         // User has multiple events - return response with available events and temp token
-        print('🔀 MULTIPLE EVENTS - User needs to select event');
+        AppLogger.d('🔀 MULTIPLE EVENTS - User needs to select event');
 
         final tempToken = response.data['temp_token'];
         if (tempToken != null) {
@@ -119,18 +137,19 @@ class DjangoAuthService {
           await _secureStorage.write(key: 'refresh_token', value: refreshToken);
         }
 
-        print('✅ TOKENS SAVED - Access and Refresh tokens stored');
+        AppLogger.d('✅ TOKENS SAVED - Access and Refresh tokens stored');
       }
 
       // Store user data
       await _prefs?.setString('user_data', response.data['user'].toString());
 
-      // Extract role from current_event object
+      // Extract role from response (new API: top-level role, legacy: current_event.role)
       String? userRole;
-      if (response.data['current_event'] != null &&
-          response.data['current_event']['role'] != null) {
-        userRole = response.data['current_event']['role'];
-        print('🎭 USER ROLE from current_event: $userRole');
+      userRole = response.data['role'] as String?;
+      userRole ??= response.data['current_event']?['role'] as String?;
+      userRole ??= response.data['event']?['role'] as String?;
+      if (userRole != null) {
+        AppLogger.d('🎭 USER ROLE: $userRole');
       }
 
       // Store role if available
@@ -144,19 +163,23 @@ class DjangoAuthService {
       if (userRole != null) {
         userData['role'] = userRole;
       }
+      // qr_code arrives top-level but belongs on the user: it is the badge payload
+      // scanners validate against. Dropping it forces the UI to invent a fake one.
+      userData['qr_code'] = response.data['qr_code'];
 
       final user = UserModel.fromJson(userData);
-      print('✅ USER MODEL CREATED - Role: ${user.role}');
+      AppLogger.d('✅ USER MODEL CREATED - Role: ${user.role}');
 
-      // Parse event from current_event
+      // Parse event from response (new API: event, legacy: current_event)
       EventModel? event;
-      final eventDataJson = response.data['current_event'];
+      final eventDataJson =
+          response.data['event'] ?? response.data['current_event'];
       if (eventDataJson != null) {
-        print('📋 EVENT DATA: $eventDataJson');
+        AppLogger.d('📋 EVENT DATA: $eventDataJson');
         event = EventModel.fromJson(eventDataJson);
-        print('🎪 EVENT PARSED - Name: ${event.name}, ID: ${event.id}');
-        print('📅 Start: ${event.startDate}, End: ${event.endDate}');
-        print('📍 Location: ${event.location}');
+        AppLogger.d('🎪 EVENT PARSED - Name: ${event.name}, ID: ${event.id}');
+        AppLogger.d('📅 Start: ${event.startDate}, End: ${event.endDate}');
+        AppLogger.d('📍 Location: ${event.location}');
 
         // Store event data for session persistence
         await _prefs?.setString('event_id', event.id);
@@ -166,22 +189,30 @@ class DjangoAuthService {
             'event_start_date', event.startDate?.toIso8601String() ?? '');
         await _prefs?.setString(
             'event_end_date', event.endDate?.toIso8601String() ?? '');
-        print('💾 EVENT DATA SAVED for session persistence');
+        await _prefs?.setString('event_description', event.description ?? '');
+        await _prefs?.setString('event_logo', event.logoUrl ?? '');
+        await _prefs?.setString('event_banner', event.bannerUrl ?? '');
+        await _prefs?.setString(
+            'event_primary_color',
+            event.primaryColor != null
+                ? '#${event.primaryColor!.toARGB32().toRadixString(16).substring(2)}'
+                : '');
+        AppLogger.d('💾 EVENT DATA SAVED for session persistence');
       } else {
-        print('⚠ NO EVENT DATA IN RESPONSE');
+        AppLogger.d('⚠ NO EVENT DATA IN RESPONSE');
       }
 
       return LoginResponse(user: user, event: event);
     } on DioException catch (e) {
-      print('❌ LOGIN ERROR: ${e.response?.statusCode}');
-      print('📍 ERROR TYPE: ${e.type}');
-      print('📍 ERROR DATA: ${e.response?.data}');
+      AppLogger.d('❌ LOGIN ERROR: ${e.response?.statusCode}');
+      AppLogger.d('📍 ERROR TYPE: ${e.type}');
+      AppLogger.d('📍 ERROR DATA: ${e.response?.data}');
 
       // Check if response is HTML (server error)
       if (e.response?.data is String &&
           (e.response?.data as String).contains('<html')) {
-        print('⚠️ SERVER ERROR: Backend returned HTML instead of JSON');
-        print('💡 This means there\'s an error in your Django backend code');
+        AppLogger.d('⚠️ SERVER ERROR: Backend returned HTML instead of JSON');
+        AppLogger.d('💡 This means there\'s an error in your Django backend code');
         throw Exception(
             'Server error: Please check your Django backend logs. The login endpoint is returning an HTML error page instead of JSON.');
       }
@@ -189,8 +220,8 @@ class DjangoAuthService {
       // Handle 500 errors with detail message
       if (e.response?.statusCode == 500) {
         final errorDetail = e.response?.data?['detail'];
-        print('🔴 BACKEND ERROR 500: $errorDetail');
-        print('💡 Check Django backend logs for the actual error');
+        AppLogger.d('🔴 BACKEND ERROR 500: $errorDetail');
+        AppLogger.d('💡 Check Django backend logs for the actual error');
         throw Exception(
             'Backend error: $errorDetail\n\nThis is a server-side issue. Please check your Django backend logs.');
       }
@@ -199,10 +230,47 @@ class DjangoAuthService {
     }
   }
 
+  Future<Response<dynamic>> _postWithDnsFallback(
+    String path, {
+    dynamic data,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.post(path, data: data, options: options);
+    } on DioException catch (e) {
+      // Check if this is a DNS/connection error and we haven't tried fallback yet
+      final isDnsError = e.type == DioExceptionType.connectionError &&
+          e.message?.contains('Failed host lookup') == true;
+
+      final canFallback =
+          isDnsError && _dio.options.baseUrl != ApiConstants.fallbackBaseUrl;
+
+      if (!canFallback) {
+        // If fallback also failed or not a DNS error, provide helpful message
+        if (isDnsError) {
+          AppLogger.d('❌ DNS RESOLUTION FAILED for both primary and fallback URLs');
+          AppLogger.d('💡 Your device cannot resolve .onrender.com domains');
+          AppLogger.d('💡 Possible solutions:');
+          AppLogger.d('   1. Check your internet connection');
+          AppLogger.d('   2. Try switching between WiFi and mobile data');
+          AppLogger.d('   3. Disable Private DNS in Android settings');
+          AppLogger.d('   4. Change DNS to 8.8.8.8 in WiFi settings');
+          AppLogger.d('   5. Contact your network administrator');
+        }
+        rethrow;
+      }
+
+      AppLogger.d(
+          '🌐 DNS fallback: retrying against ${ApiConstants.fallbackBaseUrl}');
+      _dio.options.baseUrl = ApiConstants.fallbackBaseUrl;
+      return await _dio.post(path, data: data, options: options);
+    }
+  }
+
   /// Select event after login (for users with multiple events)
   Future<LoginResponse> selectEvent(String eventId) async {
     try {
-      print('🔵 SELECT EVENT - Selecting event: $eventId');
+      AppLogger.d('🔵 SELECT EVENT - Selecting event: $eventId');
 
       // Get temp token from storage
       final tempToken = await _secureStorage.read(key: 'temp_token');
@@ -218,8 +286,8 @@ class DjangoAuthService {
         ),
       );
 
-      print('✅ SELECT EVENT - Response: ${response.statusCode}');
-      print('📦 SELECT EVENT - Data: ${response.data}');
+      AppLogger.d('✅ SELECT EVENT - Response: ${response.statusCode}');
+      AppLogger.d('📦 SELECT EVENT - Data: ${response.data}');
 
       // Extract tokens from the response
       final accessToken = response.data['access'];
@@ -241,18 +309,17 @@ class DjangoAuthService {
         // Clear temp token
         await _secureStorage.delete(key: 'temp_token');
 
-        print('✅ TOKENS SAVED - Access and Refresh tokens stored');
+        AppLogger.d('✅ TOKENS SAVED - Access and Refresh tokens stored');
       }
 
-      // Extract role from current_event
+      // Extract role from response (new API: top-level role, legacy: current_event.role)
       String? userRole;
-      if (response.data['current_event'] != null &&
-          response.data['current_event']['role'] != null) {
-        userRole = response.data['current_event']['role'];
-        print('🎭 USER ROLE: $userRole');
-        if (userRole != null) {
-          await _prefs?.setString('user_role', userRole);
-        }
+      userRole = response.data['role'] as String?;
+      userRole ??= response.data['current_event']?['role'] as String?;
+      userRole ??= response.data['event']?['role'] as String?;
+      if (userRole != null) {
+        AppLogger.d('🎭 USER ROLE: $userRole');
+        await _prefs?.setString('user_role', userRole);
       }
 
       // Parse user and merge with role
@@ -260,16 +327,18 @@ class DjangoAuthService {
       if (userRole != null) {
         userData['role'] = userRole;
       }
+      userData['qr_code'] = response.data['qr_code'];
 
       final user = UserModel.fromJson(userData);
-      print('✅ USER MODEL CREATED - Role: ${user.role}');
+      AppLogger.d('✅ USER MODEL CREATED - Role: ${user.role}');
 
-      // Parse event from current_event
+      // Parse event from response (new API: event, legacy: current_event)
       EventModel? event;
-      final eventDataJson = response.data['current_event'];
+      final eventDataJson =
+          response.data['event'] ?? response.data['current_event'];
       if (eventDataJson != null) {
         event = EventModel.fromJson(eventDataJson);
-        print('🎪 EVENT SELECTED - Name: ${event.name}, ID: ${event.id}');
+        AppLogger.d('🎪 EVENT SELECTED - Name: ${event.name}, ID: ${event.id}');
 
         // Store event data for session persistence
         await _prefs?.setString('event_id', event.id);
@@ -279,11 +348,19 @@ class DjangoAuthService {
             'event_start_date', event.startDate?.toIso8601String() ?? '');
         await _prefs?.setString(
             'event_end_date', event.endDate?.toIso8601String() ?? '');
+        await _prefs?.setString('event_description', event.description ?? '');
+        await _prefs?.setString('event_logo', event.logoUrl ?? '');
+        await _prefs?.setString('event_banner', event.bannerUrl ?? '');
+        await _prefs?.setString(
+            'event_primary_color',
+            event.primaryColor != null
+                ? '#${event.primaryColor!.toARGB32().toRadixString(16).substring(2)}'
+                : '');
       }
 
       return LoginResponse(user: user, event: event);
     } on DioException catch (e) {
-      print('❌ SELECT EVENT ERROR: ${e.response?.statusCode}');
+      AppLogger.d('❌ SELECT EVENT ERROR: ${e.response?.statusCode}');
       throw _handleError(e);
     }
   }
@@ -296,7 +373,7 @@ class DjangoAuthService {
     required String role,
   }) async {
     try {
-      print('🔵 SIGNUP - Starting signup for: $email');
+      AppLogger.d('🔵 SIGNUP - Starting signup for: $email');
 
       final nameParts = name.split(' ');
       final firstName = nameParts.first;
@@ -314,12 +391,12 @@ class DjangoAuthService {
         },
       );
 
-      print('✅ SIGNUP - Success: ${response.statusCode}');
+      AppLogger.d('✅ SIGNUP - Success: ${response.statusCode}');
 
       // Auto-login after signup
       return await login(email, password);
     } on DioException catch (e) {
-      print('❌ SIGNUP ERROR: ${e.response?.statusCode}');
+      AppLogger.d('❌ SIGNUP ERROR: ${e.response?.statusCode}');
       throw _handleError(e);
     }
   }
@@ -329,7 +406,7 @@ class DjangoAuthService {
     try {
       await _dio.post('/auth/logout/');
     } catch (e) {
-      print('⚠️ Logout error (ignored): $e');
+      AppLogger.d('⚠️ Logout error (ignored): $e');
     } finally {
       _token = null;
       _dio.options.headers.remove('Authorization');
@@ -343,19 +420,23 @@ class DjangoAuthService {
       await _prefs?.remove('event_location');
       await _prefs?.remove('event_start_date');
       await _prefs?.remove('event_end_date');
+      await _prefs?.remove('event_description');
+      await _prefs?.remove('event_logo');
+      await _prefs?.remove('event_banner');
+      await _prefs?.remove('event_primary_color');
 
       // Clear FlutterSecureStorage
       await _secureStorage.delete(key: 'access_token');
       await _secureStorage.delete(key: 'refresh_token');
 
-      print('✅ LOGOUT - All tokens cleared');
+      AppLogger.d('✅ LOGOUT - All tokens cleared');
     }
   }
 
   /// Get current user
   Future<UserModel?> getCurrentUser() async {
     if (_token == null) {
-      print('⚠️ No token found');
+      AppLogger.d('⚠️ No token found');
       return null;
     }
 
@@ -371,7 +452,7 @@ class DjangoAuthService {
 
       return UserModel.fromJson(userData);
     } on DioException catch (e) {
-      print('❌ GET USER ERROR: ${e.response?.statusCode}');
+      AppLogger.d('❌ GET USER ERROR: ${e.response?.statusCode}');
       if (e.response?.statusCode == 401) {
         await logout();
       }
@@ -382,14 +463,14 @@ class DjangoAuthService {
   /// Get current user with event data (for session restoration)
   Future<LoginResponse?> getCurrentUserWithEvent() async {
     if (_token == null) {
-      print('⚠️ No token found');
+      AppLogger.d('⚠️ No token found');
       return null;
     }
 
     try {
       final response = await _dio.get('/auth/me/');
 
-      print('📦 GET USER RESPONSE: ${response.data}');
+      AppLogger.d('📦 GET USER RESPONSE: ${response.data}');
 
       // Get stored role and merge it with the user data
       final userData = Map<String, dynamic>.from(response.data);
@@ -430,9 +511,9 @@ class DjangoAuthService {
               'event_start_date', event.startDate?.toIso8601String() ?? '');
           await _prefs?.setString(
               'event_end_date', event.endDate?.toIso8601String() ?? '');
-          print('🎪 EVENT FROM ASSIGNMENTS - ${event.name}');
-          print('📅 Start: ${event.startDate}, End: ${event.endDate}');
-          print('📍 Location: ${event.location}');
+          AppLogger.d('🎪 EVENT FROM ASSIGNMENTS - ${event.name}');
+          AppLogger.d('📅 Start: ${event.startDate}, End: ${event.endDate}');
+          AppLogger.d('📍 Location: ${event.location}');
         }
       }
 
@@ -454,14 +535,19 @@ class DjangoAuthService {
                     _prefs!.getString('event_end_date')!.isNotEmpty
                 ? DateTime.parse(_prefs!.getString('event_end_date')!)
                 : null,
+            description: _emptyToNull(_prefs?.getString('event_description')),
+            logoUrl: _emptyToNull(_prefs?.getString('event_logo')),
+            bannerUrl: _emptyToNull(_prefs?.getString('event_banner')),
+            primaryColor: EventModel.parseHexColor(
+                _emptyToNull(_prefs?.getString('event_primary_color'))),
           );
-          print('💾 EVENT FROM STORAGE - ${event.name}');
+          AppLogger.d('💾 EVENT FROM STORAGE - ${event.name}');
         }
       }
 
       return LoginResponse(user: user, event: event);
     } on DioException catch (e) {
-      print('❌ GET USER ERROR: ${e.response?.statusCode}');
+      AppLogger.d('❌ GET USER ERROR: ${e.response?.statusCode}');
       if (e.response?.statusCode == 401) {
         await logout();
       }
@@ -500,6 +586,17 @@ class DjangoAuthService {
         return data.values.first.toString();
       }
       return data.toString();
+    }
+
+    // Handle DNS/connection errors
+    if (e.type == DioExceptionType.connectionError) {
+      if (e.message?.contains('Failed host lookup') == true) {
+        return 'Cannot reach server. Please check:\n'
+            '1. Your internet connection\n'
+            '2. If using emulator, try a real device\n'
+            '3. Backend server is running and accessible';
+      }
+      return 'Connection failed. Please check your internet connection.';
     }
 
     if (e.type == DioExceptionType.connectionTimeout) {

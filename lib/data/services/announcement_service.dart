@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/announcement_model.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 /// Announcement Service
 /// Handles event announcements with role-based targeting
@@ -9,36 +10,43 @@ class AnnouncementService {
 
   AnnouncementService(this._apiClient);
 
-  /// Get announcements (automatically filtered by user's role)
+  /// Get announcements (automatically filtered by user's role and event from JWT)
+  /// IMPORTANT: Do not pass event_id parameter - backend filters automatically based on JWT token
   Future<List<AnnouncementModel>> getAnnouncements({
-    String? eventId,
     String? target,
     String? search,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (eventId != null) queryParams['event_id'] = eventId;
+      // DO NOT add event_id - backend filters automatically from JWT
       if (target != null) queryParams['target'] = target;
       if (search != null) queryParams['search'] = search;
 
-      print('📢 ANNOUNCEMENT SERVICE - Query params: $queryParams');
+      // Add timestamp to bypass CloudFlare CDN cache
+      // This forces a unique URL for each request, preventing stale cached data
+      queryParams['_t'] = DateTime.now().millisecondsSinceEpoch.toString();
+
+      AppLogger.d('📢 ANNOUNCEMENT SERVICE - Query params: $queryParams');
 
       final response = await _apiClient.get(
         '/annonces/',
         queryParameters: queryParams,
       );
 
-      print(
+      AppLogger.d(
           '📢 ANNOUNCEMENT SERVICE - Response status: ${response.statusCode}');
-      print('📢 ANNOUNCEMENT SERVICE - Response data: ${response.data}');
+      AppLogger.d('📢 ANNOUNCEMENT SERVICE - Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
         final results = data['results'] ?? data;
 
         if (results is List) {
-          print(
+          AppLogger.d(
               '📢 ANNOUNCEMENT SERVICE - Found ${results.length} announcements');
+          for (var announcement in results) {
+            AppLogger.d('  - ${announcement['title']} (ID: ${announcement['id']})');
+          }
           return results.map((e) => AnnouncementModel.fromJson(e)).toList();
         }
         return [];
@@ -46,7 +54,7 @@ class AnnouncementService {
         throw Exception('Failed to load announcements');
       }
     } on DioException catch (e) {
-      print('❌ ANNOUNCEMENT SERVICE ERROR: ${e.response?.data}');
+      AppLogger.d('❌ ANNOUNCEMENT SERVICE ERROR: ${e.response?.data}');
       throw Exception(_handleError(e));
     }
   }
@@ -74,6 +82,11 @@ class AnnouncementService {
     required String target, // 'all', 'participants', 'exposants', etc.
   }) async {
     try {
+      AppLogger.d('📢 ANNOUNCEMENT SERVICE - Creating announcement...');
+      AppLogger.d('   Event ID: $eventId');
+      AppLogger.d('   Title: $title');
+      AppLogger.d('   Target: $target');
+
       final response = await _apiClient.post(
         '/annonces/',
         data: {
@@ -84,12 +97,17 @@ class AnnouncementService {
         },
       );
 
+      AppLogger.d(
+          '📢 ANNOUNCEMENT SERVICE - Create response status: ${response.statusCode}');
+      AppLogger.d('📢 ANNOUNCEMENT SERVICE - Created announcement: ${response.data}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         return AnnouncementModel.fromJson(response.data);
       } else {
         throw Exception('Failed to create announcement');
       }
     } on DioException catch (e) {
+      AppLogger.d('❌ ANNOUNCEMENT SERVICE - Create error: ${e.response?.data}');
       throw Exception(_handleError(e));
     }
   }

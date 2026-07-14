@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release network policy: HTTPS only, system CAs only.
+
+  Two things were deliberately removed from the previous version:
+    * cleartextTrafficPermitted="true" in base-config — permitted plain HTTP to
+      ANY host, app-wide. The backend is HTTPS-only.
+    * <certificates src="user" /> — trusted user-installed CAs, which lets any
+      MITM proxy on the device transparently decrypt traffic, including the JWT
+      and the login password.
+
+  Local HTTP debugging is handled by src/debug/res/xml/network_security_config.xml,
+  which applies to debug builds only.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

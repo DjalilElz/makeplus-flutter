@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
@@ -21,30 +22,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthCheckRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
 
     try {
       final loginResponse = await authRepository.getCurrentUserWithEvent();
 
       if (loginResponse?.user != null) {
         final user = loginResponse!.user;
-        print('🔐 AUTH CHECK - User session restored');
-        print('👤 User: ${user.email}');
-        print('🎭 Role: ${user.role}');
-        print('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
+        AppLogger.d('🔐 AUTH CHECK - User session restored');
+        AppLogger.d('👤 User: ${user.email}');
+        AppLogger.d('🎭 Role: ${user.role}');
+        AppLogger.d('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
 
         emit(state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
           role: user.role,
           event: loginResponse.event,
+          clearEvent: loginResponse.event == null,
         ));
       } else {
-        print('🔐 AUTH CHECK - No saved session, showing login');
+        AppLogger.d('🔐 AUTH CHECK - No saved session, showing login');
         emit(state.copyWith(status: AuthStatus.unauthenticated));
       }
     } catch (e) {
-      print('❌ AUTH CHECK ERROR: $e');
+      AppLogger.d('❌ AUTH CHECK ERROR: $e');
       emit(state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: e.toString(),
@@ -56,7 +58,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
 
     try {
       final loginResponse = await authRepository.login(
@@ -66,7 +68,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       // Check if user needs to select an event
       if (loginResponse.requiresEventSelection) {
-        print('🔄 MULTI-EVENT USER - Showing event selection');
+        AppLogger.d('🔄 MULTI-EVENT USER - Showing event selection');
         emit(state.copyWith(
           status: AuthStatus.requiresEventSelection,
           user: loginResponse.user,
@@ -75,16 +77,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      print('🔐 AUTH BLOC - Login successful');
-      print('👤 User: ${loginResponse.user.email}');
-      print('🎭 Role: ${loginResponse.user.role}');
-      print('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
+      AppLogger.d('🔐 AUTH BLOC - Login successful');
+      AppLogger.d('👤 User: ${loginResponse.user.email}');
+      AppLogger.d('🎭 Role: ${loginResponse.user.role}');
+      AppLogger.d('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
 
       emit(state.copyWith(
         status: AuthStatus.authenticated,
         user: loginResponse.user,
         role: loginResponse.user.role,
         event: loginResponse.event,
+        clearEvent: loginResponse.event == null,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -98,22 +101,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthEventSelectionRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
 
     try {
       final loginResponse = await authRepository.selectEvent(event.eventId);
 
-      print('🔐 AUTH BLOC - Event selected successfully');
-      print('👤 User: ${loginResponse.user.email}');
-      print('🎭 Role: ${loginResponse.user.role}');
-      print('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
+      AppLogger.d('🔐 AUTH BLOC - Event selected successfully');
+      AppLogger.d('👤 User: ${loginResponse.user.email}');
+      AppLogger.d('🎭 Role: ${loginResponse.user.role}');
+      AppLogger.d('🎪 Event: ${loginResponse.event?.name ?? "NO EVENT"}');
 
       emit(state.copyWith(
         status: AuthStatus.authenticated,
         user: loginResponse.user,
         role: loginResponse.user.role,
         event: loginResponse.event,
-        availableEvents: null, // Clear available events after selection
+        clearEvent: loginResponse.event == null,
+        clearAvailableEvents: true,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -127,7 +131,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignupRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
 
     try {
       final signupResponse = await authRepository.signup(
@@ -142,6 +146,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         user: signupResponse.user,
         role: signupResponse.user.role,
         event: signupResponse.event,
+        clearEvent: signupResponse.event == null,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -155,7 +160,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
 
     try {
       await authRepository.logout();
@@ -172,7 +177,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthPasswordResetRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, clearError: true));
 
     try {
       await authRepository.resetPassword(event.email);

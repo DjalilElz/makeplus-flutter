@@ -18,6 +18,12 @@ class QRDisplayWidget extends StatelessWidget {
     this.userPhoto,
   });
 
+  // This widget renders a physical-badge look — a white card with a QR code —
+  // and is deliberately NOT theme-reactive: a printed badge doesn't invert for
+  // dark mode, and the QR needs a white backing for scanner contrast regardless
+  // of the app theme. Text on the card is pinned to the light-theme colors so
+  // it stays legible against the permanently-white card even when the rest of
+  // the app is in dark mode.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -27,7 +33,7 @@ class QRDisplayWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             blurRadius: 20,
             spreadRadius: 5,
           ),
@@ -99,7 +105,7 @@ class QRDisplayWidget extends StatelessWidget {
                 else
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     child: Text(
                       userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
                       style: const TextStyle(
@@ -111,12 +117,13 @@ class QRDisplayWidget extends StatelessWidget {
                   ),
                 const SizedBox(height: 16),
 
-                // User Name
+                // User Name — fixed dark text: sits on the permanently-white card.
                 Text(
                   userName,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryLight,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -129,7 +136,7 @@ class QRDisplayWidget extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -150,7 +157,7 @@ class QRDisplayWidget extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       width: 2,
                     ),
                   ),
@@ -164,12 +171,12 @@ class QRDisplayWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Instructions
-                Text(
+                // Instructions — fixed grey: sits on the permanently-white card.
+                const Text(
                   'Présentez ce code QR à l\'entrée',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondaryLight,
                   ),
                   textAlign: TextAlign.center,
                 ),

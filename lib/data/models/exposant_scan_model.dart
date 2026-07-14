@@ -38,12 +38,27 @@ class ExposantScanModel {
 
     // Helper function to extract participant details from nested object or direct fields
     String? getParticipantField(String field) {
-      // First check direct field
+      // Backend sends scanned_participant_name, scanned_participant_email, etc.
+      // First check for the scanned_participant_ prefix fields
+      if (field == 'participant_name' &&
+          json['scanned_participant_name'] != null) {
+        return json['scanned_participant_name'].toString();
+      }
+      if (field == 'participant_email' &&
+          json['scanned_participant_email'] != null) {
+        return json['scanned_participant_email'].toString();
+      }
+      if (field == 'participant_badge' &&
+          json['scanned_participant_badge'] != null) {
+        return json['scanned_participant_badge'].toString();
+      }
+
+      // Then check direct field
       if (json[field] != null) {
         return json[field].toString();
       }
 
-      // Then check in nested scanned_participant object
+      // Finally check in nested scanned_participant object
       if (json['scanned_participant'] is Map) {
         final participant = json['scanned_participant'] as Map;
 

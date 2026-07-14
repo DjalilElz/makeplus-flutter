@@ -14,39 +14,30 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Sécurité',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Sécurité'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             'Changer le mot de passe',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 20),
-          _buildPasswordField('Mot de passe actuel'),
+          _buildPasswordField(context, 'Mot de passe actuel'),
           const SizedBox(height: 16),
-          _buildPasswordField('Nouveau mot de passe'),
+          _buildPasswordField(context, 'Nouveau mot de passe'),
           const SizedBox(height: 16),
-          _buildPasswordField('Confirmer le mot de passe'),
+          _buildPasswordField(context, 'Confirmer le mot de passe'),
           const SizedBox(height: 30),
           SizedBox(
             width: double.infinity,
@@ -56,17 +47,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                   const SnackBar(content: Text('Mot de passe mis à jour')),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Mettre à jour',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+              child: const Text('Mettre à jour'),
             ),
           ),
         ],
@@ -74,32 +55,23 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     );
   }
 
-  Widget _buildPasswordField(String label) {
+  Widget _buildPasswordField(BuildContext context, String label) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary(context),
           ),
         ),
         const SizedBox(height: 8),
         TextField(
           obscureText: true,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            suffixIcon: const Icon(Icons.visibility_outlined),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
+          decoration: const InputDecoration(
+            suffixIcon: Icon(Icons.visibility_outlined),
           ),
         ),
       ],

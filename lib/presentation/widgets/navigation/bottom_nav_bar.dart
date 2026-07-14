@@ -1,6 +1,9 @@
 // lib/presentation/widgets/navigation/bottom_nav_bar.dart
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -33,18 +36,7 @@ class BottomNavBar extends StatelessWidget {
         const BottomNavigationBarItem(
           icon: Icon(Icons.campaign_outlined),
           activeIcon: Icon(Icons.campaign),
-          label: 'annonces',
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
-          ),
-          label: '',
+          label: 'Annonces',
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.meeting_room_outlined),
@@ -147,7 +139,7 @@ class BottomNavBar extends StatelessWidget {
         const BottomNavigationBarItem(
           icon: Icon(Icons.map_outlined),
           activeIcon: Icon(Icons.map),
-          label: 'Plan',
+          label: 'Guide',
         ),
         BottomNavigationBarItem(
           icon: Container(
@@ -179,26 +171,35 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface(context).withValues(alpha: 0.72),
+            border:
+                Border(top: BorderSide(color: AppColors.borderColor(context))),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
           ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: onTap,
-        items: _getNavItems(),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
+          child: BottomNavigationBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            currentIndex: currentIndex,
+            onTap: onTap,
+            items: _getNavItems(),
+            type: BottomNavigationBarType.fixed,
+            showUnselectedLabels: true,
+          ),
+        ),
       ),
     );
   }

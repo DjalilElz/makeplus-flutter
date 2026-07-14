@@ -1,6 +1,7 @@
 // lib/data/models/user_model.dart
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 class UserModel extends Equatable {
   final int id;
@@ -12,6 +13,14 @@ class UserModel extends Equatable {
   final String? profilePhotoUrl;
   final bool? isActive;
 
+  /// The badge payload minted by the backend (`UserProfile.get_or_create_qr_code`),
+  /// returned as `qr_code` by both `/auth/token/` and `/auth/me/`.
+  ///
+  /// Contains `user_id`, `badge_id`, identity fields, and `paid_items` sourced from
+  /// the caisse. Scanners `json.loads` this and look up `user_id`, so the badge must
+  /// render **exactly this payload, JSON-encoded** — never a locally-built string.
+  final Map<String, dynamic>? qrCode;
+
   const UserModel({
     required this.id,
     required this.email,
@@ -21,11 +30,15 @@ class UserModel extends Equatable {
     required this.role,
     this.profilePhotoUrl,
     this.isActive,
+    this.qrCode,
   });
 
   String get fullName => '$firstName $lastName';
 
   String get displayName => fullName.trim().isEmpty ? email : fullName;
+
+  /// `badge_id` from the backend payload, e.g. `USER-42-A1B2C3D4`.
+  String? get badgeId => qrCode?['badge_id'] as String?;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -37,6 +50,7 @@ class UserModel extends Equatable {
       role: json['role'] as String? ?? 'participant',
       profilePhotoUrl: json['profile_photo_url'] as String?,
       isActive: json['is_active'] as bool?,
+      qrCode: json['qr_code'] as Map<String, dynamic>?,
     );
   }
 
@@ -50,6 +64,7 @@ class UserModel extends Equatable {
       'role': role,
       'profile_photo_url': profilePhotoUrl,
       'is_active': isActive,
+      'qr_code': qrCode,
     };
   }
 
@@ -62,6 +77,7 @@ class UserModel extends Equatable {
     String? role,
     String? profilePhotoUrl,
     bool? isActive,
+    Map<String, dynamic>? qrCode,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -72,6 +88,7 @@ class UserModel extends Equatable {
       role: role ?? this.role,
       profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
       isActive: isActive ?? this.isActive,
+      qrCode: qrCode ?? this.qrCode,
     );
   }
 
@@ -84,7 +101,8 @@ class UserModel extends Equatable {
         username,
         role,
         profilePhotoUrl,
-        isActive
+        isActive,
+        qrCode,
       ];
 }
 
@@ -118,16 +136,35 @@ class TokenPair extends Equatable {
 class AuthResponse extends Equatable {
   final UserModel user;
   final TokenPair tokens;
+  final String? role;
+  final EventModel? event;
 
   const AuthResponse({
     required this.user,
     required this.tokens,
+    this.role,
+    this.event,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    // Handle both old format (tokens nested) and new format (access/refresh at root)
+    final TokenPair tokens;
+    if (json.containsKey('tokens')) {
+      tokens = TokenPair.fromJson(json['tokens'] as Map<String, dynamic>);
+    } else {
+      tokens = TokenPair(
+        access: json['access'] as String,
+        refresh: json['refresh'] as String,
+      );
+    }
+
     return AuthResponse(
       user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
-      tokens: TokenPair.fromJson(json['tokens'] as Map<String, dynamic>),
+      tokens: tokens,
+      role: json['role'] as String?,
+      event: json['event'] != null
+          ? EventModel.fromJson(json['event'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -135,11 +172,13 @@ class AuthResponse extends Equatable {
     return {
       'user': user.toJson(),
       'tokens': tokens.toJson(),
+      if (role != null) 'role': role,
+      if (event != null) 'event': event!.toJson(),
     };
   }
 
   @override
-  List<Object?> get props => [user, tokens];
+  List<Object?> get props => [user, tokens, role, event];
 }
 
 class EventModel extends Equatable {
@@ -150,7 +189,12 @@ class EventModel extends Equatable {
   final DateTime? endDate;
   final String? location;
   final String? role; // User's role in this event
-  final String? status; // Event status: upcoming, ongoing, completed
+  final String? status; // Event status: upcoming, active, completed, cancelled
+  final String? programmeFile; // PDF programme/schedule URL
+  final String? guideFile; // PDF participant guide URL
+  final String? logoUrl;
+  final String? bannerUrl;
+  final Color? primaryColor;
 
   const EventModel({
     required this.id,
@@ -161,7 +205,20 @@ class EventModel extends Equatable {
     this.location,
     this.role,
     this.status,
+    this.programmeFile,
+    this.guideFile,
+    this.logoUrl,
+    this.bannerUrl,
+    this.primaryColor,
   });
+
+  static Color? parseHexColor(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final cleaned = hex.replaceFirst('#', '');
+    final value = int.tryParse(cleaned, radix: 16);
+    if (value == null) return null;
+    return Color(0xFF000000 | value);
+  }
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
@@ -177,6 +234,11 @@ class EventModel extends Equatable {
       location: json['location'] as String?,
       role: json['role'] as String?,
       status: json['status'] as String?,
+      programmeFile: json['programme_file'] as String?,
+      guideFile: json['guide_file'] as String?,
+      logoUrl: json['logo'] as String?,
+      bannerUrl: json['banner'] as String?,
+      primaryColor: parseHexColor(json['primary_color'] as String?),
     );
   }
 
@@ -190,12 +252,29 @@ class EventModel extends Equatable {
       'location': location,
       'role': role,
       'status': status,
+      'programme_file': programmeFile,
+      'guide_file': guideFile,
+      'logo': logoUrl,
+      'banner': bannerUrl,
     };
   }
 
   @override
-  List<Object?> get props =>
-      [id, name, description, startDate, endDate, location, role, status];
+  List<Object?> get props => [
+        id,
+        name,
+        description,
+        startDate,
+        endDate,
+        location,
+        role,
+        status,
+        programmeFile,
+        guideFile,
+        logoUrl,
+        bannerUrl,
+        primaryColor,
+      ];
 }
 
 class LoginResponse extends Equatable {

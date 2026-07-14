@@ -1,17 +1,21 @@
 // lib/presentation/screens/exposant/exposant_stats_screen.dart
 
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
+import '../../../data/models/exposant_scan_model.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/exposant_scan_service.dart';
-import '../../../data/models/exposant_scan_model.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class ExposantStatsScreen extends StatefulWidget {
   const ExposantStatsScreen({super.key});
@@ -31,6 +35,14 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  // Cache management
+  DateTime? _lastLoadTime;
+  static const Duration _cacheValidDuration = Duration(minutes: 5);
+  bool get _isCacheValid {
+    if (_lastLoadTime == null) return false;
+    return DateTime.now().difference(_lastLoadTime!) < _cacheValidDuration;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +51,15 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     _loadScans();
   }
 
-  Future<void> _loadScans() async {
+  Future<void> _loadScans({bool forceRefresh = false}) async {
+    // If cache is valid and not forcing refresh, skip loading
+    if (!forceRefresh && _isCacheValid && _scannedParticipants.isNotEmpty) {
+      AppLogger.d('📦 CACHE HIT - Using cached stats data');
+      return;
+    }
+
+    AppLogger.d('🔄 LOADING - Fetching fresh stats data from API');
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -58,8 +78,11 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
           _scannedParticipants = result['scans'] as List<ExposantScanModel>;
           _totalVisits = result['total_visits'] as int;
           _todayVisits = result['today_visits'] as int;
+          _lastLoadTime = DateTime.now();
           _isLoading = false;
         });
+
+        AppLogger.d('✅ CACHE UPDATED - Stats data cached at $_lastLoadTime');
       } else {
         setState(() {
           _errorMessage = 'Événement non sélectionné';
@@ -89,6 +112,23 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
         return 4;
       default:
         return 3;
+    }
+  }
+
+  String _formatLastUpdate() {
+    if (_lastLoadTime == null) return '';
+
+    final now = DateTime.now();
+    final difference = now.difference(_lastLoadTime!);
+
+    if (difference.inSeconds < 60) {
+      return 'À l\'instant';
+    } else if (difference.inMinutes < 60) {
+      return 'Il y a ${difference.inMinutes} min';
+    } else if (difference.inHours < 24) {
+      return 'Il y a ${difference.inHours}h';
+    } else {
+      return 'Il y a ${difference.inDays}j';
     }
   }
 
@@ -129,7 +169,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                 ),
               ),
               SizedBox(width: 16),
-              Text('Génération du fichier Excel...'),
+              Text('Preparation du fichier...'),
             ],
           ),
           backgroundColor: AppColors.primary,
@@ -137,52 +177,20 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
         ),
       );
 
-      // Request storage permission on Android
-      if (Platform.isAndroid) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Permission de stockage requise pour enregistrer le fichier'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-          return;
-        }
-      }
-
       // Call the backend to get Excel file bytes
       final fileBytes = await _exposantScanService.exportToExcel();
 
       if (!mounted) return;
 
-      // Get the Downloads directory
-      Directory? downloadsDir;
-      if (Platform.isAndroid) {
-        downloadsDir = Directory('/storage/emulated/0/Download');
-        if (!await downloadsDir.exists()) {
-          downloadsDir = await getExternalStorageDirectory();
-        }
-      } else if (Platform.isIOS) {
-        downloadsDir = await getApplicationDocumentsDirectory();
-      } else {
-        downloadsDir = await getDownloadsDirectory();
-      }
-
-      if (downloadsDir == null) {
-        throw Exception('Impossible de trouver le dossier de téléchargement');
-      }
-
       // Generate filename with timestamp
       final timestamp = DateTime.now();
       final filename =
           'Statistiques_Visiteurs_${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}_${timestamp.hour.toString().padLeft(2, '0')}${timestamp.minute.toString().padLeft(2, '0')}.xlsx';
-      final filePath = '${downloadsDir.path}/$filename';
 
-      // Write the file
+      // Save file to temporary directory
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/$filename';
+
       final file = File(filePath);
       await file.writeAsBytes(fileBytes);
 
@@ -191,21 +199,34 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       // Hide loading snackbar
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-      // Show success message with file path
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Fichier Excel enregistré avec succès!\n$filePath',
-          ),
-          backgroundColor: AppColors.success,
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-          duration: const Duration(seconds: 6),
-        ),
+      // Share using native share sheet
+      final result = await Share.shareXFiles(
+        [XFile(filePath)],
+        text: 'Statistiques des visiteurs du stand',
+        subject: 'Export Excel - Statistiques',
       );
+
+      if (!mounted) return;
+
+      // Show result message and reload data
+      if (result.status == ShareResultStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fichier partage avec succes'),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        // Reload data after successful share
+        _loadScans(forceRefresh: true);
+      } else if (result.status == ShareResultStatus.dismissed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Partage annule'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -228,24 +249,32 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.pushReplacementNamed(context, '/exposant/home');
-        return false;
-      },
+    return RootTabPopScope(
+      homeRoute: '/exposant/home',
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: const Text(
-            'Statistiques',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Statistiques'),
+              if (_lastLoadTime != null)
+                Text(
+                  'Mis à jour: ${_formatLastUpdate()}',
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
+                    fontSize: 11,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+            ],
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Actualiser',
+              onPressed: () => _loadScans(forceRefresh: true),
+            ),
+          ],
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -255,133 +284,140 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.error_outline,
-                            size: 64, color: Colors.grey[400]),
+                            size: 64, color: AppColors.textHint(context)),
                         const SizedBox(height: 16),
                         Text(_errorMessage!,
-                            style: TextStyle(color: Colors.grey[600])),
+                            style: TextStyle(
+                                color: AppColors.textSecondary(context))),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: _loadScans,
+                          onPressed: () => _loadScans(forceRefresh: true),
                           child: const Text('Réessayer'),
                         ),
                       ],
                     ),
                   )
-                : CustomScrollView(
-                    slivers: [
-                      // Statistics Cards
-                      SliverToBoxAdapter(
-                        child: Container(
-                          color: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Visiteurs total',
-                                  _totalVisits.toString(),
-                                  AppColors.primary,
+                : RefreshIndicator(
+                    onRefresh: () => _loadScans(forceRefresh: true),
+                    child: CustomScrollView(
+                      slivers: [
+                        // Statistics Cards
+                        SliverToBoxAdapter(
+                          child: Container(
+                            color: AppColors.cardBackground(context),
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    'Visiteurs total',
+                                    _totalVisits.toString(),
+                                    AppColors.primary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildStatCard(
-                                  'Aujourd\'hui',
-                                  _todayVisits.toString(),
-                                  AppColors.accent,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    context,
+                                    'Aujourd\'hui',
+                                    _todayVisits.toString(),
+                                    AppColors.accent,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 8),
-                      ),
-
-                      // Search Bar - Fixed/Sticky
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _SearchBarDelegate(
-                          searchController: _searchController,
-                          searchQuery: _searchQuery,
-                          onChanged: (value) {
-                            setState(() {
-                              _searchQuery = value;
-                            });
-                          },
-                          onClear: () {
-                            setState(() {
-                              _searchController.clear();
-                              _searchQuery = '';
-                            });
-                          },
-                        ),
-                      ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 8),
-                      ),
-
-                      // Participants List Header
-                      SliverToBoxAdapter(
-                        child: Container(
-                          color: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          child: Text(
-                            'Liste des visiteurs (${_filteredParticipants.length})',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              ],
                             ),
                           ),
                         ),
-                      ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 8),
+                        ),
 
-                      // Participants List
-                      _filteredParticipants.isEmpty
-                          ? SliverFillRemaining(
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.search_off,
-                                      size: 64,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Aucun visiteur trouvé',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey[600],
+                        // Search Bar - Fixed/Sticky
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _SearchBarDelegate(
+                            searchController: _searchController,
+                            searchQuery: _searchQuery,
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                            onClear: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              });
+                            },
+                          ),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 8),
+                        ),
+
+                        // Participants List Header
+                        SliverToBoxAdapter(
+                          child: Container(
+                            color: AppColors.cardBackground(context),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Text(
+                              'Liste des visiteurs (${_filteredParticipants.length})',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary(context),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Participants List
+                        _filteredParticipants.isEmpty
+                            ? SliverFillRemaining(
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.search_off,
+                                        size: 64,
+                                        color: AppColors.textHint(context),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Aucun visiteur trouvé',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: AppColors.textSecondary(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : SliverPadding(
+                                padding: const EdgeInsets.all(16),
+                                sliver: SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) {
+                                      final participant =
+                                          _filteredParticipants[index];
+                                      return _buildParticipantCard(participant);
+                                    },
+                                    childCount: _filteredParticipants.length,
+                                  ),
                                 ),
                               ),
-                            )
-                          : SliverPadding(
-                              padding: const EdgeInsets.all(16),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    final participant =
-                                        _filteredParticipants[index];
-                                    return _buildParticipantCard(participant);
-                                  },
-                                  childCount: _filteredParticipants.length,
-                                ),
-                              ),
-                            ),
-                    ],
+                      ],
+                    ),
                   ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _exportToExcel,
           backgroundColor: AppColors.success,
-          icon: const Icon(Icons.file_download),
-          label: const Text('Exporter'),
+          icon: const Icon(Icons.share),
+          label: const Text('Partager'),
         ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: _getCurrentIndex(context),
@@ -412,6 +448,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String label,
     String value,
     Color color,
@@ -419,9 +456,9 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +467,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[700],
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -453,15 +490,9 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBackground(context),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderColor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,7 +502,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -483,10 +514,11 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  scan.participantName ?? 'Participant',
-                  style: const TextStyle(
+                  scan.participantName ?? '',
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -496,57 +528,34 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
           if (scan.participantEmail != null) ...[
             Row(
               children: [
-                Icon(Icons.email, size: 14, color: Colors.grey[600]),
+                Icon(Icons.email,
+                    size: 14, color: AppColors.textSecondary(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     scan.participantEmail!,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[700],
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
           ],
-          const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 6),
-                  Text(
-                    scan.formattedDate,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-              if (scan.notes != null && scan.notes!.isNotEmpty)
-                Flexible(
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      scan.notes!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.success,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+              Icon(Icons.access_time,
+                  size: 14, color: AppColors.textSecondary(context)),
+              const SizedBox(width: 6),
+              Text(
+                scan.formattedDate,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
                 ),
+              ),
             ],
           ),
         ],
@@ -580,7 +589,7 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Colors.white,
+      color: AppColors.cardBackground(context),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SizedBox(
         height: 45,
@@ -596,16 +605,6 @@ class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
                     onPressed: onClear,
                   )
                 : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.primary),
-            ),
-            filled: true,
-            fillColor: Colors.grey[50],
             contentPadding: const EdgeInsets.symmetric(vertical: 8),
           ),
           onChanged: onChanged,

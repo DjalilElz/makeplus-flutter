@@ -2,13 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
-import '../../../routes/app_router.dart';
-import '../../../logic/authentication/auth_bloc.dart';
-import '../../../data/services/announcement_service.dart';
 import '../../../data/models/announcement_model.dart';
+import '../../../data/services/announcement_service.dart';
 import '../../../data/services/api_client.dart';
+import '../../../logic/authentication/auth_bloc.dart';
+import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   const AnnouncementsScreen({super.key});
@@ -40,14 +43,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       final authState = context.read<AuthBloc>().state;
       final eventId = authState.event?.id;
 
-      print('📢 LOADING ANNOUNCEMENTS - Event ID: $eventId');
+      AppLogger.d('📢 LOADING ANNOUNCEMENTS - Event ID: $eventId');
 
       // Backend automatically filters by user's current event
       // No need to pass event_id parameter
       final announcements = await _announcementService.getAnnouncements();
-      print('📢 ANNOUNCEMENTS LOADED - Count: ${announcements.length}');
+      AppLogger.d('📢 ANNOUNCEMENTS LOADED - Count: ${announcements.length}');
       for (var a in announcements) {
-        print('  - ${a.title} (ID: ${a.id})');
+        AppLogger.d('  - ${a.title} (ID: ${a.id})');
       }
 
       setState(() {
@@ -55,7 +58,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ ERROR LOADING ANNOUNCEMENTS: $e');
+      AppLogger.d('❌ ERROR LOADING ANNOUNCEMENTS: $e');
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
@@ -94,117 +97,120 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final isViewOnly = userRole == 'organizer_badge_controller';
     final currentIndex = 1; // Announcements is always at index 1 for both roles
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Annonces'),
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Erreur de chargement',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.grey[500]),
+    return RootTabPopScope(
+      homeRoute: AppRouter.organizerRoomManagerHome,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Annonces'),
+          elevation: 0,
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline,
+                            size: 64, color: AppColors.textHint(context)),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Erreur de chargement',
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: AppColors.textSecondary(context)),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary(context)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadAnnouncements,
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _announcements.isEmpty
+                    ? _buildEmptyState()
+                    : RefreshIndicator(
+                        onRefresh: _loadAnnouncements,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _announcements.length,
+                          itemBuilder: (context, index) {
+                            final announcement = _announcements[index];
+                            return _buildAnnouncementCard(
+                                announcement, isViewOnly);
+                          },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadAnnouncements,
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
-                  ),
-                )
-              : _announcements.isEmpty
-                  ? _buildEmptyState()
-                  : RefreshIndicator(
-                      onRefresh: _loadAnnouncements,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _announcements.length,
-                        itemBuilder: (context, index) {
-                          final announcement = _announcements[index];
-                          return _buildAnnouncementCard(
-                              announcement, isViewOnly);
-                        },
-                      ),
-                    ),
-      floatingActionButton: isViewOnly
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _showCreateAnnouncementModal,
-              backgroundColor: AppColors.primary,
-              icon: const Icon(Icons.add),
-              label: const Text('Nouvelle annonce'),
-            ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: currentIndex,
-        userRole: userRole,
-        onTap: (index) {
-          // Navigate based on index and role
-          if (userRole == 'organizer_badge_controller') {
-            switch (index) {
-              case 0:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerBadgeControllerHome);
-                break;
-              case 1:
-                // Already on announcements
-                break;
-              case 2:
-                Navigator.pushReplacementNamed(context, AppRouter.badgeScanner);
-                break;
-              case 3:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.badgeControllerProgram);
-                break;
-              case 4:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.badgeControllerStats);
-                break;
+        floatingActionButton: isViewOnly
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: _showCreateAnnouncementModal,
+                backgroundColor: AppColors.primary,
+                icon: const Icon(Icons.add),
+                label: const Text('Nouvelle annonce'),
+              ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: currentIndex,
+          userRole: userRole,
+          onTap: (index) {
+            // Navigate based on index and role
+            if (userRole == 'organizer_badge_controller') {
+              switch (index) {
+                case 0:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.organizerBadgeControllerHome);
+                  break;
+                case 1:
+                  // Already on announcements
+                  break;
+                case 2:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.badgeScanner);
+                  break;
+                case 3:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.badgeControllerProgram);
+                  break;
+                case 4:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.badgeControllerStats);
+                  break;
+              }
+            } else {
+              // Original organizer room manager navigation
+              switch (index) {
+                case 0:
+                  // Home
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.organizerRoomManagerHome);
+                  break;
+                case 1:
+                  // Already on Announcements
+                  break;
+                case 2:
+                  // Rooms
+                  Navigator.pushReplacementNamed(context, AppRouter.roomsList);
+                  break;
+                case 3:
+                  // Questions
+                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  break;
+              }
             }
-          } else {
-            // Original organizer room manager navigation
-            switch (index) {
-              case 0:
-                // Home
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerRoomManagerHome);
-                break;
-              case 1:
-                // Already on Announcements
-                break;
-              case 2:
-                // Scanner (middle button)
-                // TODO: Navigate to scanner
-                break;
-              case 3:
-                // Rooms
-                Navigator.pushReplacementNamed(context, AppRouter.roomsList);
-                break;
-              case 4:
-                // Questions
-                Navigator.pushReplacementNamed(context, AppRouter.questions);
-                break;
-            }
-          }
-        },
+          },
+        ),
       ),
     );
   }
@@ -217,7 +223,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           Icon(
             Icons.campaign_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: AppColors.textHint(context),
           ),
           const SizedBox(height: 16),
           Text(
@@ -225,7 +231,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -233,7 +239,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             'Créez votre première annonce',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -269,7 +275,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -286,9 +292,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       children: [
                         Text(
                           announcement.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -297,14 +304,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                             Icon(
                               Icons.people,
                               size: 14,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary(context),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Cible: ${announcement.targetLabel}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             const Spacer(),
@@ -312,7 +319,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                               timeStr,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ],
@@ -328,7 +335,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 announcement.description,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: AppColors.textPrimary(context),
                   height: 1.4,
                 ),
               ),
@@ -379,21 +386,31 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           ),
           TextButton(
             onPressed: () async {
+              // Close dialog first
               Navigator.pop(context);
+
+              // Capture messenger before async operation
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
+                AppLogger.d('🗑️ DELETING ANNOUNCEMENT - ID: $announcementId');
                 await _announcementService.deleteAnnouncement(announcementId);
+                AppLogger.d('✅ ANNOUNCEMENT DELETED SUCCESSFULLY');
+
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Annonce supprimée'),
                       backgroundColor: AppColors.success,
                     ),
                   );
+                  // Reload with cache bypass
                   _loadAnnouncements();
                 }
               } catch (e) {
+                AppLogger.d('❌ ERROR DELETING ANNOUNCEMENT: $e');
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Erreur: ${e.toString()}'),
                       backgroundColor: AppColors.error,
@@ -475,8 +492,8 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
     {'value': 'all', 'label': 'Tous'},
     {'value': 'participants', 'label': 'Participants'},
     {'value': 'exposants', 'label': 'Exposants'},
-    {'value': 'gestionnaires', 'label': 'Gestionnaires'},
-    {'value': 'controlleurs', 'label': 'Contrôleurs'},
+    {'value': 'gestionnaire', 'label': 'Gestionnaire'},
+    {'value': 'controller', 'label': 'Contrôleur'},
   ];
 
   @override
@@ -494,9 +511,10 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground(context),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -506,7 +524,7 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: AppColors.surfaceContainerHigh(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -567,8 +585,6 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -590,8 +606,6 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -618,14 +632,6 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                                   !_isSubmitting
                               ? _createAnnouncement
                               : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
                           child: _isSubmitting
                               ? const SizedBox(
                                   height: 20,
@@ -640,10 +646,6 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                                   widget.announcement != null
                                       ? 'Modifier l\'annonce'
                                       : 'Publier l\'annonce',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
                                 ),
                         ),
                       ),
@@ -674,11 +676,13 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? type['color'].withOpacity(0.1)
-                    : Colors.grey[100],
+                    ? type['color'].withValues(alpha: 0.1)
+                    : AppColors.surfaceContainer(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? type['color'] : Colors.grey[300]!,
+                  color: isSelected
+                      ? type['color']
+                      : AppColors.borderColor(context),
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -686,7 +690,9 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                 children: [
                   Icon(
                     type['icon'],
-                    color: isSelected ? type['color'] : Colors.grey[600],
+                    color: isSelected
+                        ? type['color']
+                        : AppColors.textSecondary(context),
                     size: 32,
                   ),
                   const SizedBox(height: 8),
@@ -697,7 +703,9 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                       fontSize: 11,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? type['color'] : Colors.grey[700],
+                      color: isSelected
+                          ? type['color']
+                          : AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -723,13 +731,15 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
               _selectedTarget = target['value']!;
             });
           },
-          selectedColor: AppColors.primary.withOpacity(0.2),
+          selectedColor: AppColors.primary.withValues(alpha: 0.2),
           labelStyle: TextStyle(
-            color: isSelected ? AppColors.primary : Colors.grey[700],
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textSecondary(context),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
           side: BorderSide(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+            color: isSelected ? AppColors.primary : AppColors.borderColor(context),
           ),
         );
       }).toList(),
@@ -751,17 +761,19 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
 
       if (widget.announcement != null) {
         // Update existing announcement
+        AppLogger.d('📢 UPDATING ANNOUNCEMENT - ID: ${widget.announcement!.id}');
         await _announcementService.updateAnnouncement(
           id: widget.announcement!.id,
           title: _titleController.text,
           description: _messageController.text,
           target: _selectedTarget,
         );
+        AppLogger.d('✅ ANNOUNCEMENT UPDATED SUCCESSFULLY');
       } else {
         // Create new announcement
-        print('📢 CREATING ANNOUNCEMENT - Event ID: $eventId');
-        print('📢 Title: ${_titleController.text}');
-        print('📢 Target: $_selectedTarget');
+        AppLogger.d('📢 CREATING ANNOUNCEMENT - Event ID: $eventId');
+        AppLogger.d('📢 Title: ${_titleController.text}');
+        AppLogger.d('📢 Target: $_selectedTarget');
 
         await _announcementService.createAnnouncement(
           eventId: eventId,
@@ -769,10 +781,14 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
           description: _messageController.text,
           target: _selectedTarget,
         );
+        AppLogger.d('✅ ANNOUNCEMENT CREATED SUCCESSFULLY');
       }
 
       if (mounted) {
+        // First pop the modal
         Navigator.pop(context);
+
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -781,11 +797,18 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
                   : 'Annonce publiée avec succès',
             ),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
           ),
         );
-        widget.onAnnouncementCreated();
+
+        // Call the callback to refresh the list
+        // Add a small delay to ensure the modal is closed and parent widget is ready
+        Future.delayed(const Duration(milliseconds: 100), () {
+          widget.onAnnouncementCreated();
+        });
       }
     } catch (e) {
+      AppLogger.d('❌ ERROR CREATING/UPDATING ANNOUNCEMENT: $e');
       setState(() {
         _isSubmitting = false;
       });

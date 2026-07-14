@@ -1,8 +1,14 @@
 // lib/presentation/screens/exposant/exposant_plan_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
+import '../../../logic/authentication/auth_bloc.dart';
+import '../../../logic/authentication/auth_state.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class ExposantPlanScreen extends StatefulWidget {
   const ExposantPlanScreen({super.key});
@@ -12,12 +18,43 @@ class ExposantPlanScreen extends StatefulWidget {
 }
 
 class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
+  Future<void> _openPdfUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible d\'ouvrir le PDF'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadPdf(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ouverture du PDF...'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    }
+  }
+
   int _getCurrentIndex(BuildContext context) {
     final route = ModalRoute.of(context)?.settings.name;
     switch (route) {
       case '/exposant/home':
         return 0;
-      case '/exposant/plan':
+      case '/exposant/guide':
         return 1;
       case '/exposant/scanner':
         return 2;
@@ -32,238 +69,235 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Navigate to home instead of quitting
-        Navigator.pushReplacementNamed(context, '/exposant/home');
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: const Text(
-            'Plan',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.download, color: AppColors.primary),
-              onPressed: () {
-                // TODO: Download PDF
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Téléchargement du plan...'),
-                    backgroundColor: AppColors.primary,
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        final event = (authState.status == AuthStatus.authenticated)
+            ? authState.event
+            : null;
+        final guideUrl = event?.guideFile;
+        final hasGuide = guideUrl != null && guideUrl.isNotEmpty;
+
+        return RootTabPopScope(
+          homeRoute: '/exposant/home',
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Guide'),
+              actions: [
+                if (hasGuide)
+                  IconButton(
+                    icon: const Icon(Icons.download, color: AppColors.primary),
+                    onPressed: () => _downloadPdf(guideUrl),
                   ),
-                );
-              },
+              ],
             ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // PDF Container
-              Container(
-                width: double.infinity,
-                height: MediaQuery.of(context).size.height * 0.7,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // PDF Container
+                  Container(
+                    width: double.infinity,
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderColor(context)),
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // PDF Header
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.picture_as_pdf,
-                              color: Colors.white,
-                              size: 32,
+                    child: Column(
+                      children: [
+                        // PDF Header
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Plan de l\'événement',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Document PDF • 2.1 MB',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // PDF Preview/Viewer Area
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.map,
-                              size: 80,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Aperçu du PDF',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Le plan complet de l\'événement\navec tous les stands et espaces',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                // TODO: Open PDF viewer
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Ouverture du PDF...'),
-                                    backgroundColor: AppColors.primary,
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
+                                child: const Icon(
+                                  Icons.picture_as_pdf,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
                               ),
-                              icon: const Icon(Icons.open_in_new),
-                              label: const Text('Ouvrir le PDF'),
-                            ),
-                          ],
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Guide de l\'événement',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary(context),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Document PDF • 2.1 MB',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary(context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        // PDF Preview/Viewer Area
+                        Expanded(
+                          child: Center(
+                            child: hasGuide
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.map,
+                                        size: 80,
+                                        color: AppColors.textHint(context),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Guide PDF disponible',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondary(context),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Le guide complet de l\'événement\navec toutes les informations pratiques',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary(context),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      ElevatedButton.icon(
+                                        onPressed: () => _openPdfUrl(guideUrl),
+                                        icon: const Icon(Icons.open_in_new),
+                                        label: const Text('Ouvrir le PDF'),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        size: 80,
+                                        color: AppColors.textHint(context),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Guide non disponible',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondary(context),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Le guide de l\'événement\nn\'a pas encore été publié',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textHint(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Plan Info
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'À propos du plan',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Plan Info
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBackground(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderColor(context)),
                     ),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(
-                        Icons.location_city, 'Lieu', 'Centre de Conférences'),
-                    const SizedBox(height: 8),
-                    _buildInfoRow(
-                        Icons.store, 'Stands d\'exposition', '50+ stands'),
-                    const SizedBox(height: 8),
-                    _buildInfoRow(Icons.restaurant, 'Espaces restauration',
-                        '3 zones disponibles'),
-                    const SizedBox(height: 8),
-                    _buildInfoRow(Icons.local_parking, 'Parking',
-                        'Parking gratuit disponible'),
-                  ],
-                ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'À propos du guide',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoRow(context, Icons.location_city, 'Lieu',
+                            'Centre de Conférences'),
+                        const SizedBox(height: 8),
+                        _buildInfoRow(context, Icons.store,
+                            'Stands d\'exposition', '50+ stands'),
+                        const SizedBox(height: 8),
+                        _buildInfoRow(context, Icons.restaurant,
+                            'Espaces restauration', '3 zones disponibles'),
+                        const SizedBox(height: 8),
+                        _buildInfoRow(context, Icons.local_parking, 'Parking',
+                            'Parking gratuit disponible'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 80), // Extra space for bottom navbar
+                ],
               ),
-              const SizedBox(height: 80), // Extra space for bottom navbar
-            ],
+            ),
+            bottomNavigationBar: BottomNavBar(
+              currentIndex: _getCurrentIndex(context),
+              userRole: 'exposant',
+              onTap: (index) {
+                switch (index) {
+                  case 0:
+                    Navigator.pushReplacementNamed(context, '/exposant/home');
+                    break;
+                  case 1:
+                    // Already on Guide
+                    break;
+                  case 2:
+                    Navigator.pushNamed(context, '/exposant/scanner');
+                    break;
+                  case 3:
+                    Navigator.pushReplacementNamed(context, '/exposant/stats');
+                    break;
+                  case 4:
+                    Navigator.pushReplacementNamed(
+                        context, '/exposant/announcements');
+                    break;
+                }
+              },
+            ),
           ),
-        ),
-        bottomNavigationBar: BottomNavBar(
-          currentIndex: _getCurrentIndex(context),
-          userRole: 'exposant',
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushReplacementNamed(context, '/exposant/home');
-                break;
-              case 1:
-                // Already on Plan
-                break;
-              case 2:
-                Navigator.pushNamed(context, '/exposant/scanner');
-                break;
-              case 3:
-                Navigator.pushReplacementNamed(context, '/exposant/stats');
-                break;
-              case 4:
-                Navigator.pushReplacementNamed(
-                    context, '/exposant/announcements');
-                break;
-            }
-          },
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+      BuildContext context, IconData icon, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -274,14 +308,14 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
             text: TextSpan(
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: AppColors.textSecondary(context),
               ),
               children: [
                 TextSpan(
                   text: '$label: ',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 TextSpan(text: value),

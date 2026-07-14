@@ -1,11 +1,14 @@
 // lib/presentation/screens/exposant/exposant_announcements_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
+import '../../../data/models/announcement_model.dart';
+import '../../../data/services/announcement_service.dart';
 import '../../../data/services/api_client.dart';
-import '../../../logic/authentication/auth_bloc.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class ExposantAnnouncementsScreen extends StatefulWidget {
   const ExposantAnnouncementsScreen({super.key});
@@ -17,15 +20,15 @@ class ExposantAnnouncementsScreen extends StatefulWidget {
 
 class _ExposantAnnouncementsScreenState
     extends State<ExposantAnnouncementsScreen> {
-  late ApiClient _apiClient;
-  List<Map<String, dynamic>> _announcements = [];
+  late AnnouncementService _announcementService;
+  List<AnnouncementModel> _announcements = [];
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _apiClient = ApiClient();
+    _announcementService = AnnouncementService(ApiClient());
     _loadAnnouncements();
   }
 
@@ -36,30 +39,20 @@ class _ExposantAnnouncementsScreenState
     });
 
     try {
-      final authState = context.read<AuthBloc>().state;
-      final eventId = authState.event?.id;
+      AppLogger.d('📢 EXPOSANT - Loading announcements...');
 
-      if (eventId == null) {
-        throw Exception('No event selected');
-      }
+      // Backend automatically filters announcements based on JWT token
+      // No need to pass event_id parameter
+      final announcements = await _announcementService.getAnnouncements();
 
-      final response = await _apiClient.get(
-        '/annonces/',
-        queryParameters: {'event_id': eventId},
-      );
-
-      final data = response.data;
-      final results =
-          data is Map && data.containsKey('results') ? data['results'] : data;
+      AppLogger.d('📢 EXPOSANT - Loaded ${announcements.length} announcements');
 
       setState(() {
-        _announcements = results is List
-            ? List<Map<String, dynamic>>.from(
-                results.map((item) => Map<String, dynamic>.from(item)))
-            : [];
+        _announcements = announcements;
         _isLoading = false;
       });
     } catch (e) {
+      AppLogger.d('❌ EXPOSANT - Error loading announcements: $e');
       setState(() {
         _errorMessage = 'Erreur de chargement: ${e.toString()}';
         _isLoading = false;
@@ -76,8 +69,12 @@ class _ExposantAnnouncementsScreenState
         return Icons.people;
       case 'exposants':
         return Icons.store;
+      case 'controller':
       case 'controlleurs':
         return Icons.qr_code_scanner;
+      case 'gestionnaire':
+      case 'gestionnaires':
+        return Icons.meeting_room;
       default:
         return Icons.info;
     }
@@ -123,7 +120,7 @@ class _ExposantAnnouncementsScreenState
     switch (route) {
       case '/exposant/home':
         return 0;
-      case '/exposant/plan':
+      case '/exposant/guide':
         return 1;
       case '/exposant/scanner':
         return 2;
@@ -138,12 +135,8 @@ class _ExposantAnnouncementsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Navigate to home instead of quitting
-        Navigator.pushReplacementNamed(context, '/exposant/home');
-        return false;
-      },
+    return RootTabPopScope(
+      homeRoute: '/exposant/home',
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Annonces'),
@@ -163,13 +156,16 @@ class _ExposantAnnouncementsScreenState
                 ? _buildErrorState()
                 : _announcements.isEmpty
                     ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _announcements.length,
-                        itemBuilder: (context, index) {
-                          final announcement = _announcements[index];
-                          return _buildAnnouncementCard(announcement);
-                        },
+                    : RefreshIndicator(
+                        onRefresh: _loadAnnouncements,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _announcements.length,
+                          itemBuilder: (context, index) {
+                            final announcement = _announcements[index];
+                            return _buildAnnouncementCard(announcement);
+                          },
+                        ),
                       ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: _getCurrentIndex(context),
@@ -206,7 +202,7 @@ class _ExposantAnnouncementsScreenState
           Icon(
             Icons.error_outline,
             size: 80,
-            color: Colors.grey[400],
+            color: AppColors.textHint(context),
           ),
           const SizedBox(height: 16),
           Text(
@@ -214,7 +210,7 @@ class _ExposantAnnouncementsScreenState
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -225,7 +221,7 @@ class _ExposantAnnouncementsScreenState
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),
@@ -248,7 +244,7 @@ class _ExposantAnnouncementsScreenState
           Icon(
             Icons.campaign_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: AppColors.textHint(context),
           ),
           const SizedBox(height: 16),
           Text(
@@ -256,7 +252,7 @@ class _ExposantAnnouncementsScreenState
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -264,7 +260,7 @@ class _ExposantAnnouncementsScreenState
             'Aucune annonce pour le moment',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -272,11 +268,11 @@ class _ExposantAnnouncementsScreenState
     );
   }
 
-  Widget _buildAnnouncementCard(Map<String, dynamic> announcement) {
-    final target = announcement['target'] ?? '';
+  Widget _buildAnnouncementCard(AnnouncementModel announcement) {
+    final target = announcement.target;
     final icon = _getIconForTarget(target);
     final color = _getColorForTarget(target);
-    final timestamp = _formatTimestamp(announcement['created_at']);
+    final timestamp = _formatTimestamp(announcement.createdAt.toString());
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -295,7 +291,7 @@ class _ExposantAnnouncementsScreenState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -311,10 +307,11 @@ class _ExposantAnnouncementsScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        announcement['title'] ?? 'Sans titre',
-                        style: const TextStyle(
+                        announcement.title,
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -323,14 +320,14 @@ class _ExposantAnnouncementsScreenState
                           Icon(
                             Icons.people,
                             size: 14,
-                            color: Colors.grey[600],
+                            color: AppColors.textSecondary(context),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Cible: $target',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                           const Spacer(),
@@ -338,7 +335,7 @@ class _ExposantAnnouncementsScreenState
                             timestamp,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -351,10 +348,10 @@ class _ExposantAnnouncementsScreenState
             const SizedBox(height: 16),
             // Message
             Text(
-              announcement['description'] ?? announcement['message'] ?? '',
+              announcement.description,
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.grey[800],
+                color: AppColors.textPrimary(context),
                 height: 1.5,
               ),
             ),

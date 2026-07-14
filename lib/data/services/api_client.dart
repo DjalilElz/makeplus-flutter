@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:makeplus/core/constants/api_constants.dart';
 
@@ -30,15 +31,17 @@ class ApiClient {
       ),
     );
 
-    // Add logging interceptor for debugging
-    _dio.interceptors.add(LogInterceptor(
-      request: true,
-      requestHeader: true,
-      requestBody: true,
-      responseHeader: true,
-      responseBody: true,
-      error: true,
-    ));
+    // Debug only: this logs the Bearer token on every request.
+    if (kDebugMode) {
+      _dio.interceptors.add(LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+      ));
+    }
   }
 
   /// Handle request - Add JWT token to headers
@@ -51,6 +54,13 @@ class ApiClient {
 
     if (accessToken != null && accessToken.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $accessToken';
+    }
+
+    // Add cache-busting headers for GET requests to prevent stale data
+    if (options.method == 'GET') {
+      options.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      options.headers['Pragma'] = 'no-cache';
+      options.headers['Expires'] = '0';
     }
 
     handler.next(options);
@@ -80,8 +90,10 @@ class ApiClient {
 
           if (newTokens != null) {
             // Save new tokens
-            await _storage.write(key: 'access_token', value: newTokens['access']);
-            await _storage.write(key: 'refresh_token', value: newTokens['refresh']);
+            await _storage.write(
+                key: 'access_token', value: newTokens['access']);
+            await _storage.write(
+                key: 'refresh_token', value: newTokens['refresh']);
 
             // Retry original request with new token
             final options = err.requestOptions;

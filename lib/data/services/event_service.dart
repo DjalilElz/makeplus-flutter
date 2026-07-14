@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
-import 'api_client.dart';
+
 import '../../core/constants/api_constants.dart';
 import '../models/event_model.dart';
+import 'api_client.dart';
 
 /// Event Service
 /// Handles all event, room, and session related API calls
@@ -132,15 +133,22 @@ class EventService {
   }
 
   /// Get room sessions
+  /// Uses sessions endpoint with room filter
   Future<List<Session>> getRoomSessions(String roomId) async {
     try {
       final response = await _apiClient.get(
-        ApiConstants.roomSessions(roomId),
+        ApiConstants.sessions,
+        queryParameters: {'room': roomId},
       );
 
       if (response.statusCode == 200) {
-        final results = response.data as List;
-        return results.map((e) => Session.fromJson(e)).toList();
+        final data = response.data;
+        final results = data['results'] ?? data;
+
+        if (results is List) {
+          return results.map((e) => Session.fromJson(e)).toList();
+        }
+        return [];
       } else {
         throw Exception('Failed to load room sessions');
       }
@@ -150,16 +158,24 @@ class EventService {
   }
 
   /// Get current session in room
+  /// NOTE: Current session endpoint is NOT available in mobile API
+  /// Use getSessions with room filter and status='live' instead
   Future<Session?> getCurrentSession(String roomId) async {
     try {
       final response = await _apiClient.get(
-        ApiConstants.roomCurrentSession(roomId),
+        ApiConstants.sessions,
+        queryParameters: {
+          'room': roomId,
+          'status': 'live',
+        },
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
-        if (data != null && data is Map<String, dynamic>) {
-          return Session.fromJson(data);
+        final results = data['results'] ?? data;
+
+        if (results is List && results.isNotEmpty) {
+          return Session.fromJson(results.first);
         }
         return null;
       } else {
@@ -233,19 +249,25 @@ class EventService {
   }
 
   /// Get live sessions
+  /// Uses sessions endpoint with status='live' filter
   Future<List<Session>> getLiveSessions({String? eventId}) async {
     try {
-      final queryParams = <String, dynamic>{};
+      final queryParams = <String, dynamic>{'status': 'live'};
       if (eventId != null) queryParams['event'] = eventId;
 
       final response = await _apiClient.get(
-        ApiConstants.sessionLive,
+        ApiConstants.sessions,
         queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
-        final results = response.data as List;
-        return results.map((e) => Session.fromJson(e)).toList();
+        final data = response.data;
+        final results = data['results'] ?? data;
+
+        if (results is List) {
+          return results.map((e) => Session.fromJson(e)).toList();
+        }
+        return [];
       } else {
         throw Exception('Failed to load live sessions');
       }
@@ -262,7 +284,11 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        return Session.fromJson(response.data);
+        final payload = response.data;
+        final sessionData = payload is Map<String, dynamic>
+            ? (payload['session'] ?? payload)
+            : payload;
+        return Session.fromJson(sessionData as Map<String, dynamic>);
       } else {
         throw Exception('Failed to start session');
       }
@@ -279,7 +305,11 @@ class EventService {
       );
 
       if (response.statusCode == 200) {
-        return Session.fromJson(response.data);
+        final payload = response.data;
+        final sessionData = payload is Map<String, dynamic>
+            ? (payload['session'] ?? payload)
+            : payload;
+        return Session.fromJson(sessionData as Map<String, dynamic>);
       } else {
         throw Exception('Failed to end session');
       }

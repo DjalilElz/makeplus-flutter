@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/session_question_service.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class LiveStreamScreen extends StatefulWidget {
   final Map<String, dynamic> session;
@@ -17,7 +19,7 @@ class LiveStreamScreen extends StatefulWidget {
 
 class _LiveStreamScreenState extends State<LiveStreamScreen> {
   late YoutubePlayerController _youtubeController;
-  late ApiClient _apiClient;
+  late SessionQuestionService _questionService;
   late String _sessionId;
   final TextEditingController _questionController = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
@@ -29,17 +31,21 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
   // User questions loaded from API
   List<Map<String, dynamic>> _userQuestions = [];
 
+  // The API never returns who asked a question (SessionQuestion.participant is
+  // write_only — anonymous by design). The only way to label a question "Vous"
+  // is to remember, client-side, which ones this session submitted.
+  final Set<String> _myQuestionIds = {};
+
   @override
   void initState() {
     super.initState();
 
-    // Initialize API client and session ID
-    _apiClient = ApiClient();
+    _questionService = SessionQuestionService(ApiClient());
     _sessionId = widget.session['id'] as String;
 
-    print('🎬 LIVE STREAM SCREEN INITIALIZED');
-    print('📺 Session ID: $_sessionId');
-    print('📺 Session Data: ${widget.session}');
+    AppLogger.d('🎬 LIVE STREAM SCREEN INITIALIZED');
+    AppLogger.d('📺 Session ID: $_sessionId');
+    AppLogger.d('📺 Session Data: ${widget.session}');
 
     // Extract video ID from URL
     final videoUrl = widget.session['youtubeUrl'] ??
@@ -69,31 +75,26 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
 
   Future<void> _loadQuestions() async {
     try {
-      print('📡 LOADING QUESTIONS for session: $_sessionId');
+      AppLogger.d('📡 LOADING QUESTIONS for session: $_sessionId');
 
-      final response = await _apiClient.get(
-        '/session-questions/',
-        queryParameters: {'session': _sessionId},
-      );
-
-      final questionsList = response.data['results'] as List? ?? [];
-      print('✅ LOADED ${questionsList.length} questions');
+      final questions = await _questionService.getQuestions(_sessionId);
+      AppLogger.d('✅ LOADED ${questions.length} questions');
 
       setState(() {
-        _userQuestions = questionsList.map<Map<String, dynamic>>((q) {
+        _userQuestions = questions.map<Map<String, dynamic>>((q) {
           return {
-            'id': q['id'],
-            'question': q['question_text'] ?? '',
-            'time': _formatTime(q['asked_at']),
-            'is_answered': q['is_answered'] ?? false,
-            'answer': q['answer_text'],
-            'participant_name': q['participant_name'] ?? 'Vous',
+            'id': q.id,
+            'question': q.questionText,
+            'time': _formatTime(q.askedAt.toIso8601String()),
+            'is_answered': q.isAnswered,
+            'answer': q.answerText,
+            'is_mine': _myQuestionIds.contains(q.id),
           };
         }).toList();
         _isLoadingQuestions = false;
       });
     } catch (e) {
-      print('❌ ERROR LOADING QUESTIONS: $e');
+      AppLogger.d('❌ ERROR LOADING QUESTIONS: $e');
       setState(() {
         _isLoadingQuestions = false;
       });
@@ -137,35 +138,27 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
     });
 
     try {
-      print('📤 SENDING QUESTION: $questionText');
-      print('📤 SESSION ID: $_sessionId');
+      AppLogger.d('📤 SENDING QUESTION: $questionText');
+      AppLogger.d('📤 SESSION ID: $_sessionId');
 
-      // Backend auto-extracts participant from JWT token
-      // Only send session and question_text
-      final requestData = {
-        'session': _sessionId,
-        'question_text': questionText,
-      };
-
-      print('📤 REQUEST DATA: $requestData');
-
-      final response = await _apiClient.post(
-        '/session-questions/',
-        data: requestData,
+      final question = await _questionService.askQuestion(
+        sessionId: _sessionId,
+        questionText: questionText,
       );
 
-      print('✅ QUESTION SENT SUCCESSFULLY');
-      print('✅ RESPONSE: ${response.data}');
+      AppLogger.d('✅ QUESTION SENT SUCCESSFULLY');
+
+      _myQuestionIds.add(question.id);
 
       // Add question to local list immediately
       setState(() {
         _userQuestions.insert(0, {
-          'id': response.data['id'],
+          'id': question.id,
           'question': questionText,
-          'time': _formatTime(response.data['asked_at']),
+          'time': _formatTime(question.askedAt.toIso8601String()),
           'is_answered': false,
           'answer': null,
-          'participant_name': 'Vous',
+          'is_mine': true,
         });
         _isSendingQuestion = false;
       });
@@ -181,6 +174,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
         }
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Question envoyée avec succès!'),
@@ -189,39 +183,16 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
         ),
       );
     } catch (e) {
-      print('❌ ERROR SENDING QUESTION: $e');
+      AppLogger.d('❌ ERROR SENDING QUESTION: $e');
 
-      // Try to extract more error details
-      String errorMessage = 'Erreur lors de l\'envoi';
-      if (e.toString().contains('DioException')) {
-        try {
-          final dioError = e as dynamic;
-          if (dioError.response?.data != null) {
-            print('❌ BACKEND ERROR RESPONSE: ${dioError.response.data}');
-            // Try to get error message from backend
-            if (dioError.response.data is Map) {
-              final data = dioError.response.data as Map;
-              if (data.containsKey('detail')) {
-                errorMessage = data['detail'].toString();
-              } else if (data.containsKey('error')) {
-                errorMessage = data['error'].toString();
-              } else if (data.containsKey('message')) {
-                errorMessage = data['message'].toString();
-              }
-            }
-          }
-        } catch (_) {
-          // Ignore parsing errors
-        }
-      }
-
+      if (!mounted) return;
       setState(() {
         _isSendingQuestion = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
           duration: const Duration(seconds: 4),
           backgroundColor: AppColors.error,
         ),
@@ -237,12 +208,13 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
         showVideoProgressIndicator: true,
         progressIndicatorColor: AppColors.primary,
         onReady: () {
-          print('YouTube Player is ready');
+          AppLogger.d('YouTube Player is ready');
         },
       ),
       builder: (context, player) {
         return Scaffold(
-          backgroundColor: _isFullscreen ? Colors.black : Colors.white,
+          backgroundColor:
+              _isFullscreen ? Colors.black : AppColors.background(context),
           appBar: _isFullscreen
               ? null
               : AppBar(
@@ -279,7 +251,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
         Expanded(
           child: SingleChildScrollView(
             child: Container(
-              color: Colors.white,
+              color: AppColors.background(context),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -287,14 +259,11 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: AppColors.cardBackground(context),
+                      border: Border(
+                        bottom:
+                            BorderSide(color: AppColors.borderColor(context)),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +304,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                               '${_userQuestions.length} questions posées',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ],
@@ -345,7 +314,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                           widget.session['speaker'],
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[700],
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -384,7 +353,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             bottom: 80,
             child: FloatingActionButton(
               heroTag: 'question',
-              backgroundColor: AppColors.primary.withOpacity(0.9),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.9),
               onPressed: () {
                 setState(() {
                   _showQuestionBoxInFullscreen = true;
@@ -403,7 +372,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             child: Container(
               width: 320,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.85),
+                color: Colors.black.withValues(alpha: 0.85),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   bottomLeft: Radius.circular(12),
@@ -453,20 +422,24 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
 
   Widget _buildQuestionsSection() {
     return Container(
-      color: Colors.grey[50],
+      color: AppColors.background(context),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            color: AppColors.cardBackground(context),
             child: Row(
               children: [
                 const Icon(Icons.question_answer,
                     color: AppColors.primary, size: 20),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Mes Questions',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
                 ),
                 const Spacer(),
                 if (_isLoadingQuestions)
@@ -489,14 +462,14 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                             Icon(
                               Icons.question_answer_outlined,
                               size: 64,
-                              color: Colors.grey[300],
+                              color: AppColors.textHint(context),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Aucune question posée',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey[500],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ],
@@ -527,10 +500,13 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        question['participant_name'] ?? 'Vous',
-                                        style: const TextStyle(
+                                        (question['is_mine'] as bool? ?? false)
+                                            ? 'Vous'
+                                            : 'Participant anonyme',
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
+                                          color: AppColors.textPrimary(context),
                                         ),
                                       ),
                                       const Spacer(),
@@ -559,7 +535,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                         question['time'] ?? '',
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.grey[600],
+                                          color: AppColors.textSecondary(context),
                                         ),
                                       ),
                                     ],
@@ -567,7 +543,10 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     question['question'] ?? '',
-                                    style: const TextStyle(fontSize: 14),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textPrimary(context),
+                                    ),
                                   ),
                                   // Show answer if available
                                   if (isAnswered &&
@@ -577,12 +556,12 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color:
-                                            AppColors.primary.withOpacity(0.1),
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
                                           color: AppColors.primary
-                                              .withOpacity(0.3),
+                                              .withValues(alpha: 0.3),
                                         ),
                                       ),
                                       child: Column(
@@ -610,9 +589,9 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                           const SizedBox(height: 6),
                                           Text(
                                             answer,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13,
-                                              color: Colors.black87,
+                                              color: AppColors.textPrimary(context),
                                             ),
                                           ),
                                         ],
@@ -646,14 +625,14 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 Icon(
                   Icons.question_answer_outlined,
                   size: 48,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Aucune question posée',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -672,11 +651,11 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: isAnswered
                       ? Border.all(
-                          color: AppColors.success.withOpacity(0.5), width: 1.5)
+                          color: AppColors.success.withValues(alpha: 0.5), width: 1.5)
                       : null,
                 ),
                 child: Column(
@@ -691,7 +670,9 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          question['participant_name'] ?? 'Vous',
+                          (question['is_mine'] as bool? ?? false)
+                              ? 'Vous'
+                              : 'Participant anonyme',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
@@ -723,7 +704,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                           question['time'] ?? '',
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -739,7 +720,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Column(
@@ -791,14 +772,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 12,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: AppColors.cardBackground(context),
+        border: Border(top: BorderSide(color: AppColors.borderColor(context))),
       ),
       child: SafeArea(
         child: Row(
@@ -808,8 +783,6 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 controller: _questionController,
                 decoration: InputDecoration(
                   hintText: 'Poser une question...',
-                  filled: true,
-                  fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -828,7 +801,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
               icon: const Icon(Icons.send),
               color: AppColors.primary,
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 padding: const EdgeInsets.all(12),
               ),
             ),
@@ -841,7 +814,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
   Widget _buildFullscreenMessageInput() {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.black.withOpacity(0.5)),
+      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5)),
       child: SafeArea(
         child: Row(
           children: [
@@ -851,9 +824,9 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Poser une question...',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
+                  fillColor: Colors.white.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -871,7 +844,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
               onPressed: _sendMessage,
               icon: const Icon(Icons.send, color: Colors.white),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withOpacity(0.8),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.8),
                 padding: const EdgeInsets.all(12),
               ),
             ),

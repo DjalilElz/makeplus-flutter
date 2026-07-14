@@ -8,6 +8,7 @@ import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
 import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class OrganizerRoomManagerHomeScreen extends StatefulWidget {
   const OrganizerRoomManagerHomeScreen({super.key});
@@ -44,79 +45,72 @@ class _OrganizerRoomManagerHomeScreenState
         final user = authState.user;
         final event = authState.event;
 
-        // Debug logs
-        if (event != null) {
-          print('🏠 ORGANIZER HOME - Event: ${event.name}');
-          print(
-              '📅 Dates: ${event.startDate ?? "N/A"} to ${event.endDate ?? "N/A"}');
-          print('📍 Location: ${event.location ?? "N/A"}');
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text(
-              'Accueil',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRouter.notifications);
-                },
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Event Header
-                      _buildEventHeader(user, event),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+        return RootTabPopScope(
+          homeRoute: AppRouter.organizerRoomManagerHome,
+          isHome: true,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text(
+                'Accueil',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
-          ),
-          bottomNavigationBar: BottomNavBar(
-            currentIndex: _getCurrentIndex(context),
-            userRole: 'organizer',
-            onTap: (index) {
-              // Navigate based on index
-              switch (index) {
-                case 0:
-                  // Already on home
-                  break;
-                case 1:
-                  // Announcements
-                  Navigator.pushReplacementNamed(
-                      context, AppRouter.announcements);
-                  break;
-                case 2:
-                  // Scanner (middle button)
-                  // TODO: Navigate to scanner
-                  break;
-                case 3:
-                  // Rooms
-                  Navigator.pushReplacementNamed(context, AppRouter.roomsList);
-                  break;
-                case 4:
-                  // Settings
-                  Navigator.pushReplacementNamed(context, AppRouter.settings);
-                  break;
-              }
-            },
-          ),
-        );
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRouter.notifications);
+                  },
+                ),
+              ],
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Event Header
+                        _buildEventHeader(user, event),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            bottomNavigationBar: BottomNavBar(
+              currentIndex: _getCurrentIndex(context),
+              userRole: 'organizer',
+              onTap: (index) {
+                // Navigate based on index
+                switch (index) {
+                  case 0:
+                    // Already on home
+                    break;
+                  case 1:
+                    // Announcements
+                    Navigator.pushReplacementNamed(
+                        context, AppRouter.announcements);
+                    break;
+                  case 2:
+                    // Rooms
+                    Navigator.pushReplacementNamed(
+                        context, AppRouter.roomsList);
+                    break;
+                  case 3:
+                    // Settings
+                    Navigator.pushReplacementNamed(context, AppRouter.settings);
+                    break;
+                }
+              },
+            ),
+          ), // End Scaffold
+        ); // End RootTabPopScope
       },
     );
   }
@@ -205,6 +199,28 @@ class _OrganizerRoomManagerHomeScreenState
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, AppRouter.eventDetails);
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white70),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.info_outline, size: 18),
+              label: const Text(
+                'Voir les details',
+                style: TextStyle(fontSize: 14),
+              ),
+            ),
           ),
         ],
       ),

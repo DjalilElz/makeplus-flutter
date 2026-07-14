@@ -1,7 +1,10 @@
 // lib/presentation/screens/organizer/room_management/room_detail_screen.dart
 
 import 'package:flutter/material.dart';
+
 import '../../../../core/constants/theme/app_colors.dart';
+import '../../../../routes/app_router.dart';
+import '../../../widgets/navigation/bottom_nav_bar.dart';
 
 class RoomDetailScreen extends StatefulWidget {
   final String roomId;
@@ -15,6 +18,8 @@ class RoomDetailScreen extends StatefulWidget {
 class _RoomDetailScreenState extends State<RoomDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -25,6 +30,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -36,8 +42,25 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Salle N°3'),
+        title: const Text(
+          'Salle N°3',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () {
@@ -48,6 +71,30 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
       ),
       body: Column(
         children: [
+          // Search bar (when active)
+          if (_isSearching)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground(context),
+                border: Border(
+                  bottom: BorderSide(color: AppColors.borderColor(context)),
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Rechercher...',
+                  prefixIcon: Icon(Icons.search, color: AppColors.primary),
+                ),
+                onChanged: (value) {
+                  // TODO: Implement search filtering
+                  setState(() {});
+                },
+              ),
+            ),
+
           // Room info header
           _buildRoomHeader(),
 
@@ -56,14 +103,11 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               border: Border(
-                bottom: BorderSide(color: AppColors.border),
+                bottom: BorderSide(color: AppColors.borderColor(context)),
               ),
             ),
             child: TabBar(
               controller: _tabController,
-              indicatorColor: AppColors.primary,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: Colors.grey,
               tabs: const [
                 Tab(text: 'Sessions'),
                 Tab(text: 'Participants'),
@@ -91,6 +135,31 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
         icon: const Icon(Icons.add),
         label: const Text('Ajouter'),
       ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 2, // Salle tab
+        userRole: 'organizer',
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              // Home
+              Navigator.pushReplacementNamed(
+                  context, AppRouter.organizerRoomManagerHome);
+              break;
+            case 1:
+              // Announcements
+              Navigator.pushReplacementNamed(context, AppRouter.announcements);
+              break;
+            case 2:
+              // Rooms - go back to rooms list
+              Navigator.pushReplacementNamed(context, AppRouter.roomsList);
+              break;
+            case 3:
+              // Questions/Settings
+              Navigator.pushReplacementNamed(context, AppRouter.questions);
+              break;
+          }
+        },
+      ),
     );
   }
 
@@ -100,101 +169,71 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primaryLight.withOpacity(0.05),
+            AppColors.primary.withValues(alpha: 0.08),
+            AppColors.primaryLight.withValues(alpha: 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Room name and location
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.meeting_room,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+              const Text(
+                'Salle N°3',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Salle N°3',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 18,
+                    color: AppColors.textSecondary(context),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Aile Principale, Niveau 2',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textSecondary(context),
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Aile Principale, Niveau 2',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // Stats row
+          const SizedBox(height: 24),
+
+          // Enhanced stats cards
           Row(
             children: [
               Expanded(
-                child: _buildStatItem(
-                  Icons.event,
-                  '3',
-                  'Sessions',
+                child: _buildEnhancedStatCard(
+                  icon: Icons.event_note,
+                  value: '3',
+                  label: 'Sessions',
+                  color: AppColors.primary,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 40,
-                color: AppColors.border,
-              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: _buildStatItem(
-                  Icons.people,
-                  '68/100',
-                  'Participants',
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: AppColors.border,
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  Icons.check_circle,
-                  'Active',
-                  'Status',
+                child: _buildEnhancedStatCard(
+                  icon: Icons.people_outline,
+                  value: '68',
+                  label: 'Capacité',
+                  subtitle: '/ 100',
+                  color: const Color(0xFF6366F1),
                 ),
               ),
             ],
@@ -204,26 +243,75 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.primary, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+  Widget _buildEnhancedStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+    String? subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderColor(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const Spacer(),
+              if (subtitle != null)
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  height: 1,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary(context),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -233,7 +321,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
         'time': '09:00 - 10:30',
         'title': '"Ouverture & Keynote"',
         'speaker': 'Dr M. Ali',
-        'status': 'ongoing',
+        'status': 'live',
         'theme': 'Conférence',
       },
       {
@@ -263,7 +351,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
   }
 
   Widget _buildSessionCard(Map<String, dynamic> session) {
-    final isOngoing = session['status'] == 'ongoing';
+    final sessionStatus = session['status']?.toString().toLowerCase();
+    final isOngoing = sessionStatus == 'live' || sessionStatus == 'ongoing';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -318,14 +407,14 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
                 Icon(
                   Icons.person_outline,
                   size: 16,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary(context),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   session['speaker'],
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -335,7 +424,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -383,7 +472,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
         leading: Stack(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.primary.withOpacity(0.2),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.2),
               child: Text(
                 participant['name'][0],
                 style: const TextStyle(
@@ -398,8 +487,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
                 bottom: 0,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground(context),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -424,7 +513,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
               participant['time'],
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary(context),
               ),
             ),
             if (participant['checkedIn'])

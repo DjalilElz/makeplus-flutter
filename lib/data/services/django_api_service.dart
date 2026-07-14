@@ -1,13 +1,14 @@
 // lib/data/services/django_api_service.dart
 
 import 'package:dio/dio.dart';
+
+import '../../core/constants/api_constants.dart';
 import '../models/room_model.dart';
 
 class DjangoApiService {
   late final Dio _dio;
-  
-  // Replace with your Django backend URL
-  static const String baseUrl = 'https://makeplus-django-5.onrender.com';
+
+  static const String baseUrl = ApiConstants.baseUrl;
 
   DjangoApiService() {
     _dio = Dio(
@@ -52,7 +53,7 @@ class DjangoApiService {
         '/rooms/',
         queryParameters: eventId != null ? {'event_id': eventId} : null,
       );
-      
+
       final List<dynamic> data = response.data['results'] ?? response.data;
       return data.map((json) => RoomModel.fromJson(json)).toList();
     } catch (e) {
@@ -81,7 +82,8 @@ class DjangoApiService {
   }
 
   // Update room
-  Future<RoomModel> updateRoom(String roomId, Map<String, dynamic> updates) async {
+  Future<RoomModel> updateRoom(
+      String roomId, Map<String, dynamic> updates) async {
     try {
       final response = await _dio.patch('/rooms/$roomId/', data: updates);
       return RoomModel.fromJson(response.data);
@@ -104,10 +106,11 @@ class DjangoApiService {
   // Get sessions for a room
   Future<List<SessionModel>> getRoomSessions(String roomId) async {
     try {
-      final response = await _dio.get('/sessions/', 
+      final response = await _dio.get(
+        '/sessions/',
         queryParameters: {'room_id': roomId},
       );
-      
+
       final List<dynamic> data = response.data['results'] ?? response.data;
       return data.map((json) => SessionModel.fromJson(json)).toList();
     } catch (e) {
@@ -163,7 +166,7 @@ class DjangoApiService {
         '/participants/',
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
-      
+
       return List<Map<String, dynamic>>.from(
         response.data['results'] ?? response.data,
       );
@@ -172,15 +175,15 @@ class DjangoApiService {
     }
   }
 
-  // Verify participant badge
-  Future<Map<String, dynamic>> verifyBadge(String qrData) async {
+  // Scan participant badge (for badge controllers)
+  Future<Map<String, dynamic>> scanParticipant(String qrData) async {
     try {
-      final response = await _dio.post('/participants/verify/', data: {
+      final response = await _dio.post('/participants/scan/', data: {
         'qr_data': qrData,
       });
       return response.data;
     } catch (e) {
-      throw Exception('Failed to verify badge: $e');
+      throw Exception('Failed to scan participant: $e');
     }
   }
 

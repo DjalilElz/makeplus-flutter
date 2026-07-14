@@ -1,5 +1,7 @@
 // lib/presentation/screens/participant/qr_badge/my_badge_screen.dart
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/theme/app_colors.dart';
@@ -44,7 +46,22 @@ class _MyBadgeScreenState extends State<MyBadgeScreen> {
           }
 
           final user = state.user!;
-          final qrData = 'MAKEPLUS_${user.id}_${DateTime.now().millisecondsSinceEpoch}';
+
+          // The badge must carry the backend's payload verbatim: scanners POST it
+          // to /participants/scan/, which json.loads it and looks up `user_id`.
+          // Anything minted locally fails validation at the door.
+          if (user.qrCode == null) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'Badge indisponible.\n\nReconnectez-vous pour le récupérer.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          final qrData = jsonEncode(user.qrCode);
 
           return SingleChildScrollView(
             child: Column(
@@ -75,7 +92,7 @@ class _MyBadgeScreenState extends State<MyBadgeScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppColors.info.withOpacity(0.1),
+                                  color: AppColors.info.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
@@ -182,7 +199,7 @@ class _MyBadgeScreenState extends State<MyBadgeScreen> {
               text,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: AppColors.textSecondary(context),
                 height: 1.4,
               ),
             ),

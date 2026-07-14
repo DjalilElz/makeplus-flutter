@@ -29,6 +29,9 @@ class AuthState extends Equatable {
     this.errorMessage,
   });
 
+  /// Note the explicit `clear*` flags: passing `errorMessage: null` cannot clear
+  /// the field, because `null ?? this.errorMessage` keeps the old value. Without
+  /// these, a stale login error would survive every subsequent emit.
   AuthState copyWith({
     AuthStatus? status,
     UserModel? user,
@@ -36,14 +39,18 @@ class AuthState extends Equatable {
     EventModel? event,
     List<EventModel>? availableEvents,
     String? errorMessage,
+    bool clearAvailableEvents = false,
+    bool clearError = false,
+    bool clearEvent = false,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       role: role ?? this.role,
-      event: event ?? this.event,
-      availableEvents: availableEvents ?? this.availableEvents,
-      errorMessage: errorMessage ?? this.errorMessage,
+      event: clearEvent ? null : (event ?? this.event),
+      availableEvents:
+          clearAvailableEvents ? null : (availableEvents ?? this.availableEvents),
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 

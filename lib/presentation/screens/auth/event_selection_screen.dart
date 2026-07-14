@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/user_model.dart';
 import '../../../logic/authentication/auth_bloc.dart';
@@ -86,9 +87,9 @@ class EventSelectionScreen extends StatelessWidget {
                 // Events list
                 Expanded(
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: AppColors.background(context),
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(32),
                         topRight: Radius.circular(32),
                       ),
@@ -133,10 +134,13 @@ class _EventCard extends StatelessWidget {
     switch (status?.toLowerCase()) {
       case 'upcoming':
         return 'À venir';
+      case 'active':
       case 'ongoing':
         return 'En cours';
       case 'completed':
         return 'Terminé';
+      case 'cancelled':
+        return 'Annulé';
       default:
         return status ?? 'Inconnu';
     }
@@ -146,10 +150,13 @@ class _EventCard extends StatelessWidget {
     switch (status?.toLowerCase()) {
       case 'upcoming':
         return AppColors.info;
+      case 'active':
       case 'ongoing':
         return AppColors.success;
       case 'completed':
         return AppColors.textSecondaryLight;
+      case 'cancelled':
+        return AppColors.error;
       default:
         return AppColors.textSecondaryLight;
     }
@@ -161,11 +168,14 @@ class _EventCard extends StatelessWidget {
         return Icons.person;
       case 'exposant':
         return Icons.store;
+      case 'controller':
       case 'controlleur_des_badges':
         return Icons.qr_code_scanner;
+      case 'gestionnaire':
       case 'responsable_de_salle':
         return Icons.meeting_room;
       case 'admin':
+      case 'president':
       case 'organisateur':
         return Icons.admin_panel_settings;
       default:
@@ -179,12 +189,16 @@ class _EventCard extends StatelessWidget {
         return 'Participant';
       case 'exposant':
         return 'Exposant';
+      case 'controller':
       case 'controlleur_des_badges':
         return 'Contrôleur';
+      case 'gestionnaire':
       case 'responsable_de_salle':
         return 'Responsable';
       case 'admin':
         return 'Admin';
+      case 'president':
+        return 'Président';
       case 'organisateur':
         return 'Organisateur';
       default:
@@ -226,7 +240,7 @@ class _EventCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(event.status).withOpacity(0.1),
+                      color: _getStatusColor(event.status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(

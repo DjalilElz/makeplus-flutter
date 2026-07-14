@@ -58,3 +58,11 @@ firebase_options.dart
 secrets.dart
 *.key
 *.jks
+# Android release signing — NEVER commit
+android/key.properties
+**/*.jks
+**/*.keystore
+
+# Build artifacts / crash dumps (were previously tracked)
+android/build/
+hs_err_pid*.log

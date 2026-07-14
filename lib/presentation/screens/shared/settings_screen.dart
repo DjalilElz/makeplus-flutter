@@ -18,12 +18,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             // Check if we can pop, otherwise navigate to home
             if (Navigator.canPop(context)) {
@@ -34,21 +31,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
           },
         ),
-        title: const Text(
-          'Paramètres',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Paramètres'),
       ),
       body: ListView(
         children: [
           const SizedBox(height: 10),
 
           // Account Section
-          _buildSectionHeader('Compte'),
+          _buildSectionHeader(context, 'Compte'),
           _buildSettingsTile(
             context,
             icon: Icons.person_outline,
@@ -69,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // Preferences Section
-          _buildSectionHeader('Préférences'),
+          _buildSectionHeader(context, 'Préférences'),
           _buildSettingsTile(
             context,
             icon: Icons.notifications_outlined,
@@ -98,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // Support Section
-          _buildSectionHeader('Support'),
+          _buildSectionHeader(context, 'Support'),
           _buildSettingsTile(
             context,
             icon: Icons.help_outline,
@@ -125,7 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // Logout Section
-          _buildSectionHeader('Session'),
+          _buildSectionHeader(context, 'Session'),
           _buildSettingsTile(
             context,
             icon: Icons.logout,
@@ -142,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Text(
@@ -150,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.grey[600],
+          color: AppColors.textSecondary(context),
           letterSpacing: 0.5,
         ),
       ),
@@ -169,14 +159,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBackground(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (iconColor ?? AppColors.primary).withOpacity(0.1),
+            color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -190,19 +180,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: textColor ?? Colors.black,
+            color: textColor ?? AppColors.textPrimary(context),
           ),
         ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
             fontSize: 13,
-            color: Colors.grey[600],
+            color: AppColors.textSecondary(context),
           ),
         ),
         trailing: Icon(
           Icons.chevron_right,
-          color: Colors.grey[400],
+          color: AppColors.textHint(context),
         ),
         onTap: onTap,
       ),

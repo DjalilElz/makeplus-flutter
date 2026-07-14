@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Event Model
 class EventModel {
   final String id;
@@ -9,6 +11,9 @@ class EventModel {
   final String? locationDetails;
   final String? logoUrl;
   final String? bannerUrl;
+  final Color? primaryColor;
+  final String? programmeFile; // PDF programme/schedule
+  final String? guideFile; // PDF participant guide
   final String status;
   final int totalParticipants;
   final int totalExhibitors;
@@ -30,6 +35,9 @@ class EventModel {
     this.locationDetails,
     this.logoUrl,
     this.bannerUrl,
+    this.primaryColor,
+    this.programmeFile,
+    this.guideFile,
     required this.status,
     required this.totalParticipants,
     required this.totalExhibitors,
@@ -42,6 +50,14 @@ class EventModel {
     required this.updatedAt,
   });
 
+  static Color? _parseHexColor(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final cleaned = hex.replaceFirst('#', '');
+    final value = int.tryParse(cleaned, radix: 16);
+    if (value == null) return null;
+    return Color(0xFF000000 | value);
+  }
+
   factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
       id: json['id'] as String,
@@ -51,8 +67,11 @@ class EventModel {
       endDate: DateTime.parse(json['end_date'] as String),
       location: json['location'] as String,
       locationDetails: json['location_details'] as String?,
-      logoUrl: json['logo_url'] as String?,
-      bannerUrl: json['banner_url'] as String?,
+      logoUrl: json['logo'] as String?,
+      bannerUrl: json['banner'] as String?,
+      primaryColor: _parseHexColor(json['primary_color'] as String?),
+      programmeFile: json['programme_file'] as String?,
+      guideFile: json['guide_file'] as String?,
       status: json['status'] as String,
       totalParticipants: json['total_participants'] as int? ?? 0,
       totalExhibitors: json['total_exhibitors'] as int? ?? 0,
@@ -75,8 +94,10 @@ class EventModel {
       'end_date': endDate.toIso8601String(),
       'location': location,
       'location_details': locationDetails,
-      'logo_url': logoUrl,
-      'banner_url': bannerUrl,
+      'logo': logoUrl,
+      'banner': bannerUrl,
+      'programme_file': programmeFile,
+      'guide_file': guideFile,
       'status': status,
       'total_participants': totalParticipants,
       'total_exhibitors': totalExhibitors,
@@ -92,14 +113,14 @@ class EventModel {
 
   bool isActive() {
     final now = DateTime.now();
-    return status == 'active' && 
-           now.isAfter(startDate) && 
-           now.isBefore(endDate);
+    return status == 'active' &&
+        now.isAfter(startDate) &&
+        now.isBefore(endDate);
   }
 
   bool isUpcoming() {
     final now = DateTime.now();
-    return status == 'active' && now.isBefore(startDate);
+    return status == 'upcoming' && now.isBefore(startDate);
   }
 
   bool isCompleted() {

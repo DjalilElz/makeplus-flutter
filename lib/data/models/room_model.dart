@@ -84,9 +84,11 @@ class SessionModel extends Equatable {
   final String? theme;
   final bool isLive;
   final SessionStatus status;
-  final String sessionType; // 'conference' or 'atelier'
+  final String
+      sessionType; // conference, atelier, communication, table_ronde, lunch_symposium, symposium, session_photo_communication
   final bool isPaid;
   final double? price;
+  final int? maxParticipants; // Maximum participants for paid sessions
   final String? youtubeLiveUrl;
 
   const SessionModel({
@@ -105,6 +107,7 @@ class SessionModel extends Equatable {
     this.sessionType = 'conference',
     this.isPaid = false,
     this.price,
+    this.maxParticipants,
     this.youtubeLiveUrl,
   });
 
@@ -112,14 +115,19 @@ class SessionModel extends Equatable {
     SessionStatus status = SessionStatus.notStarted;
     if (json['status'] != null) {
       switch (json['status'].toString().toLowerCase()) {
+        case 'live':
         case 'in_progress':
+        case 'ongoing':
         case 'en_cours':
           status = SessionStatus.inProgress;
           break;
+        case 'completed':
+        case 'cancelled':
         case 'finished':
         case 'termine':
           status = SessionStatus.finished;
           break;
+        case 'scheduled':
         case 'pas_encore':
         case 'not_started':
         default:
@@ -145,6 +153,9 @@ class SessionModel extends Equatable {
       price: json['price'] != null
           ? double.tryParse(json['price'].toString())
           : null,
+      maxParticipants: json['max_participants'] != null
+          ? int.tryParse(json['max_participants'].toString())
+          : null,
       youtubeLiveUrl: json['youtube_live_url'],
     );
   }
@@ -153,13 +164,13 @@ class SessionModel extends Equatable {
     String statusString;
     switch (status) {
       case SessionStatus.inProgress:
-        statusString = 'en_cours';
+        statusString = 'live';
         break;
       case SessionStatus.finished:
-        statusString = 'termine';
+        statusString = 'completed';
         break;
       default:
-        statusString = 'pas_encore';
+        statusString = 'scheduled';
     }
 
     return {
@@ -178,6 +189,7 @@ class SessionModel extends Equatable {
       'session_type': sessionType,
       'is_paid': isPaid,
       'price': price?.toString(),
+      'max_participants': maxParticipants,
       'youtube_live_url': youtubeLiveUrl,
     };
   }
@@ -199,6 +211,7 @@ class SessionModel extends Equatable {
         sessionType,
         isPaid,
         price,
+        maxParticipants,
         youtubeLiveUrl,
       ];
 }

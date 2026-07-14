@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/theme/app_colors.dart';
+import '../../../data/services/api_client.dart';
+import '../../../data/services/session_question_service.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final Map<String, dynamic> session;
@@ -17,7 +20,15 @@ class SessionDetailScreen extends StatefulWidget {
 
 class _SessionDetailScreenState extends State<SessionDetailScreen> {
   final TextEditingController _questionController = TextEditingController();
+  late final SessionQuestionService _questionService;
   bool _showQuestionForm = false;
+  bool _isSubmittingQuestion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _questionService = SessionQuestionService(ApiClient());
+  }
 
   @override
   void dispose() {
@@ -25,8 +36,9 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     super.dispose();
   }
 
-  void _submitQuestion() {
-    if (_questionController.text.trim().isEmpty) {
+  Future<void> _submitQuestion() async {
+    final questionText = _questionController.text.trim();
+    if (questionText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez entrer une question'),
@@ -36,18 +48,49 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       return;
     }
 
-    // TODO: Submit question to backend
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Question envoyée avec succès!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    final sessionId = widget.session['id'] as String?;
+    if (sessionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session introuvable'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
-    setState(() {
-      _questionController.clear();
-      _showQuestionForm = false;
-    });
+    setState(() => _isSubmittingQuestion = true);
+
+    try {
+      await _questionService.askQuestion(
+        sessionId: sessionId,
+        questionText: questionText,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _questionController.clear();
+        _showQuestionForm = false;
+        _isSubmittingQuestion = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Question envoyée avec succès!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      AppLogger.d('❌ ERROR SUBMITTING QUESTION: $e');
+      if (!mounted) return;
+      setState(() => _isSubmittingQuestion = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
@@ -57,22 +100,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     final String youtubeUrl = widget.session['youtubeUrl'] ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Détails de la session',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Détails de la session'),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -87,15 +120,17 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   // Title
                   Text(
                     widget.session['title'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 16),
 
                   // Speaker Info
                   _buildInfoRow(
+                    context,
                     Icons.person,
                     'Intervenant',
                     widget.session['speaker'],
@@ -104,6 +139,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
                   // Room
                   _buildInfoRow(
+                    context,
                     Icons.meeting_room,
                     'Salle',
                     widget.session['room'],
@@ -112,6 +148,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
                   // Time
                   _buildInfoRow(
+                    context,
                     Icons.access_time,
                     'Horaire',
                     widget.session['time'],
@@ -119,11 +156,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   const SizedBox(height: 24),
 
                   // Description
-                  const Text(
+                  Text(
                     'Description',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -135,7 +173,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                             'l\'intervenant et de poser leurs questions en temps réel.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.grey[700],
+                      color: AppColors.textSecondary(context),
                       height: 1.6,
                     ),
                   ),
@@ -149,25 +187,20 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Poser une question',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             const SizedBox(height: 12),
                             TextField(
                               controller: _questionController,
                               maxLines: 4,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 hintText: 'Écrivez votre question ici...',
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -175,18 +208,31 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _showQuestionForm = false;
-                                      _questionController.clear();
-                                    });
-                                  },
+                                  onPressed: _isSubmittingQuestion
+                                      ? null
+                                      : () {
+                                          setState(() {
+                                            _showQuestionForm = false;
+                                            _questionController.clear();
+                                          });
+                                        },
                                   child: const Text('Annuler'),
                                 ),
                                 const SizedBox(width: 12),
                                 ElevatedButton(
-                                  onPressed: _submitQuestion,
-                                  child: const Text('Envoyer'),
+                                  onPressed:
+                                      _isSubmittingQuestion ? null : _submitQuestion,
+                                  child: _isSubmittingQuestion
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation(
+                                                Colors.white),
+                                          ),
+                                        )
+                                      : const Text('Envoyer'),
                                 ),
                               ],
                             ),
@@ -217,7 +263,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             backgroundColor: AppColors.primary,
-                            disabledBackgroundColor: Colors.grey[300],
+                            disabledBackgroundColor:
+                                AppColors.surfaceContainerHigh(context),
                           ),
                         ),
                       ),
@@ -248,13 +295,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+      BuildContext context, IconData icon, String label, String value) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -271,15 +319,16 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: 2),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary(context),
               ),
             ),
           ],

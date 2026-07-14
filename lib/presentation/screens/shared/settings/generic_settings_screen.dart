@@ -1,6 +1,7 @@
 // lib/presentation/screens/shared/settings/generic_settings_screen.dart
 
 import 'package:flutter/material.dart';
+import '../../../../core/constants/theme/app_colors.dart';
 
 class GenericSettingsScreen extends StatelessWidget {
   final String title;
@@ -15,34 +16,28 @@ class GenericSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text(title),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.cardBackground(context),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             content,
-            style: const TextStyle(fontSize: 16, height: 1.5),
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+              color: AppColors.textPrimary(context),
+            ),
           ),
         ),
       ),

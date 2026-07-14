@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
 import '../../../logic/authentication/auth_bloc.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class DiffusionScreen extends StatefulWidget {
   const DiffusionScreen({super.key});
@@ -37,7 +39,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
       final eventId = authState.event?.id;
 
       if (eventId == null) {
-        print('⚠️ NO EVENT ID');
+        AppLogger.d('⚠️ NO EVENT ID');
         setState(() {
           _isLoadingConferences = false;
           _isLoadingAteliers = false;
@@ -45,7 +47,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
         return;
       }
 
-      print('📡 LOADING SESSIONS for event: $eventId');
+      AppLogger.d('📡 LOADING SESSIONS for event: $eventId');
 
       // Load all sessions
       final response = await _apiClient.get(
@@ -54,15 +56,23 @@ class _DiffusionScreenState extends State<DiffusionScreen>
       );
 
       final sessionsList = response.data['results'] as List? ?? [];
-      print('📚 FETCHED ${sessionsList.length} sessions');
+      AppLogger.d('📚 FETCHED ${sessionsList.length} sessions');
 
       // Get participant's accessible ateliers
       List<String> accessibleAtelierIds = [];
       try {
-        final ateliersResponse = await _apiClient.get('/my-ateliers/');
-        print('📦 RAW MY-ATELIERS RESPONSE: ${ateliersResponse.data}');
+        // ⚠️ WORKAROUND: /api/events/my-ateliers/ returns 404
+        // Using /api/auth/me/ to get paid items from QR code data
+        final ateliersResponse = await _apiClient.get('/auth/me/');
+        AppLogger.d('📦 RAW PROFILE RESPONSE: ${ateliersResponse.data}');
 
-        final ateliersList = ateliersResponse.data['ateliers'] as List? ?? [];
+        final qrCode =
+            ateliersResponse.data['qr_code'] as Map<String, dynamic>?;
+        final paidItems = qrCode?['paid_items'] as List? ?? [];
+
+        // Filter only session type items
+        final ateliersList =
+            paidItems.where((item) => item['type'] == 'session').toList();
 
         // Filter to only include paid/free ateliers (backend filter not working yet)
         final accessibleAteliers = ateliersList.where((a) {
@@ -78,24 +88,24 @@ class _DiffusionScreenState extends State<DiffusionScreen>
         accessibleAtelierIds =
             accessibleAteliers.map((a) => a['session_id'] as String).toList();
 
-        print('📊 TOTAL ATELIERS IN RESPONSE: ${ateliersList.length}');
-        print('✅ PAID/FREE ATELIERS: ${accessibleAteliers.length}');
-        print('✅ ACCESSIBLE ATELIER IDs: $accessibleAtelierIds');
+        AppLogger.d('📊 TOTAL ATELIERS IN RESPONSE: ${ateliersList.length}');
+        AppLogger.d('✅ PAID/FREE ATELIERS: ${accessibleAteliers.length}');
+        AppLogger.d('✅ ACCESSIBLE ATELIER IDs: $accessibleAtelierIds');
 
         // Show which ones were filtered out
         final filteredOut = ateliersList.length - accessibleAteliers.length;
         if (filteredOut > 0) {
-          print('⛔ FILTERED OUT: $filteredOut pending ateliers');
+          AppLogger.d('⛔ FILTERED OUT: $filteredOut pending ateliers');
         }
       } catch (e) {
-        print('⚠️ ERROR LOADING ACCESSIBLE ATELIERS: $e');
+        AppLogger.d('⚠️ ERROR LOADING ACCESSIBLE ATELIERS: $e');
       }
 
       // Separate into conferences and ateliers
       final conferences = <Map<String, dynamic>>[];
       final ateliers = <Map<String, dynamic>>[];
 
-      print('\n🔍 PROCESSING SESSIONS:');
+      AppLogger.d('\n🔍 PROCESSING SESSIONS:');
       for (var session in sessionsList) {
         final sessionType = session['session_type'] as String?;
         final sessionId = session['id'] as String;
@@ -115,7 +125,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
           roomName = roomData;
         }
 
-        print(
+        AppLogger.d(
             '  Session: ${session['title']} (Type: $sessionType, ID: $sessionId, Room: $roomName, YouTube: ${youtubeUrl != null ? "YES" : "NO"})');
 
         final sessionData = {
@@ -138,22 +148,22 @@ class _DiffusionScreenState extends State<DiffusionScreen>
         if (sessionType == 'conference') {
           // All conferences are accessible
           conferences.add(sessionData);
-          print('  ➕ Conference: ${session['title']}');
+          AppLogger.d('  ➕ Conference: ${session['title']}');
         } else if (sessionType == 'atelier') {
           // Only show accessible ateliers
           if (accessibleAtelierIds.isEmpty) {
             // If we don't have accessible ateliers list, show all ateliers
             ateliers.add(sessionData);
-            print('  ➕ Atelier (no filter): ${session['title']}');
+            AppLogger.d('  ➕ Atelier (no filter): ${session['title']}');
           } else if (accessibleAtelierIds.contains(sessionId)) {
             ateliers.add(sessionData);
-            print('  ➕ Atelier: ${session['title']}');
+            AppLogger.d('  ➕ Atelier: ${session['title']}');
           } else {
-            print(
+            AppLogger.d(
                 '  ⛔ Atelier not accessible: ${session['title']} (ID: $sessionId)');
           }
         } else {
-          print(
+          AppLogger.d(
               '  ⚠️ Unknown session type: $sessionType for ${session['title']}');
         }
       }
@@ -165,10 +175,10 @@ class _DiffusionScreenState extends State<DiffusionScreen>
         _isLoadingAteliers = false;
       });
 
-      print('✅ CONFERENCES: ${conferences.length}');
-      print('✅ ACCESSIBLE ATELIERS: ${ateliers.length}');
+      AppLogger.d('✅ CONFERENCES: ${conferences.length}');
+      AppLogger.d('✅ ACCESSIBLE ATELIERS: ${ateliers.length}');
     } catch (e) {
-      print('❌ ERROR LOADING SESSIONS: $e');
+      AppLogger.d('❌ ERROR LOADING SESSIONS: $e');
       setState(() {
         _isLoadingConferences = false;
         _isLoadingAteliers = false;
@@ -198,27 +208,14 @@ class _DiffusionScreenState extends State<DiffusionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Sessions',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Sessions'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: AppColors.primary,
           tabs: const [
             Tab(text: 'Conférences'),
             Tab(text: 'Ateliers'),
@@ -249,14 +246,14 @@ class _DiffusionScreenState extends State<DiffusionScreen>
             Icon(
               Icons.event_busy,
               size: 64,
-              color: Colors.grey[400],
+              color: AppColors.textHint(context),
             ),
             const SizedBox(height: 16),
             Text(
               'Aucune session disponible',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -264,7 +261,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
               'Les sessions de cet événement apparaîtront ici',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[500],
+                color: AppColors.textSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -273,13 +270,16 @@ class _DiffusionScreenState extends State<DiffusionScreen>
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sessions.length,
-      itemBuilder: (context, index) {
-        final session = sessions[index];
-        return _buildSessionCard(session);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadSessions,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: sessions.length,
+        itemBuilder: (context, index) {
+          final session = sessions[index];
+          return _buildSessionCard(session);
+        },
+      ),
     );
   }
 
@@ -346,7 +346,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
                       ),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[400],
+                        color: AppColors.textHint(context),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -375,9 +375,10 @@ class _DiffusionScreenState extends State<DiffusionScreen>
               // Title
               Text(
                 session['title'],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -385,10 +386,10 @@ class _DiffusionScreenState extends State<DiffusionScreen>
               // Speaker
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.person,
                     size: 16,
-                    color: Colors.grey,
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -396,7 +397,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
                       session['speaker'],
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[700],
+                        color: AppColors.textSecondary(context),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -408,10 +409,10 @@ class _DiffusionScreenState extends State<DiffusionScreen>
               // Room and time
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.meeting_room,
                     size: 16,
-                    color: Colors.grey,
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 6),
                   Flexible(
@@ -419,16 +420,16 @@ class _DiffusionScreenState extends State<DiffusionScreen>
                       session['room'],
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary(context),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Icon(
+                  Icon(
                     Icons.access_time,
                     size: 16,
-                    color: Colors.grey,
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -448,7 +449,7 @@ class _DiffusionScreenState extends State<DiffusionScreen>
                 session['description'],
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary(context),
                   height: 1.4,
                 ),
                 maxLines: 2,

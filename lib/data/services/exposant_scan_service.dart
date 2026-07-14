@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
-import 'api_client.dart';
+
 import '../models/exposant_scan_model.dart';
+import 'api_client.dart';
 
 /// Exposant Scan Service
 /// Handles booth visit tracking when exposants scan participant QR codes
@@ -10,7 +11,38 @@ class ExposantScanService {
   ExposantScanService(this._apiClient);
 
   /// Scan participant QR code (create booth visit record)
+  /// NEW: Uses scan_participant endpoint that accepts QR data directly
   Future<ExposantScanModel> scanParticipant({
+    required String qrData,
+    required String eventId,
+    String? notes,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/exposant-scans/scan_participant/',
+        data: {
+          'qr_data': qrData,
+          'event_id': eventId,
+          'notes': notes,
+        },
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        // Return the scan object from response
+        final scanData = response.data['scan'] ?? response.data;
+        return ExposantScanModel.fromJson(scanData);
+      } else {
+        throw Exception('Failed to record scan');
+      }
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  /// Legacy method - kept for backward compatibility
+  /// Use scanParticipant(qrData, eventId, notes) instead
+  @Deprecated('Use scanParticipant with qrData parameter instead')
+  Future<ExposantScanModel> scanParticipantLegacy({
     required String exposantId,
     required String scannedParticipantId,
     required String eventId,

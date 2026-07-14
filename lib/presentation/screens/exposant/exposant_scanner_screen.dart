@@ -1,11 +1,13 @@
 // lib/presentation/screens/exposant/exposant_scanner_screen.dart
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
-import '../../../data/services/qr_service.dart';
 import '../../../data/services/exposant_scan_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
@@ -21,47 +23,14 @@ class ExposantScannerScreen extends StatefulWidget {
 class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool _isProcessing = false;
-  late QRService _qrService;
   late ExposantScanService _exposantScanService;
   late ApiClient _apiClient;
-  String? _exposantParticipantId; // Store exposant's participant UUID
 
   @override
   void initState() {
     super.initState();
     _apiClient = ApiClient();
-    _qrService = QRService(_apiClient);
     _exposantScanService = ExposantScanService(_apiClient);
-    _loadExposantParticipantId();
-  }
-
-  /// Fetch exposant's participant UUID from backend
-  /// This is needed because backend requires participant UUID, not user ID
-  Future<void> _loadExposantParticipantId() async {
-    try {
-      // Try to get from /auth/profile/
-      final response = await _apiClient.get('/auth/profile/');
-      final profileData = response.data;
-
-      // Check various possible fields for participant ID
-      if (profileData['participant_id'] != null) {
-        _exposantParticipantId = profileData['participant_id'].toString();
-      } else if (profileData['participant'] != null) {
-        if (profileData['participant'] is Map) {
-          _exposantParticipantId = profileData['participant']['id']?.toString();
-        } else {
-          _exposantParticipantId = profileData['participant'].toString();
-        }
-      }
-
-      if (_exposantParticipantId != null) {
-        debugPrint('✅ Exposant Participant ID loaded: $_exposantParticipantId');
-      } else {
-        debugPrint('⚠️ Could not find exposant participant ID in profile');
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading exposant participant ID: $e');
-    }
   }
 
   int _getCurrentIndex(BuildContext context) {
@@ -69,7 +38,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
     switch (route) {
       case '/exposant/home':
         return 0;
-      case '/exposant/plan':
+      case '/exposant/guide':
         return 1;
       case '/exposant/scanner':
         return 2;
@@ -102,75 +71,20 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
     });
 
     try {
-      // Verify QR code with backend
-      final result = await _qrService.verifyQRCode(qrData: code);
+      // Parse QR code to get participant info
+      final qrData = jsonDecode(code);
+      final participantName = qrData['full_name'] ??
+          '${qrData['first_name'] ?? ''} ${qrData['last_name'] ?? ''}'.trim();
+      final participantEmail = qrData['email'] ?? '';
 
       if (!mounted) return;
 
-      if (result.valid && result.participant != null) {
-        // Get auth state to get event ID
-        final authState = context.read<AuthBloc>().state;
-
-        if (authState.status == AuthStatus.authenticated) {
-          // Record the scan using exposant's participant UUID
-          try {
-            // Use stored participant UUID or fallback to user ID as string
-            final exposantId =
-                _exposantParticipantId ?? authState.user?.id.toString() ?? '';
-
-            if (_exposantParticipantId == null) {
-              debugPrint(
-                  '⚠️ Using user ID as fallback. Backend may require participant UUID.');
-            }
-
-            await _exposantScanService.scanParticipant(
-              exposantId: exposantId,
-              scannedParticipantId: result.participant!.id,
-              eventId: authState.event?.id ?? '',
-              notes: null,
-            );
-
-            debugPrint('✅ Scan recorded successfully');
-          } catch (e) {
-            // Scan recording failed but still show participant info
-            debugPrint('❌ Failed to record scan: $e');
-
-            // Show error to user if scan recording fails
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Erreur d\'enregistrement: ${e.toString()}'),
-                  backgroundColor: Colors.orange,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
-          }
-        } // Navigate to participant info screen with real data
-        Navigator.pushNamed(
-          context,
-          '/exposant/participant-info',
-          arguments: result.participant,
-        ).then((_) {
-          setState(() {
-            _isProcessing = false;
-          });
-        });
-      } else {
-        // Invalid QR code
-        setState(() {
-          _isProcessing = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message ?? 'QR code invalide'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      // Show dialog to get remarque before saving
+      await _showScanConfirmationDialog(
+        qrCode: code,
+        participantName: participantName,
+        participantEmail: participantEmail,
+      );
     } catch (e) {
       setState(() {
         _isProcessing = false;
@@ -180,9 +94,216 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur de vérification: ${e.toString()}'),
+          content: Text('Erreur de lecture du QR code: ${e.toString()}'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Show dialog to confirm scan and add remarque
+  Future<void> _showScanConfirmationDialog({
+    required String qrCode,
+    required String participantName,
+    required String participantEmail,
+  }) async {
+    final TextEditingController remarqueController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Only close via buttons
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text(
+            'Enregistrer la visite',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Participant info (without background)
+                Row(
+                  children: [
+                    const Icon(Icons.person,
+                        size: 20, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        participantName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (participantEmail.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.email,
+                          size: 16,
+                          color: AppColors.textSecondary(dialogContext)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          participantEmail,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary(dialogContext),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 20),
+                // Remarque field
+                const Text(
+                  'Remarque (optionnel):',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: remarqueController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Intéressé par...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: AppColors.primary, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.all(8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            // Cancel button
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Annuler'),
+            ),
+            // Save button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Enregistrer'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Get remarque text before disposing (if user clicked save)
+    final remarque = result == true ? remarqueController.text.trim() : '';
+
+    // Check if widget is still mounted before setState
+    if (!mounted) {
+      remarqueController.dispose();
+      return;
+    }
+
+    // Resume scanning first (before disposing controller)
+    setState(() {
+      _isProcessing = false;
+    });
+
+    // Dispose controller AFTER setState completes
+    // Use addPostFrameCallback to ensure disposal happens after rebuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      remarqueController.dispose();
+    });
+
+    // Handle dialog result
+    if (result == true) {
+      // User clicked save - proceed with scan
+      await _saveScan(
+        qrCode: qrCode,
+        remarque: remarque,
+      );
+    }
+  }
+
+  /// Save scan to backend
+  Future<void> _saveScan({
+    required String qrCode,
+    required String remarque,
+  }) async {
+    try {
+      // Get auth state to get event ID
+      final authState = context.read<AuthBloc>().state;
+
+      if (authState.status == AuthStatus.authenticated &&
+          authState.event != null) {
+        // Call API to save scan
+        final scanResult = await _exposantScanService.scanParticipant(
+          qrData: qrCode,
+          eventId: authState.event!.id,
+          notes: remarque.isEmpty ? null : remarque,
+        );
+
+        if (!mounted) return;
+
+        debugPrint('✅ Scan recorded successfully');
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Visite enregistrée: ${scanResult.participantName ?? "Participant"}',
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Événement non sélectionné'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      debugPrint('❌ Failed to record scan: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -255,7 +376,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -312,7 +433,7 @@ class ScannerOverlay extends CustomPainter {
 
     // Draw semi-transparent overlay
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
 
     // Top

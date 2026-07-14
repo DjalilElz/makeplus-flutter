@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey[600],
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                       const SizedBox(height: 48),
@@ -217,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Text(
                             'Pas encore de compte ? ',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: AppColors.textSecondary(context)),
                           ),
                           TextButton(
                             onPressed: () {

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
-import 'api_client.dart';
+
 import '../models/qr_verification_result.dart';
+import 'api_client.dart';
 
 /// QR Code Service
 /// Handles QR code generation and verification
@@ -9,8 +10,9 @@ class QRService {
 
   QRService(this._apiClient);
 
-  /// Verify QR code
-  /// Used by controllers and exposants to verify participant QR codes
+  /// Scan participant QR code
+  /// Used by controllers to scan participant badges
+  /// Note: Room ID is no longer required - controllers can scan anywhere
   Future<QRVerificationResult> verifyQRCode({
     required String qrData,
     String? roomId,
@@ -20,12 +22,11 @@ class QRService {
         'qr_data': qrData,
       };
 
-      if (roomId != null) {
-        requestData['room_id'] = roomId;
-      }
+      // Note: roomId parameter kept for backward compatibility but not used
+      // The new /participants/scan/ endpoint doesn't require room_id
 
       final response = await _apiClient.post(
-        '/participants/verify/',
+        '/participants/scan/',
         data: requestData,
       );
 

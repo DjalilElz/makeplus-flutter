@@ -1,0 +1,15 @@
+# Copy to android/key.properties and fill in with your real values.
+# key.properties and *.jks are gitignored — NEVER commit them.
+#
+# Generate the upload keystore (run from the android/ directory):
+#
+#   keytool -genkey -v -keystore upload-keystore.jks \
+#           -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+# Back the .jks file up somewhere safe. If you lose it you cannot ship an
+# update to an existing Play Store listing — ever.
+
+storeFile=../upload-keystore.jks
+storePassword=CHANGEME
+keyAlias=upload
+keyPassword=CHANGEME

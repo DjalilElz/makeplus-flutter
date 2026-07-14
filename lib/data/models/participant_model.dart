@@ -7,7 +7,7 @@ class ParticipantModel {
   final String badgeNumber;
   final String qrCodeData;
   final DateTime registrationDate;
-  final String? planFile;
+  final String? guideFile;
 
   // User details (from nested user object)
   final String? firstName;
@@ -21,7 +21,7 @@ class ParticipantModel {
     required this.badgeNumber,
     required this.qrCodeData,
     required this.registrationDate,
-    this.planFile,
+    this.guideFile,
     this.firstName,
     this.lastName,
     this.email,
@@ -37,7 +37,9 @@ class ParticipantModel {
       registrationDate: json['registration_date'] != null
           ? DateTime.parse(json['registration_date'])
           : DateTime.now(),
-      planFile: json['plan_file'],
+      guideFile: json['guide_file'] ??
+          json[
+              'plan_file'], // Support both field names for backwards compatibility
       firstName: json['first_name'],
       lastName: json['last_name'],
       email: json['email'],
@@ -52,7 +54,7 @@ class ParticipantModel {
       'badge_number': badgeNumber,
       'qr_code_data': qrCodeData,
       'registration_date': registrationDate.toIso8601String(),
-      'plan_file': planFile,
+      'guide_file': guideFile,
       'first_name': firstName,
       'last_name': lastName,
       'email': email,

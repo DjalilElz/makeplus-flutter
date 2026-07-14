@@ -38,7 +38,7 @@ class SessionCard extends StatelessWidget {
                   Icon(
                     Icons.access_time,
                     size: 16,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -102,7 +102,7 @@ class SessionCard extends StatelessWidget {
                   session.description!,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary(context),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -118,7 +118,7 @@ class SessionCard extends StatelessWidget {
                   if (session.speakerName != null) ...[
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                       child: Text(
                         session.speakerName![0].toUpperCase(),
                         style: const TextStyle(
@@ -145,7 +145,7 @@ class SessionCard extends StatelessWidget {
                               session.speakerTitle!,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                         ],
@@ -160,7 +160,7 @@ class SessionCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -209,8 +209,8 @@ class SessionCardCompact extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: session.isLive
-                ? AppColors.success.withOpacity(0.1)
-                : AppColors.primary.withOpacity(0.1),
+                ? AppColors.success.withValues(alpha: 0.1)
+                : AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(

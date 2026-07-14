@@ -1,7 +1,10 @@
 // lib/presentation/screens/organizer/room_management/add_session_screen.dart
 
 import 'package:flutter/material.dart';
+
 import '../../../../core/constants/theme/app_colors.dart';
+import '../../../../routes/app_router.dart';
+import '../../../widgets/navigation/bottom_nav_bar.dart';
 
 class AddSessionScreen extends StatefulWidget {
   const AddSessionScreen({super.key});
@@ -127,7 +130,9 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                   },
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[800],
+                    color: isSelected
+                        ? Colors.white
+                        : AppColors.textPrimary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 );
@@ -329,9 +334,10 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             Container(
               height: 150,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border, width: 2),
+                border:
+                    Border.all(color: AppColors.borderColor(context), width: 2),
                 borderRadius: BorderRadius.circular(12),
-                color: AppColors.backgroundLight,
+                color: AppColors.surfaceContainer(context),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -347,20 +353,20 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                         Icon(
                           Icons.cloud_upload_outlined,
                           size: 48,
-                          color: Colors.grey[400],
+                          color: AppColors.textHint(context),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Télécharger une photo',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: AppColors.textSecondary(context),
                             fontSize: 14,
                           ),
                         ),
                         Text(
                           'La taille maximale est de 2MB',
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: AppColors.textHint(context),
                             fontSize: 12,
                           ),
                         ),
@@ -383,6 +389,31 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
             const SizedBox(height: 20),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 2, // Salle tab
+        userRole: 'organizer',
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              // Home
+              Navigator.pushReplacementNamed(
+                  context, AppRouter.organizerRoomManagerHome);
+              break;
+            case 1:
+              // Announcements
+              Navigator.pushReplacementNamed(context, AppRouter.announcements);
+              break;
+            case 2:
+              // Rooms
+              Navigator.pushReplacementNamed(context, AppRouter.roomsList);
+              break;
+            case 3:
+              // Questions/Settings
+              Navigator.pushReplacementNamed(context, AppRouter.questions);
+              break;
+          }
+        },
       ),
     );
   }

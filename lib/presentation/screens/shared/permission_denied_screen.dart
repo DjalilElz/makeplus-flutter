@@ -21,7 +21,7 @@ class PermissionDeniedScreen extends StatelessWidget {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -33,11 +33,12 @@ class PermissionDeniedScreen extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Title
-                const Text(
+                Text(
                   'Accès refusé',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -48,7 +49,7 @@ class PermissionDeniedScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary(context),
                     height: 1.5,
                   ),
                 ),

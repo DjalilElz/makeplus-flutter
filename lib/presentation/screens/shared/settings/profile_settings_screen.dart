@@ -14,22 +14,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Profil',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Profil'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -39,7 +29,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   child: const Icon(
                     Icons.person,
                     size: 50,
@@ -66,13 +56,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
           ),
           const SizedBox(height: 30),
-          _buildTextField('Nom complet', 'Mohamed ALAMI'),
+          _buildTextField(context, 'Nom complet', 'Mohamed ALAMI'),
           const SizedBox(height: 16),
-          _buildTextField('Email', 'mohamed.alami@example.com'),
+          _buildTextField(context, 'Email', 'mohamed.alami@example.com'),
           const SizedBox(height: 16),
-          _buildTextField('Téléphone', '+212 6 12 34 56 78'),
+          _buildTextField(context, 'Téléphone', '+212 6 12 34 56 78'),
           const SizedBox(height: 16),
-          _buildTextField('Organisation', 'MakePlus Event'),
+          _buildTextField(context, 'Organisation', 'MakePlus Event'),
           const SizedBox(height: 30),
           SizedBox(
             width: double.infinity,
@@ -100,32 +90,21 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  Widget _buildTextField(String label, String hint) {
+  Widget _buildTextField(BuildContext context, String label, String hint) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary(context),
           ),
         ),
         const SizedBox(height: 8),
         TextField(
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-          ),
+          decoration: InputDecoration(hintText: hint),
         ),
       ],
     );

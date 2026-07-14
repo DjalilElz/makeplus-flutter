@@ -2,44 +2,49 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../core/constants/user_roles.dart';
+import '../data/repositories/room_repository.dart';
+import '../data/services/django_api_service.dart';
+import '../logic/organizer_room_manager/room_management/room_bloc.dart';
 import '../presentation/screens/auth/login_screen.dart';
-import '../presentation/screens/splash/splash_screen.dart';
-import '../presentation/screens/organizer_room_manager/organizer_room_manager_home_screen.dart';
-import '../presentation/screens/organizer_room_manager/participants_list_screen.dart';
-import '../presentation/screens/organizer_room_manager/announcements_screen.dart';
-import '../presentation/screens/organizer_room_manager/room_management/rooms_list_screen.dart';
-import '../presentation/screens/organizer_room_manager/room_management/room_detail_screen.dart';
-import '../presentation/screens/organizer_badge_controller/organizer_badge_controller_home_screen.dart';
-import '../presentation/screens/organizer_badge_controller/badge_controller_announcements_screen.dart';
-import '../presentation/screens/organizer_badge_controller/statistics_screen.dart';
-import '../presentation/screens/organizer_badge_controller/program_pdf_screen.dart';
-import '../presentation/screens/organizer_badge_controller/badge_scanner_screen.dart';
-import '../presentation/screens/participant/participant_home_screen.dart';
-import '../presentation/screens/participant/diffusion_screen.dart';
-import '../presentation/screens/participant/session_detail_screen.dart';
-import '../presentation/screens/participant/live_stream_screen.dart';
-import '../presentation/screens/participant/eposters_screen.dart';
-import '../presentation/screens/participant/participant_profile_screen.dart';
-import '../presentation/screens/participant/program_screen.dart';
-import '../presentation/screens/participant/guide_screen.dart';
-import '../presentation/screens/participant/participant_announcements_screen.dart';
+import '../presentation/screens/auth/signup_screen.dart';
 import '../presentation/screens/exhibitor/exhibitor_home_screen.dart';
+import '../presentation/screens/exposant/exposant_announcements_screen.dart';
 import '../presentation/screens/exposant/exposant_home_screen.dart';
 import '../presentation/screens/exposant/exposant_plan_screen.dart';
 import '../presentation/screens/exposant/exposant_scanner_screen.dart';
 import '../presentation/screens/exposant/exposant_stats_screen.dart';
-import '../presentation/screens/exposant/exposant_announcements_screen.dart';
 import '../presentation/screens/exposant/participant_info_screen.dart';
+import '../presentation/screens/organizer_badge_controller/badge_controller_announcements_screen.dart';
+import '../presentation/screens/organizer_badge_controller/badge_scanner_screen.dart';
+import '../presentation/screens/organizer_badge_controller/organizer_badge_controller_home_screen.dart';
+import '../presentation/screens/organizer_badge_controller/program_pdf_screen.dart';
+import '../presentation/screens/organizer_badge_controller/statistics_screen.dart';
+import '../presentation/screens/organizer_room_manager/announcements_screen.dart';
+import '../presentation/screens/organizer_room_manager/organizer_room_manager_home_screen.dart';
+import '../presentation/screens/organizer_room_manager/participants_list_screen.dart';
+import '../presentation/screens/organizer_room_manager/room_management/room_detail_screen.dart';
+import '../presentation/screens/organizer_room_manager/room_management/rooms_list_screen.dart';
+import '../presentation/screens/participant/diffusion_screen.dart';
+import '../presentation/screens/participant/eposters_screen.dart';
+import '../presentation/screens/participant/guide_screen.dart';
+import '../presentation/screens/participant/live_stream_screen.dart';
+import '../presentation/screens/participant/participant_announcements_screen.dart';
+import '../presentation/screens/participant/participant_home_screen.dart';
+import '../presentation/screens/participant/participant_profile_screen.dart';
+import '../presentation/screens/participant/qr_badge/my_badge_screen.dart';
+import '../presentation/screens/participant/program_screen.dart';
+import '../presentation/screens/participant/session_detail_screen.dart';
+import '../presentation/screens/shared/event_details_screen.dart';
 import '../presentation/screens/shared/permission_denied_screen.dart';
-import '../presentation/screens/shared/settings_screen.dart';
+import '../presentation/screens/shared/settings/generic_settings_screen.dart';
+import '../presentation/screens/shared/settings/notification_settings_screen.dart';
 import '../presentation/screens/shared/settings/profile_settings_screen.dart';
 import '../presentation/screens/shared/settings/security_settings_screen.dart';
-import '../presentation/screens/shared/settings/notification_settings_screen.dart';
-import '../presentation/screens/shared/settings/generic_settings_screen.dart';
-import '../logic/organizer_room_manager/room_management/room_bloc.dart';
-import '../data/repositories/room_repository.dart';
-import '../data/services/django_api_service.dart';
+import '../presentation/screens/shared/settings_screen.dart';
+import '../presentation/screens/splash/splash_screen.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class AppRouter {
   // Route names
@@ -94,7 +99,7 @@ class AppRouter {
 
   // Exposant routes
   static const String exposantHome = '/exposant/home';
-  static const String exposantPlan = '/exposant/plan';
+  static const String exposantGuide = '/exposant/guide';
   static const String exposantScanner = '/exposant/scanner';
   static const String exposantStats = '/exposant/stats';
   static const String exposantAnnouncements = '/exposant/announcements';
@@ -103,6 +108,7 @@ class AppRouter {
   // Shared routes
   static const String notifications = '/notifications';
   static const String profile = '/profile';
+  static const String eventDetails = '/event-details';
   static const String settings = '/settings';
   static const String profileSettings = '/settings/profile';
   static const String securitySettings = '/settings/security';
@@ -129,7 +135,7 @@ class AppRouter {
     } else if (UserRoles.isExhibitor(role)) {
       return exhibitorHome;
     } else {
-      print('⚠️ Unknown role: $role - defaulting to participant');
+      AppLogger.d('⚠️ Unknown role: $role - defaulting to participant');
       return participantHome;
     }
   }
@@ -142,6 +148,9 @@ class AppRouter {
 
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+
+      case signup:
+        return MaterialPageRoute(builder: (_) => const SignupScreen());
 
       // Organizer Room Manager routes
       case organizerRoomManagerHome:
@@ -212,6 +221,9 @@ class AppRouter {
       case eposters:
         return MaterialPageRoute(builder: (_) => const EpostersScreen());
 
+      case myBadge:
+        return MaterialPageRoute(builder: (_) => const MyBadgeScreen());
+
       case participantProfile:
         return MaterialPageRoute(
             builder: (_) => const ParticipantProfileScreen());
@@ -254,7 +266,7 @@ class AppRouter {
       case exposantHome:
         return MaterialPageRoute(builder: (_) => const ExposantHomeScreen());
 
-      case exposantPlan:
+      case exposantGuide:
         return MaterialPageRoute(builder: (_) => const ExposantPlanScreen());
 
       case exposantScanner:
@@ -284,6 +296,10 @@ class AppRouter {
       case permissionDenied:
         return MaterialPageRoute(
             builder: (_) => const PermissionDeniedScreen());
+
+      // Event details
+      case eventDetails:
+        return MaterialPageRoute(builder: (_) => const EventDetailsScreen());
 
       // Settings routes
       case AppRouter.settings:

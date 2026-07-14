@@ -19,34 +19,48 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _logoScaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    
-    // Setup animations
+
+    // Setup animations with more dynamic timing
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2500),
     );
 
+    // Logo starts small and grows with bounce effect
+    _logoScaleAnimation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.7, curve: Curves.elasticOut),
+      ),
+    );
+
+    // Fade in effect for text
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+        curve: const Interval(0.4, 0.8, curve: Curves.easeIn),
       ),
     );
 
+    // Scale effect for text
     _scaleAnimation = Tween<double>(
-      begin: 0.5,
+      begin: 0.8,
       end: 1.0,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+        curve: const Interval(0.4, 0.8, curve: Curves.easeOut),
       ),
     );
 
@@ -92,76 +106,46 @@ class _SplashScreenState extends State<SplashScreen>
             child: AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
-                return Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo Container
-                        Container(
-                          height: 150,
-                          width: 150,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.event,
-                              size: 80,
-                              color: AppColors.primary,
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo Container with growing animation
+                    Transform.scale(
+                      scale: _logoScaleAnimation.value,
+                      child: Container(
+                        height: 180,
+                        width: 180,
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 25,
+                              offset: const Offset(0, 12),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 32),
-                        
-                        // App Name
-                        const Text(
-                          'MakePlus',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 2,
-                          ),
+                        child: Image.asset(
+                          'assets/images/rectangle_logo.png',
+                          fit: BoxFit.contain,
                         ),
-                        const SizedBox(height: 8),
-                        
-                        // Tagline
-                        const Text(
-                          '2025',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w300,
-                            color: Colors.white70,
-                            letterSpacing: 4,
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-                        
-                        // Loading Indicator
-                        const SizedBox(
-                          height: 32,
-                          width: 32,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                            strokeWidth: 3,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 48),
+
+                    // Tagline with fade
+                    Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: const Text(
+                        '2025',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white70,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

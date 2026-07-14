@@ -1,13 +1,15 @@
 // lib/presentation/screens/organizer_badge_controller/badge_controller_announcements_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../routes/app_router.dart';
+
+import '../../../core/constants/theme/app_colors.dart';
+import '../../../data/models/announcement_model.dart';
 import '../../../data/services/announcement_service.dart';
 import '../../../data/services/api_client.dart';
-import '../../../data/models/announcement_model.dart';
-import '../../../logic/authentication/auth_bloc.dart';
+import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 class BadgeControllerAnnouncementsScreen extends StatefulWidget {
   const BadgeControllerAnnouncementsScreen({super.key});
@@ -38,27 +40,21 @@ class _BadgeControllerAnnouncementsScreenState
     });
 
     try {
-      final authState = context.read<AuthBloc>().state;
-      final eventId = authState.event?.id;
+      AppLogger.d('📢 BADGE CONTROLLER - Loading announcements...');
 
-      if (eventId == null) {
-        throw Exception('No event ID found');
-      }
-
-      print('📢 LOADING ANNOUNCEMENTS - Event ID: $eventId');
-
-      final announcements = await _announcementService.getAnnouncements(
-        eventId: eventId,
-      );
+      // Backend automatically filters announcements based on JWT token
+      // No need to pass event_id parameter
+      final announcements = await _announcementService.getAnnouncements();
 
       setState(() {
         _announcements = announcements;
         _isLoading = false;
       });
 
-      print('📢 LOADED ${announcements.length} announcements');
+      AppLogger.d(
+          '📢 BADGE CONTROLLER - Loaded ${announcements.length} announcements');
     } catch (e) {
-      print('❌ ERROR LOADING ANNOUNCEMENTS: $e');
+      AppLogger.d('❌ BADGE CONTROLLER - Error loading announcements: $e');
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
@@ -68,59 +64,62 @@ class _BadgeControllerAnnouncementsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Annonces'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadAnnouncements,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? _buildErrorState()
-              : _announcements.isEmpty
-                  ? _buildEmptyState()
-                  : RefreshIndicator(
-                      onRefresh: _loadAnnouncements,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _announcements.length,
-                        itemBuilder: (context, index) {
-                          final announcement = _announcements[index];
-                          return _buildAnnouncementCard(announcement);
-                        },
+    return RootTabPopScope(
+      homeRoute: AppRouter.organizerBadgeControllerHome,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Annonces'),
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadAnnouncements,
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? _buildErrorState()
+                : _announcements.isEmpty
+                    ? _buildEmptyState()
+                    : RefreshIndicator(
+                        onRefresh: _loadAnnouncements,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _announcements.length,
+                          itemBuilder: (context, index) {
+                            final announcement = _announcements[index];
+                            return _buildAnnouncementCard(announcement);
+                          },
+                        ),
                       ),
-                    ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 1, // Annonces tab
-        userRole: 'organizer_badge_controller',
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.organizerBadgeControllerHome);
-              break;
-            case 1:
-              // Already on announcements
-              break;
-            case 2:
-              Navigator.pushReplacementNamed(context, AppRouter.badgeScanner);
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.badgeControllerProgram);
-              break;
-            case 4:
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.badgeControllerStats);
-              break;
-          }
-        },
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: 1, // Annonces tab
+          userRole: 'organizer_badge_controller',
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.organizerBadgeControllerHome);
+                break;
+              case 1:
+                // Already on announcements
+                break;
+              case 2:
+                Navigator.pushReplacementNamed(context, AppRouter.badgeScanner);
+                break;
+              case 3:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.badgeControllerProgram);
+                break;
+              case 4:
+                Navigator.pushReplacementNamed(
+                    context, AppRouter.badgeControllerStats);
+                break;
+            }
+          },
+        ),
       ),
     );
   }
@@ -133,7 +132,7 @@ class _BadgeControllerAnnouncementsScreenState
           Icon(
             Icons.campaign_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: AppColors.textHint(context),
           ),
           const SizedBox(height: 16),
           Text(
@@ -141,7 +140,7 @@ class _BadgeControllerAnnouncementsScreenState
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -149,7 +148,7 @@ class _BadgeControllerAnnouncementsScreenState
             'Aucune annonce pour le moment',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -162,10 +161,10 @@ class _BadgeControllerAnnouncementsScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             size: 80,
-            color: Colors.red[400],
+            color: AppColors.error,
           ),
           const SizedBox(height: 16),
           Text(
@@ -173,7 +172,7 @@ class _BadgeControllerAnnouncementsScreenState
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -182,7 +181,7 @@ class _BadgeControllerAnnouncementsScreenState
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -223,12 +222,12 @@ class _BadgeControllerAnnouncementsScreenState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.campaign,
-                      color: Colors.blue,
+                      color: AppColors.primary,
                       size: 32,
                     ),
                   ),
@@ -240,9 +239,10 @@ class _BadgeControllerAnnouncementsScreenState
                       children: [
                         Text(
                           announcement.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -251,14 +251,14 @@ class _BadgeControllerAnnouncementsScreenState
                             Icon(
                               Icons.people,
                               size: 14,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary(context),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'Cible: ${announcement.targetLabel}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                             const Spacer(),
@@ -266,7 +266,7 @@ class _BadgeControllerAnnouncementsScreenState
                               timeStr,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                           ],
@@ -282,7 +282,7 @@ class _BadgeControllerAnnouncementsScreenState
                 announcement.description,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: AppColors.textPrimary(context),
                   height: 1.4,
                 ),
               ),
@@ -305,13 +305,14 @@ class _BadgeControllerAnnouncementsScreenState
             children: [
               Row(
                 children: [
-                  Icon(Icons.people, size: 16, color: Colors.grey[600]),
+                  Icon(Icons.people,
+                      size: 16, color: AppColors.textSecondary(context)),
                   const SizedBox(width: 4),
                   Text(
                     'Cible: ${announcement.targetLabel}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -320,13 +321,14 @@ class _BadgeControllerAnnouncementsScreenState
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                  Icon(Icons.access_time,
+                      size: 16, color: AppColors.textSecondary(context)),
                   const SizedBox(width: 4),
                   Text(
                     '${announcement.createdAt.day}/${announcement.createdAt.month}/${announcement.createdAt.year} à ${announcement.createdAt.hour.toString().padLeft(2, '0')}:${announcement.createdAt.minute.toString().padLeft(2, '0')}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -335,13 +337,14 @@ class _BadgeControllerAnnouncementsScreenState
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                    Icon(Icons.person,
+                        size: 16, color: AppColors.textSecondary(context)),
                     const SizedBox(width: 4),
                     Text(
                       'Créé par: ${announcement.creatorName}',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],

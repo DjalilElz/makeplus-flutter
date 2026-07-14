@@ -72,47 +72,27 @@ class _ProgramScreenState extends State<ProgramScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Programme',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Programme'),
       ),
       body: Column(
         children: [
           // Search and Filters Section
           Container(
             padding: const EdgeInsets.all(20),
-            color: Colors.white,
+            color: AppColors.cardBackground(context),
             child: Column(
               children: [
                 // Search Bar
                 TextField(
                   controller: _searchController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Recherche …',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    prefixIcon: Icon(Icons.search),
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -172,34 +152,36 @@ class _ProgramScreenState extends State<ProgramScreen> {
           // Sessions Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            color: Colors.grey[50],
+            color: AppColors.surfaceContainer(context),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   '2 Sessions',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.cardBackground(context),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: AppColors.borderColor(context)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.access_time, size: 16, color: Colors.grey),
-                      SizedBox(width: 4),
+                      Icon(Icons.access_time,
+                          size: 16, color: AppColors.textSecondary(context)),
+                      const SizedBox(width: 4),
                       Text(
                         'Par heure',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey,
+                          color: AppColors.textSecondary(context),
                         ),
                       ),
                     ],
@@ -281,22 +263,23 @@ class _ProgramScreenState extends State<ProgramScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBackground(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: AppColors.borderColor(context)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
           isDense: true,
-          icon: const Icon(Icons.keyboard_arrow_down,
-              size: 18, color: Colors.black87),
-          style: const TextStyle(
+          icon: Icon(Icons.keyboard_arrow_down,
+              size: 18, color: AppColors.textPrimary(context)),
+          style: TextStyle(
             fontSize: 14,
-            color: Colors.black87,
+            color: AppColors.textPrimary(context),
             fontWeight: FontWeight.w600,
           ),
+          dropdownColor: AppColors.cardBackground(context),
           selectedItemBuilder: (BuildContext context) {
             return items.map<Widget>((String item) {
               return Row(
@@ -307,9 +290,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
                     child: Text(
                       item,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.black87,
+                        color: AppColors.textPrimary(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -323,9 +306,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
               value: item,
               child: Text(
                 item,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: AppColors.textPrimary(context),
                 ),
               ),
             );
@@ -348,16 +331,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBackground(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.borderColor(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +342,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
           Container(
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -376,7 +352,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
               child: Icon(
                 Icons.music_note,
                 size: 48,
-                color: AppColors.primary.withOpacity(0.5),
+                color: AppColors.primary.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -390,9 +366,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 // Speaker Name
                 Text(
                   speakerName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey,
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -407,7 +383,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -424,7 +400,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
                       sessionType,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],
@@ -434,9 +410,10 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 // Session Title
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -447,28 +424,28 @@ class _ProgramScreenState extends State<ProgramScreen> {
                     Icon(
                       Icons.access_time,
                       size: 16,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary(context),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       time,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[700],
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Icon(
                       Icons.meeting_room,
                       size: 16,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary(context),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       room,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[700],
+                        color: AppColors.textSecondary(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -483,7 +460,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(

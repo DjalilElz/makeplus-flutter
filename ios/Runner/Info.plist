@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Makeplus</string>
+	<string>MakePlus</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>makeplus</string>
+	<string>MakePlus</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,5 +45,17 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Purpose strings must name the concrete feature. Apple rejects vague text
+	     (App Review Guideline 5.1.1) and questions permissions the app never uses.
+	     NSMicrophoneUsageDescription was removed: the app records no audio. -->
+	<key>NSCameraUsageDescription</key>
+	<string>MakePlus utilise la caméra pour scanner les QR codes des badges des participants et vérifier leur accès aux salles et aux sessions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MakePlus accède à vos photos pour vous permettre de choisir une image illustrant une salle ou une session.</string>
+
+	<!-- The app only talks to its backend over HTTPS, which is exempt encryption.
+	     Declaring this here avoids the export-compliance prompt on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

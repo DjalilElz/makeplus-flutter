@@ -8,7 +8,6 @@ allprojects {
             }
         }
         mavenCentral()
-        // Backup repository
         maven {
             url = uri("https://maven.aliyun.com/repository/google")
             content {
@@ -23,16 +22,14 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+// Fixed redirect — uses projectDirectory to stay on the same drive (E:)
+val newBuildDir: Directory = rootProject.layout.projectDirectory.dir("../build")
+rootProject.layout.buildDirectory.set(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
+    layout.buildDirectory.set(newBuildDir.dir(project.name))
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

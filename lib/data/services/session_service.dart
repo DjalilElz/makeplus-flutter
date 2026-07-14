@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
-import 'api_client.dart';
+
 import '../models/room_model.dart';
+import 'api_client.dart';
+import 'package:makeplus/core/utils/app_logger.dart';
 
 /// Session Service
 /// Handles session management and status control
@@ -19,8 +21,8 @@ class SessionService {
   }) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (roomId != null) queryParams['room_id'] = roomId;
-      if (eventId != null) queryParams['event_id'] = eventId;
+      if (roomId != null) queryParams['room'] = roomId;
+      if (eventId != null) queryParams['event'] = eventId;
       if (status != null) queryParams['status'] = status;
       if (sessionType != null) queryParams['session_type'] = sessionType;
       if (isPaid != null) queryParams['is_paid'] = isPaid;
@@ -168,7 +170,11 @@ class SessionService {
       final response = await _apiClient.post('/sessions/$sessionId/start/');
 
       if (response.statusCode == 200) {
-        return SessionModel.fromJson(response.data);
+        final payload = response.data;
+        final sessionData = payload is Map<String, dynamic>
+            ? (payload['session'] ?? payload)
+            : payload;
+        return SessionModel.fromJson(sessionData as Map<String, dynamic>);
       } else {
         throw Exception('Failed to start session');
       }
@@ -184,7 +190,11 @@ class SessionService {
       final response = await _apiClient.post('/sessions/$sessionId/end/');
 
       if (response.statusCode == 200) {
-        return SessionModel.fromJson(response.data);
+        final payload = response.data;
+        final sessionData = payload is Map<String, dynamic>
+            ? (payload['session'] ?? payload)
+            : payload;
+        return SessionModel.fromJson(sessionData as Map<String, dynamic>);
       } else {
         throw Exception('Failed to end session');
       }
@@ -199,11 +209,60 @@ class SessionService {
       final response = await _apiClient.post('/sessions/$sessionId/cancel/');
 
       if (response.statusCode == 200) {
-        return SessionModel.fromJson(response.data);
+        final payload = response.data;
+        final sessionData = payload is Map<String, dynamic>
+            ? (payload['session'] ?? payload)
+            : payload;
+        return SessionModel.fromJson(sessionData as Map<String, dynamic>);
       } else {
         throw Exception('Failed to cancel session');
       }
     } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  /// Swap session times (room manager only)
+  /// Swaps start_time and end_time between two sessions in the same room
+  Future<Map<String, dynamic>> swapSessionTimes(
+    String session1Id,
+    String session2Id,
+  ) async {
+    try {
+      AppLogger.d(
+          '🔄 SWAPPING SESSION TIMES - Session 1: $session1Id, Session 2: $session2Id');
+
+      final response = await _apiClient.post(
+        '/sessions/swap-times/',
+        data: {
+          'session_1_id': session1Id,
+          'session_2_id': session2Id,
+        },
+      );
+
+      AppLogger.d('📡 Swap Response Status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        AppLogger.d('✅ SESSIONS SWAPPED SUCCESSFULLY');
+        return data;
+      } else {
+        throw Exception('Failed to swap session times');
+      }
+    } on DioException catch (e) {
+      AppLogger.d('❌ ERROR SWAPPING SESSIONS: ${e.response?.data}');
+
+      if (e.response?.statusCode == 400) {
+        final errorData = e.response?.data;
+        if (errorData is Map) {
+          throw Exception(errorData['message'] ??
+              errorData['error'] ??
+              'Cannot swap sessions');
+        }
+      } else if (e.response?.statusCode == 404) {
+        throw Exception('One or both sessions not found');
+      }
+
       throw Exception(_handleError(e));
     }
   }

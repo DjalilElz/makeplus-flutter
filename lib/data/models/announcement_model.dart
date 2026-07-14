@@ -6,7 +6,7 @@ class AnnouncementModel {
   final String title;
   final String description;
   final String
-      target; // 'all', 'participants', 'exposants', 'controlleurs', 'gestionnaires'
+      target; // 'all', 'participants', 'exposants', 'controller', 'gestionnaire'
   final int createdBy;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -68,8 +68,10 @@ class AnnouncementModel {
         return 'Participants';
       case 'exposants':
         return 'Exposants';
+      case 'controller':
       case 'controlleurs':
         return 'Contrôleurs';
+      case 'gestionnaire':
       case 'gestionnaires':
         return 'Gestionnaires';
       default:
