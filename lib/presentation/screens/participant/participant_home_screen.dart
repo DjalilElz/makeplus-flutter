@@ -172,7 +172,7 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
 
             // Event information — name, dates, location.
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [primary, primaryDark],
@@ -190,8 +190,8 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                         ClipOval(
                           child: CachedNetworkImage(
                             imageUrl: logoUrl,
-                            width: 44,
-                            height: 44,
+                            width: 64,
+                            height: 64,
                             fit: BoxFit.cover,
                             fadeInDuration: const Duration(milliseconds: 150),
                             errorWidget: (context, url, error) =>
@@ -204,7 +204,7 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                         'Bonjour ',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
                       Flexible(
@@ -212,7 +212,7 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                           '$userName,',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -220,23 +220,23 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Text(
                     eventName,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   if (eventDates != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         const Icon(
                           Icons.calendar_today,
                           color: Colors.white70,
-                          size: 16,
+                          size: 14,
                         ),
                         const SizedBox(width: 8),
                         Flexible(
@@ -244,7 +244,7 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                             eventDates,
                             style: const TextStyle(
                               color: Colors.white70,
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
                           ),
                         ),
@@ -252,13 +252,13 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                     ),
                   ],
                   if (eventLocation != null && eventLocation.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         const Icon(
                           Icons.location_on,
                           color: Colors.white70,
-                          size: 16,
+                          size: 14,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -266,35 +266,13 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                             eventLocation,
                             style: const TextStyle(
                               color: Colors.white70,
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/event-details');
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white70),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(Icons.info_outline, size: 18),
-                      label: const Text(
-                        'Voir les details',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
