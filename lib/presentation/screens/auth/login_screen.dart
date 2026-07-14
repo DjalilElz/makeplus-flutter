@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:makeplus/routes/app_router.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
@@ -90,11 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppColors.primary,
                             shape: BoxShape.circle,
                           ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.event,
-                              size: 60,
-                              color: Colors.white,
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/logos/Les adidas.svg',
+                              width: 56,
+                              height: 56,
                             ),
                           ),
                         ),

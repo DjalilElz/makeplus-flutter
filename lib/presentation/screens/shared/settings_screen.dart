@@ -6,6 +6,7 @@ import '../../../core/constants/theme/app_colors.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_event.dart';
 import '../../../routes/app_router.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,20 +18,14 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return RootTabPopScope(
+      // Only the room-manager role reaches this screen via the bottom nav
+      // (as its "Paramètres" tab, pushReplacementNamed — stack root, nothing
+      // to pop to). Every other role pushes this normally from a gear icon,
+      // where canPop() is already true and this homeRoute never applies.
+      homeRoute: AppRouter.organizerRoomManagerHome,
+      child: Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Check if we can pop, otherwise navigate to home
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              Navigator.pushReplacementNamed(
-                  context, AppRouter.organizerRoomManagerHome);
-            }
-          },
-        ),
         title: const Text('Paramètres'),
       ),
       body: ListView(
@@ -129,7 +124,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 30),
         ],
       ),
-    );
+      ), // End Scaffold
+    ); // End RootTabPopScope
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {

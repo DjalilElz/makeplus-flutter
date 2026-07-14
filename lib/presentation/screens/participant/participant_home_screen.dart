@@ -1,5 +1,6 @@
 // lib/presentation/screens/participant/participant_home_screen.dart
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -147,16 +148,21 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Event banner — sits at the very top of the home screen.
+            // Fixed 2:1 aspect ratio (not a fixed height) so every device
+            // crops/frames the banner the same way — see the CLAUDE.md note
+            // on recommended source dimensions for designers.
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 180,
+              child: AspectRatio(
+                aspectRatio: 2 / 1,
                 child: bannerUrl != null && bannerUrl.isNotEmpty
-                    ? Image.network(
-                        bannerUrl,
+                    ? CachedNetworkImage(
+                        imageUrl: bannerUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
+                        fadeInDuration: const Duration(milliseconds: 150),
+                        placeholder: (context, url) =>
+                            _bannerFallback(primary, primaryDark),
+                        errorWidget: (context, url, error) =>
                             _bannerFallback(primary, primaryDark),
                       )
                     : _bannerFallback(primary, primaryDark),
@@ -182,12 +188,13 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                     children: [
                       if (logoUrl != null && logoUrl.isNotEmpty) ...[
                         ClipOval(
-                          child: Image.network(
-                            logoUrl,
-                            width: 32,
-                            height: 32,
+                          child: CachedNetworkImage(
+                            imageUrl: logoUrl,
+                            width: 44,
+                            height: 44,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
+                            fadeInDuration: const Duration(milliseconds: 150),
+                            errorWidget: (context, url, error) =>
                                 const SizedBox.shrink(),
                           ),
                         ),

@@ -9,6 +9,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
 import '../../../logic/authentication/auth_bloc.dart';
+import '../../widgets/navigation/bottom_nav_bar.dart';
+import '../../widgets/navigation/root_tab_pop_scope.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
 
 class ParticipantProfileScreen extends StatefulWidget {
@@ -569,12 +571,10 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
       badgeId = _profileData!['qr_code']['badge_id'];
     }
 
-    return Scaffold(
+    return RootTabPopScope(
+      homeRoute: '/participant/home',
+      child: Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text('Profil'),
         actions: [
           IconButton(
@@ -723,6 +723,31 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
           ),
         ),
       ),
-    );
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 2,
+        userRole: 'participant',
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushReplacementNamed(context, '/participant/home');
+              break;
+            case 1:
+              Navigator.pushReplacementNamed(context, '/participant/program');
+              break;
+            case 2:
+              // Already on Profile
+              break;
+            case 3:
+              Navigator.pushReplacementNamed(context, '/participant/guide');
+              break;
+            case 4:
+              Navigator.pushReplacementNamed(
+                  context, '/participant/announcements');
+              break;
+          }
+        },
+      ),
+      ), // End Scaffold
+    ); // End RootTabPopScope
   }
 }
