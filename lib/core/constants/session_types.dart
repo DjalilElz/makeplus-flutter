@@ -10,7 +10,7 @@ class SessionTypes {
   static const String tableRonde = 'table_ronde';
   static const String lunchSymposium = 'lunch_symposium';
   static const String symposium = 'symposium';
-  static const String sessionPhotoCommunication = 'session_photo_communication';
+  static const String sessionPhotoCommunication = 'session_photo';
 
   /// Get display name for session type
   static String getDisplayName(String type) {

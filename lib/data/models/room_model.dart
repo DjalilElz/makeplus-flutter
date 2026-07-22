@@ -78,6 +78,7 @@ class SessionModel extends Equatable {
   final DateTime startTime;
   final DateTime endTime;
   final String roomId;
+  final String? roomName;
   final String eventId;
   final String? speakerName;
   final String? speakerTitle;
@@ -98,6 +99,7 @@ class SessionModel extends Equatable {
     required this.startTime,
     required this.endTime,
     required this.roomId,
+    this.roomName,
     required this.eventId,
     this.speakerName,
     this.speakerTitle,
@@ -142,6 +144,7 @@ class SessionModel extends Equatable {
       startTime: DateTime.parse(json['start_time']),
       endTime: DateTime.parse(json['end_time']),
       roomId: json['room']?.toString() ?? json['room_id']?.toString() ?? '',
+      roomName: json['room_name'],
       eventId: json['event']?.toString() ?? '',
       speakerName: json['speaker_name'],
       speakerTitle: json['speaker_title'],
@@ -180,6 +183,7 @@ class SessionModel extends Equatable {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       'room': roomId,
+      'room_name': roomName,
       'event': eventId,
       'speaker_name': speakerName,
       'speaker_title': speakerTitle,
@@ -202,6 +206,7 @@ class SessionModel extends Equatable {
         startTime,
         endTime,
         roomId,
+        roomName,
         eventId,
         speakerName,
         speakerTitle,

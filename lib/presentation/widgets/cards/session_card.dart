@@ -8,12 +8,14 @@ class SessionCard extends StatelessWidget {
   final SessionModel session;
   final VoidCallback? onTap;
   final bool showLiveIndicator;
+  final String? typeLabel;
 
   const SessionCard({
     super.key,
     required this.session,
     this.onTap,
     this.showLiveIndicator = true,
+    this.typeLabel,
   });
 
   String _formatTime(DateTime time) {
@@ -95,6 +97,54 @@ class SessionCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
+              if (typeLabel != null || (session.roomName ?? '').isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    if (typeLabel != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          typeLabel!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    if ((session.roomName ?? '').isNotEmpty)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.meeting_room_outlined,
+                            size: 14,
+                            color: AppColors.textSecondary(context),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            session.roomName!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
 
               if (session.description != null) ...[
                 const SizedBox(height: 8),

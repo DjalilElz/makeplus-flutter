@@ -49,6 +49,7 @@ dependencies:
 
   # File sharing
   share_plus: ^7.2.1
+  flutter_pdfview: ^1.4.4
 
 # Removed 2026-07: supabase_flutter (initialised, never used), firebase_core +
 # firebase_messaging + flutter_local_notifications (no native config existed — push
