@@ -18,8 +18,17 @@ class SessionCard extends StatelessWidget {
     this.typeLabel,
   });
 
+  static const List<String> _months = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+  ];
+
   String _formatTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day} ${_months[date.month - 1]}';
   }
 
   @override
@@ -34,8 +43,11 @@ class SessionCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Time and Status Row
+              // Date + time on its own row -- always shown in full (wraps
+              // to a 2nd line if it must, never shares space with the
+              // live badge, so nothing else can ever squeeze it).
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
                     Icons.access_time,
@@ -43,50 +55,56 @@ class SessionCard extends StatelessWidget {
                     color: AppColors.textSecondary(context),
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    '${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                  Expanded(
+                    child: Text(
+                      '${_formatDate(session.startTime)} • ${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  if (showLiveIndicator && session.isLive)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.success,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'EN DIRECT',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
+              if (showLiveIndicator && session.isLive) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'EN DIRECT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
 
               // Session Title
@@ -98,50 +116,50 @@ class SessionCard extends StatelessWidget {
                 ),
               ),
 
-              // Tags row: type, room, theme -- all in one Wrap so long
-              // labels flow onto a new line instead of overflowing (a
-              // plain Row can't shrink an oversized child; Wrap can).
-              if (typeLabel != null ||
-                  (session.roomName ?? '').isNotEmpty ||
-                  (session.theme ?? '').isNotEmpty) ...[
+              // Theme, then type directly below it in a column (not
+              // side-by-side) -- each capped at a max width with ellipsis
+              // so a long label can never overflow.
+              if ((session.theme ?? '').isNotEmpty || typeLabel != null) ...[
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (typeLabel != null)
-                      _Chip(
-                        text: typeLabel!,
-                        background: AppColors.accent.withValues(alpha: 0.15),
-                        foreground: AppColors.accent,
-                      ),
                     if ((session.theme ?? '').isNotEmpty)
                       _Chip(
                         text: session.theme!,
                         background: AppColors.primary.withValues(alpha: 0.1),
                         foreground: AppColors.primary,
                       ),
-                    if ((session.roomName ?? '').isNotEmpty)
-                      _IconLabel(
-                        icon: Icons.meeting_room_outlined,
-                        text: session.roomName!,
-                        color: AppColors.textSecondary(context),
+                    if ((session.theme ?? '').isNotEmpty && typeLabel != null)
+                      const SizedBox(height: 4),
+                    if (typeLabel != null)
+                      _Chip(
+                        text: typeLabel!,
+                        background: AppColors.accent.withValues(alpha: 0.15),
+                        foreground: AppColors.accent,
                       ),
                   ],
                 ),
               ],
 
+              if ((session.roomName ?? '').isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _IconLabel(
+                  icon: Icons.meeting_room_outlined,
+                  text: session.roomName!,
+                  color: AppColors.textSecondary(context),
+                ),
+              ],
+
               if (session.description != null) ...[
                 const SizedBox(height: 10),
-                Text(
-                  session.description!,
+                _ExpandableText(
+                  text: session.description!,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary(context),
                     height: 1.4,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
 
@@ -195,6 +213,57 @@ class SessionCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Description text truncated to 2 lines with a tappable ellipsis -- tapping
+// the truncated text (the "..." included) expands it to show the full
+// text; tapping again collapses it back.
+class _ExpandableText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _ExpandableText({required this.text, required this.style});
+
+  @override
+  State<_ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<_ExpandableText> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_expanded) {
+      return GestureDetector(
+        onTap: () => setState(() => _expanded = false),
+        child: Text(widget.text, style: widget.style),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: widget.style),
+          maxLines: 2,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth);
+
+        if (!painter.didExceedMaxLines) {
+          return Text(widget.text, style: widget.style);
+        }
+
+        return GestureDetector(
+          onTap: () => setState(() => _expanded = true),
+          child: Text(
+            widget.text,
+            style: widget.style,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      },
     );
   }
 }
