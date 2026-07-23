@@ -98,56 +98,41 @@ class SessionCard extends StatelessWidget {
                 ),
               ),
 
-              if (typeLabel != null || (session.roomName ?? '').isNotEmpty) ...[
+              // Tags row: type, room, theme -- all in one Wrap so long
+              // labels flow onto a new line instead of overflowing (a
+              // plain Row can't shrink an oversized child; Wrap can).
+              if (typeLabel != null ||
+                  (session.roomName ?? '').isNotEmpty ||
+                  (session.theme ?? '').isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
                   children: [
                     if (typeLabel != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          typeLabel!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
-                          ),
-                        ),
+                      _Chip(
+                        text: typeLabel!,
+                        background: AppColors.accent.withValues(alpha: 0.15),
+                        foreground: AppColors.accent,
+                      ),
+                    if ((session.theme ?? '').isNotEmpty)
+                      _Chip(
+                        text: session.theme!,
+                        background: AppColors.primary.withValues(alpha: 0.1),
+                        foreground: AppColors.primary,
                       ),
                     if ((session.roomName ?? '').isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.meeting_room_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary(context),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            session.roomName!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary(context),
-                            ),
-                          ),
-                        ],
+                      _IconLabel(
+                        icon: Icons.meeting_room_outlined,
+                        text: session.roomName!,
+                        color: AppColors.textSecondary(context),
                       ),
                   ],
                 ),
               ],
 
               if (session.description != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   session.description!,
                   style: TextStyle(
@@ -160,12 +145,10 @@ class SessionCard extends StatelessWidget {
                 ),
               ],
 
-              const SizedBox(height: 12),
-
-              // Speaker and Theme Row
-              Row(
-                children: [
-                  if (session.speakerName != null) ...[
+              if (session.speakerName != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -189,6 +172,8 @@ class SessionCard extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           if (session.speakerTitle != null)
                             Text(
@@ -197,37 +182,91 @@ class SessionCard extends StatelessWidget {
                                 fontSize: 12,
                                 color: AppColors.textSecondary(context),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                         ],
                       ),
                     ),
                   ],
-                  if (session.theme != null) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        session.theme!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Small pill label (session type, theme) used in SessionCard's tags row.
+// Capped at a fixed max width with ellipsis so a long label can never
+// overflow its Wrap line, no matter how long the text is.
+class _Chip extends StatelessWidget {
+  final String text;
+  final Color background;
+  final Color foreground;
+
+  const _Chip({
+    required this.text,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: foreground,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+// Icon + label (room name) used in SessionCard's tags row -- same
+// max-width/ellipsis guarantee as _Chip.
+class _IconLabel extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const _IconLabel({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 160),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 3),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 12, color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
