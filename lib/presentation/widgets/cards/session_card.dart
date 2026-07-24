@@ -65,7 +65,8 @@ class SessionCard extends StatelessWidget {
                 ],
               ),
 
-              // Speaker / author -- right after the date/time, before the title.
+              // Speaker / author, with the session type chip beside the
+              // name -- right after the date/time, before the title.
               if (session.speakerName != null) ...[
                 const SizedBox(height: 12),
                 Row(
@@ -109,7 +110,25 @@ class SessionCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (typeLabel != null) ...[
+                      const SizedBox(width: 8),
+                      _Chip(
+                        text: typeLabel!,
+                        background: AppColors.accent.withValues(alpha: 0.15),
+                        foreground: AppColors.accent,
+                      ),
+                    ],
                   ],
+                ),
+              ] else if (typeLabel != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _Chip(
+                    text: typeLabel!,
+                    background: AppColors.accent.withValues(alpha: 0.15),
+                    foreground: AppColors.accent,
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
@@ -123,38 +142,14 @@ class SessionCard extends StatelessWidget {
                 ),
               ),
 
-              // Theme (shown in full, never truncated), then type directly
-              // below it in a column (not side-by-side).
-              if ((session.theme ?? '').isNotEmpty || typeLabel != null) ...[
+              // Theme, shown in full, never truncated.
+              if ((session.theme ?? '').isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if ((session.theme ?? '').isNotEmpty)
-                      _Chip(
-                        text: session.theme!,
-                        background: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                        foreground: AppColors.eventPrimary(context),
-                        fullWidth: true,
-                      ),
-                    if ((session.theme ?? '').isNotEmpty && typeLabel != null)
-                      const SizedBox(height: 4),
-                    if (typeLabel != null)
-                      _Chip(
-                        text: typeLabel!,
-                        background: AppColors.accent.withValues(alpha: 0.15),
-                        foreground: AppColors.accent,
-                      ),
-                  ],
-                ),
-              ],
-
-              if ((session.roomName ?? '').isNotEmpty) ...[
-                const SizedBox(height: 6),
-                _IconLabel(
-                  icon: Icons.meeting_room_outlined,
-                  text: session.roomName!,
-                  color: AppColors.textSecondary(context),
+                _Chip(
+                  text: session.theme!,
+                  background: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                  foreground: AppColors.eventPrimary(context),
+                  fullWidth: true,
                 ),
               ],
 
@@ -167,6 +162,16 @@ class SessionCard extends StatelessWidget {
                     color: AppColors.textSecondary(context),
                     height: 1.4,
                   ),
+                ),
+              ],
+
+              // Salle -- moved to the bottom of the card.
+              if ((session.roomName ?? '').isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _IconLabel(
+                  icon: Icons.meeting_room_outlined,
+                  text: session.roomName!,
+                  color: AppColors.textSecondary(context),
                 ),
               ],
             ],
