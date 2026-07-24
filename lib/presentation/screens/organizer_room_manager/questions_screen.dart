@@ -3,235 +3,174 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
-import '../../../routes/app_router.dart';
-import '../../widgets/navigation/bottom_nav_bar.dart';
-import '../../widgets/navigation/root_tab_pop_scope.dart';
+import '../../../data/models/session_question_model.dart';
+import '../../../data/services/api_client.dart';
+import '../../../data/services/session_question_service.dart';
 
+/// Q&A for a single session -- reached by drilling into a session from the
+/// room manager's rooms/sessions list, not a root tab (so it's a normal
+/// pushed subpage: back arrow, no bottom nav bar).
+///
+/// Anonymous by design: the backend never returns who asked a question, so
+/// there is no asker name/avatar to show here, only the question text.
 class QuestionsScreen extends StatefulWidget {
-  const QuestionsScreen({super.key});
+  final String sessionId;
+  final String sessionTitle;
+
+  const QuestionsScreen({
+    super.key,
+    required this.sessionId,
+    required this.sessionTitle,
+  });
 
   @override
   State<QuestionsScreen> createState() => _QuestionsScreenState();
 }
 
 class _QuestionsScreenState extends State<QuestionsScreen> {
-  int _getCurrentIndex(BuildContext context) {
-    final route = ModalRoute.of(context)?.settings.name;
-    switch (route) {
-      case '/organizer-room-manager/home':
-        return 0;
-      case '/organizer-room-manager/announcements':
-        return 1;
-      case '/organizer-room-manager/participants':
-        return 2;
-      case '/organizer-room-manager/rooms':
-        return 3;
-      case '/organizer-room-manager/questions':
-        return 4;
-      default:
-        return 4;
+  late final SessionQuestionService _questionService;
+
+  List<SessionQuestionModel>? _questions;
+  bool _isLoading = false;
+  String? _error;
+
+  // Tracks which question is currently being answered (its inline reply
+  // field is expanded) and whether a submit is in flight for it.
+  String? _replyingToId;
+  final Map<String, TextEditingController> _replyControllers = {};
+  bool _isSubmittingAnswer = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _questionService = SessionQuestionService(ApiClient());
+    _loadQuestions();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _replyControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _loadQuestions() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final questions = await _questionService.getQuestions(widget.sessionId);
+      if (!mounted) return;
+      setState(() {
+        _questions = questions;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Impossible de charger les questions.';
+        _isLoading = false;
+      });
     }
   }
 
-  // Mock data for questions - only for the assigned room (Salle 3)
-  final List<Map<String, dynamic>> _questions = [
-    {
-      'id': 1,
-      'question': 'Quelle est la durée de la pause déjeuner ?',
-      'asker': 'Mohamed ALAMI',
-      'askerType': 'Participant',
-      'room': 'Salle 3',
-      'timestamp': '10:30',
-      'isAnswered': false,
-    },
-    {
-      'id': 2,
-      'question': 'Y a-t-il une session de networking après la conférence ?',
-      'asker': 'Sarah BENALI',
-      'askerType': 'Exposant',
-      'room': 'Salle 3',
-      'timestamp': '11:15',
-      'isAnswered': false,
-    },
-    {
-      'id': 3,
-      'question':
-          'Peut-on enregistrer la présentation pour la revoir plus tard ?',
-      'asker': 'Karim ETTAKI',
-      'askerType': 'Participant',
-      'room': 'Salle 3',
-      'timestamp': '11:45',
-      'isAnswered': true,
-    },
-    {
-      'id': 4,
-      'question': 'Où se trouve la salle de prière la plus proche ?',
-      'asker': 'Amina BENDJEBBAR',
-      'askerType': 'Participant',
-      'room': 'Salle 3',
-      'timestamp': '12:00',
-      'isAnswered': false,
-    },
-    {
-      'id': 5,
-      'question':
-          'Le matériel de démonstration est-il disponible pour les exposants ?',
-      'asker': 'Rachid MANSOURI',
-      'askerType': 'Exposant',
-      'room': 'Salle 3',
-      'timestamp': '14:20',
-      'isAnswered': false,
-    },
-  ];
+  Future<void> _submitAnswer(SessionQuestionModel question) async {
+    final controller = _replyControllers[question.id];
+    final answerText = controller?.text.trim() ?? '';
+    if (answerText.isEmpty) return;
+
+    setState(() => _isSubmittingAnswer = true);
+
+    try {
+      final updated = await _questionService.answerQuestion(
+        questionId: question.id,
+        answerText: answerText,
+      );
+      if (!mounted) return;
+      setState(() {
+        _questions = _questions
+            ?.map((q) => q.id == question.id ? updated : q)
+            .toList();
+        _replyingToId = null;
+        _isSubmittingAnswer = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmittingAnswer = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible d\'envoyer la réponse.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Sort questions by timestamp (most recent first)
-    final sortedQuestions = List<Map<String, dynamic>>.from(_questions)
-      ..sort((a, b) {
-        final timeA = a['timestamp'] as String;
-        final timeB = b['timestamp'] as String;
-        return timeB.compareTo(timeA); // Descending order
-      });
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.sessionTitle),
+      ),
+      body: _buildBody(context),
+    );
+  }
 
-    return RootTabPopScope(
-      homeRoute: AppRouter.organizerRoomManagerHome,
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerRoomManagerHome);
-              }
-            },
-          ),
-          title: const Text('Questions - Salle 3'),
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return _buildMessage(
+        context,
+        icon: Icons.error_outline,
+        title: 'Erreur',
+        message: _error!,
+        action: TextButton(
+          onPressed: _loadQuestions,
+          child: const Text('Réessayer'),
         ),
-        body: Column(
-          children: [
-            // Room Info Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: AppColors.eventPrimary(context).withValues(alpha: 0.05),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.meeting_room,
-                      color: AppColors.eventPrimary(context),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Salle 3 - Conférences',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary(context),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${_questions.length} questions',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      );
+    }
+    final questions = _questions ?? [];
+    if (questions.isEmpty) {
+      return _buildMessage(
+        context,
+        icon: Icons.question_answer_outlined,
+        title: 'Aucune question pour le moment',
+        message: 'Les questions posées pendant cette session apparaîtront ici.',
+      );
+    }
 
-            // Questions List
-            Expanded(
-              child: _questions.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.question_answer_outlined,
-                            size: 64,
-                            color: AppColors.textHint(context),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Aucune question pour le moment',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.textSecondary(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: sortedQuestions.length,
-                      itemBuilder: (context, index) {
-                        final question = sortedQuestions[index];
-                        return _buildQuestionCard(question);
-                      },
-                    ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: BottomNavBar(
-          currentIndex: _getCurrentIndex(context),
-          userRole: 'organizer',
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerRoomManagerHome);
-                break;
-              case 1:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.announcements);
-                break;
-              case 2:
-                Navigator.pushReplacementNamed(context, AppRouter.roomsList);
-                break;
-              case 3:
-                // Already on Questions/Settings
-                break;
-            }
-          },
-        ),
+    // Most recent first.
+    final sorted = List<SessionQuestionModel>.from(questions)
+      ..sort((a, b) => b.askedAt.compareTo(a.askedAt));
+
+    return RefreshIndicator(
+      onRefresh: _loadQuestions,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: sorted.length,
+        itemBuilder: (context, index) => _buildQuestionCard(context, sorted[index]),
       ),
     );
   }
 
-  Widget _buildQuestionCard(Map<String, dynamic> question) {
-    final bool isAnswered = question['isAnswered'] ?? false;
+  Widget _buildQuestionCard(BuildContext context, SessionQuestionModel question) {
+    final isReplying = _replyingToId == question.id;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
+      elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isAnswered
+          color: question.isAnswered
               ? AppColors.success.withValues(alpha: 0.3)
               : AppColors.borderColor(context),
-          width: 1,
         ),
       ),
       child: Padding(
@@ -239,226 +178,180 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with asker info and status
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: question['askerType'] == 'Exposant'
-                      ? AppColors.accent.withValues(alpha: 0.2)
-                      : AppColors.eventPrimary(context).withValues(alpha: 0.2),
-                  radius: 20,
-                  child: Text(
-                    question['asker'][0],
-                    style: TextStyle(
-                      color: question['askerType'] == 'Exposant'
-                          ? AppColors.accent
-                          : AppColors.eventPrimary(context),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                Icon(Icons.person_off_outlined, size: 16, color: AppColors.textSecondary(context)),
+                const SizedBox(width: 6),
+                Text(
+                  'Question anonyme',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        question['asker'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: question['askerType'] == 'Exposant'
-                                  ? AppColors.accent.withValues(alpha: 0.1)
-                                  : AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              question['askerType'],
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: question['askerType'] == 'Exposant'
-                                    ? AppColors.accent
-                                    : AppColors.eventPrimary(context),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.access_time,
-                            size: 12,
-                            color: AppColors.textSecondary(context),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            question['timestamp'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                const Spacer(),
+                Text(
+                  question.formattedAskedAt,
+                  style: TextStyle(fontSize: 12, color: AppColors.textHint(context)),
                 ),
-                if (isAnswered)
+                const SizedBox(width: 8),
+                if (question.isAnswered)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.check_circle,
-                          size: 14,
-                          color: AppColors.success,
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Répondu',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        Icon(Icons.check_circle, size: 13, color: AppColors.success),
+                        SizedBox(width: 4),
+                        Text('Répondu', style: TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600)),
                       ],
                     ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text('En attente', style: TextStyle(fontSize: 11, color: AppColors.warning, fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-
-            // Question text
+            const SizedBox(height: 10),
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.surfaceContainer(context),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                question['question'],
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.4,
-                  color: AppColors.textPrimary(context),
+                question.questionText,
+                style: TextStyle(fontSize: 15, height: 1.4, color: AppColors.textPrimary(context)),
+              ),
+            ),
+
+            if (question.isAnswered) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if ((question.answeredByName ?? '').isNotEmpty)
+                      Text(
+                        'Réponse — ${question.answeredByName}',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary(context)),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(question.answerText ?? '', style: TextStyle(fontSize: 14, color: AppColors.textPrimary(context))),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Action button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Implement show question detail/answer logic
-                  _showQuestionDetailDialog(question);
-                },
-                icon: const Icon(Icons.visibility, size: 18),
-                label: const Text('Afficher'),
-              ),
-            ),
+            ] else ...[
+              const SizedBox(height: 10),
+              if (isReplying) ...[
+                TextField(
+                  controller: _replyControllers.putIfAbsent(question.id, () => TextEditingController()),
+                  autofocus: true,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Écrire une réponse...',
+                    filled: true,
+                    fillColor: AppColors.surfaceContainer(context),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isSubmittingAnswer ? null : () => setState(() => _replyingToId = null),
+                        child: const Text('Annuler'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isSubmittingAnswer ? null : () => _submitAnswer(question),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.eventPrimary(context),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: _isSubmittingAnswer
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Envoyer'),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => setState(() => _replyingToId = question.id),
+                    icon: const Icon(Icons.reply, size: 18),
+                    label: const Text('Répondre'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.eventPrimary(context),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  void _showQuestionDetailDialog(Map<String, dynamic> question) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Détails de la question',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+  Widget _buildMessage(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String message,
+    Widget? action,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: AppColors.textHint(context)),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textSecondary(context)),
             ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Posée par: ${question['asker']}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Type: ${question['askerType']}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary(context),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Heure: ${question['timestamp']}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary(context),
-                ),
-              ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: AppColors.textHint(context)),
+            ),
+            if (action != null) ...[
               const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              const Text(
-                'Question:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                question['question'],
-                style: const TextStyle(fontSize: 15, height: 1.5),
-              ),
+              action,
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Fermer'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Implement answer logic
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.eventPrimary(context),
-              ),
-              child: const Text('Répondre'),
-            ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }

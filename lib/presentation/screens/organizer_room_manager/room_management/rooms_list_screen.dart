@@ -613,6 +613,28 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+
+              // Questions
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    AppRouter.sessionQuestions,
+                    arguments: {
+                      'sessionId': session.id,
+                      'sessionTitle': session.title,
+                    },
+                  ),
+                  icon: const Icon(Icons.question_answer_outlined, size: 18),
+                  label: const Text('Questions'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.eventPrimary(context),
+                    side: BorderSide(color: AppColors.eventPrimary(context)),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

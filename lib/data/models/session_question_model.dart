@@ -1,9 +1,11 @@
 /// Session Question Model
-/// Q&A system for sessions
+///
+/// Anonymous by design: the backend's SessionQuestionSerializer never
+/// returns asker identity (`participant` is write_only) -- there is no
+/// participant id/name field here to match, on purpose.
 class SessionQuestionModel {
   final String id;
   final String sessionId;
-  final String participantId;
   final String questionText;
   final DateTime askedAt;
   final bool isAnswered;
@@ -13,13 +15,11 @@ class SessionQuestionModel {
 
   // Optional nested details
   final String? sessionTitle;
-  final String? participantName;
-  final String? answererName;
+  final String? answeredByName;
 
   SessionQuestionModel({
     required this.id,
     required this.sessionId,
-    required this.participantId,
     required this.questionText,
     required this.askedAt,
     required this.isAnswered,
@@ -27,15 +27,13 @@ class SessionQuestionModel {
     this.answeredBy,
     this.answeredAt,
     this.sessionTitle,
-    this.participantName,
-    this.answererName,
+    this.answeredByName,
   });
 
   factory SessionQuestionModel.fromJson(Map<String, dynamic> json) {
     return SessionQuestionModel(
       id: json['id'] ?? '',
       sessionId: json['session'] ?? '',
-      participantId: json['participant'] ?? '',
       questionText: json['question_text'] ?? '',
       askedAt: json['asked_at'] != null
           ? DateTime.parse(json['asked_at'])
@@ -47,8 +45,7 @@ class SessionQuestionModel {
           ? DateTime.parse(json['answered_at'])
           : null,
       sessionTitle: json['session_title'],
-      participantName: json['participant_name'],
-      answererName: json['answerer_name'],
+      answeredByName: json['answered_by_name'],
     );
   }
 
@@ -56,7 +53,6 @@ class SessionQuestionModel {
     return {
       'id': id,
       'session': sessionId,
-      'participant': participantId,
       'question_text': questionText,
       'asked_at': askedAt.toIso8601String(),
       'is_answered': isAnswered,
@@ -64,8 +60,7 @@ class SessionQuestionModel {
       'answered_by': answeredBy,
       'answered_at': answeredAt?.toIso8601String(),
       'session_title': sessionTitle,
-      'participant_name': participantName,
-      'answerer_name': answererName,
+      'answered_by_name': answeredByName,
     };
   }
 

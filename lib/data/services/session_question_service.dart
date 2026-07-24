@@ -55,6 +55,25 @@ class SessionQuestionService {
     }
   }
 
+  /// Answer a question. Gestionnaire-only on the backend; [answerText] must
+  /// be non-empty (the DRF `answer` action rejects an empty string with a
+  /// 400 -- unlike the web dashboard's equivalent view, this endpoint has no
+  /// "clear the answer" mode).
+  Future<SessionQuestionModel> answerQuestion({
+    required String questionId,
+    required String answerText,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/session-questions/$questionId/answer/',
+        data: {'answer_text': answerText},
+      );
+      return SessionQuestionModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
   String _handleError(DioException e) {
     if (e.response != null) {
       final data = e.response?.data;

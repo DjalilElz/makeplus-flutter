@@ -24,6 +24,7 @@ import '../presentation/screens/organizer_badge_controller/statistics_screen.dar
 import '../presentation/screens/organizer_room_manager/announcements_screen.dart';
 import '../presentation/screens/organizer_room_manager/organizer_room_manager_home_screen.dart';
 import '../presentation/screens/organizer_room_manager/participants_list_screen.dart';
+import '../presentation/screens/organizer_room_manager/questions_screen.dart';
 import '../presentation/screens/organizer_room_manager/room_management/room_detail_screen.dart';
 import '../presentation/screens/organizer_room_manager/room_management/rooms_list_screen.dart';
 import '../presentation/screens/participant/diffusion_screen.dart';
@@ -62,6 +63,8 @@ class AppRouter {
   static const String createAnnouncement =
       '/organizer-room-manager/create-announcement';
   static const String questions = '/organizer-room-manager/questions';
+  static const String sessionQuestions =
+      '/organizer-room-manager/session-questions';
 
   // Organizer Badge Controller routes (Organisateur Contrôleur de Badge)
   static const String organizerBadgeControllerHome =
@@ -166,6 +169,15 @@ class AppRouter {
 
       case questions:
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
+
+      case sessionQuestions:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => QuestionsScreen(
+            sessionId: args?['sessionId'] as String? ?? '',
+            sessionTitle: args?['sessionTitle'] as String? ?? 'Session',
+          ),
+        );
 
       case roomsList:
         return MaterialPageRoute(
