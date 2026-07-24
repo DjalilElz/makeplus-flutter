@@ -43,6 +43,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
   String? _typeFilter;
   SessionStatus? _statusFilter;
   DateTime? _dateFilter;
+  String? _roomFilter;
 
   String? _pdfPath;
   bool _isLoadingPdf = false;
@@ -250,6 +251,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
     return sessions.where((s) {
       if (_typeFilter != null && s.sessionType != _typeFilter) return false;
       if (_statusFilter != null && s.status != _statusFilter) return false;
+      if (_roomFilter != null && s.roomId != _roomFilter) return false;
       if (_dateFilter != null) {
         final d = s.startTime;
         if (d.year != _dateFilter!.year ||
@@ -286,8 +288,18 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
         .toSet()
         .toList()
       ..sort();
+    final rooms = <String, String>{};
+    for (final s in sessions) {
+      final roomLabel = (s.roomName ?? '').isNotEmpty ? s.roomName! : s.roomId;
+      rooms[s.roomId] = roomLabel;
+    }
+    final roomEntries = rooms.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
 
-    final hasAnyFilter = types.length > 1 || statuses.length > 1 || dates.length > 1;
+    final hasAnyFilter = types.length > 1 ||
+        statuses.length > 1 ||
+        dates.length > 1 ||
+        roomEntries.length > 1;
     if (!hasAnyFilter) return const SizedBox.shrink();
 
     return Container(
@@ -333,7 +345,21 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               onSelected: (value) => setState(() => _statusFilter = value),
             ),
           ],
-          if (statuses.length > 1 && dates.length > 1) const SizedBox(height: 18),
+          if (statuses.length > 1 && (roomEntries.length > 1 || dates.length > 1))
+            const SizedBox(height: 18),
+          if (roomEntries.length > 1) ...[
+            _FilterSectionLabel(icon: Icons.meeting_room_rounded, label: 'Salle'),
+            const SizedBox(height: 10),
+            _FilterRow<String>(
+              selected: _roomFilter,
+              options: [
+                for (final entry in roomEntries)
+                  (label: entry.value, value: entry.key),
+              ],
+              onSelected: (value) => setState(() => _roomFilter = value),
+            ),
+          ],
+          if (roomEntries.length > 1 && dates.length > 1) const SizedBox(height: 18),
           if (dates.length > 1) ...[
             _FilterSectionLabel(icon: Icons.calendar_today_rounded, label: 'Date'),
             const SizedBox(height: 10),
