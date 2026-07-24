@@ -481,40 +481,37 @@ class DjangoAuthService {
 
       final user = UserModel.fromJson(userData);
 
-      // Try to get event data from API response first (assignments array)
+      // Get event data from the API response's `event` object (the shape
+      // /auth/me/ actually returns) -- parsed through EventModel.fromJson
+      // like login() does, so every field (including programme_file/
+      // guide_file/primary_color) comes through consistently instead of
+      // being hand-picked field-by-field.
       EventModel? event;
-      if (response.data['assignments'] != null &&
-          (response.data['assignments'] as List).isNotEmpty) {
-        final assignment = (response.data['assignments'] as List).first;
-        final eventId = assignment['event_id'];
-        final eventName = assignment['event_name'];
-        final eventLocation = assignment['event_location'];
-        final eventStartDate = assignment['event_start_date'];
-        final eventEndDate = assignment['event_end_date'];
+      final eventDataJson = response.data['event'];
+      if (eventDataJson != null) {
+        event = EventModel.fromJson(eventDataJson as Map<String, dynamic>);
 
-        if (eventId != null && eventName != null) {
-          // Create event model from assignment data with all available fields
-          event = EventModel(
-            id: eventId,
-            name: eventName,
-            location: eventLocation,
-            startDate:
-                eventStartDate != null ? DateTime.parse(eventStartDate) : null,
-            endDate: eventEndDate != null ? DateTime.parse(eventEndDate) : null,
-          );
-
-          // Store for next session
-          await _prefs?.setString('event_id', eventId);
-          await _prefs?.setString('event_name', eventName);
-          await _prefs?.setString('event_location', eventLocation ?? '');
-          await _prefs?.setString(
-              'event_start_date', event.startDate?.toIso8601String() ?? '');
-          await _prefs?.setString(
-              'event_end_date', event.endDate?.toIso8601String() ?? '');
-          AppLogger.d('🎪 EVENT FROM ASSIGNMENTS - ${event.name}');
-          AppLogger.d('📅 Start: ${event.startDate}, End: ${event.endDate}');
-          AppLogger.d('📍 Location: ${event.location}');
-        }
+        // Store for next session (fallback below, if this endpoint or the
+        // network is ever unreachable on a later app start)
+        await _prefs?.setString('event_id', event.id);
+        await _prefs?.setString('event_name', event.name);
+        await _prefs?.setString('event_location', event.location ?? '');
+        await _prefs?.setString(
+            'event_start_date', event.startDate?.toIso8601String() ?? '');
+        await _prefs?.setString(
+            'event_end_date', event.endDate?.toIso8601String() ?? '');
+        await _prefs?.setString('event_description', event.description ?? '');
+        await _prefs?.setString('event_logo', event.logoUrl ?? '');
+        await _prefs?.setString('event_banner', event.bannerUrl ?? '');
+        await _prefs?.setString(
+            'event_primary_color',
+            event.primaryColor != null
+                ? '#${event.primaryColor!.toARGB32().toRadixString(16).substring(2)}'
+                : '');
+        AppLogger.d('🎪 EVENT FROM /auth/me/ - ${event.name}');
+        AppLogger.d('📅 Start: ${event.startDate}, End: ${event.endDate}');
+        AppLogger.d('📍 Location: ${event.location}');
+        AppLogger.d('📄 Programme: ${event.programmeFile}, Guide: ${event.guideFile}');
       }
 
       // Fallback to stored event data if not in API response
