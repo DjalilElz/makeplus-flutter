@@ -1,7 +1,10 @@
 // lib/presentation/screens/participant/guide_screen.dart
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
@@ -18,34 +21,54 @@ class ParticipantGuideScreen extends StatefulWidget {
 }
 
 class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
-  Future<void> _openPdfUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Impossible d\'ouvrir le PDF'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+  String? _pdfPath;
+  bool _isLoadingPdf = false;
+  String? _pdfError;
+
+  @override
+  void initState() {
+    super.initState();
+    final guideUrl = context.read<AuthBloc>().state.event?.guideFile;
+    if (guideUrl != null && guideUrl.isNotEmpty) {
+      _loadPdf(guideUrl);
     }
   }
 
-  Future<void> _downloadPdf(String url) async {
+  Future<void> _loadPdf(String url) async {
+    setState(() {
+      _isLoadingPdf = true;
+      _pdfError = null;
+    });
+
+    try {
+      final dir = await getTemporaryDirectory();
+      final path = '${dir.path}/event_guide.pdf';
+      await Dio().download(url, path);
+      if (!mounted) return;
+      setState(() {
+        _pdfPath = path;
+        _isLoadingPdf = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _pdfError = 'Impossible de charger le PDF.';
+        _isLoadingPdf = false;
+      });
+    }
+  }
+
+  Future<void> _openPdfExternally(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Ouverture du PDF...'),
-            backgroundColor: AppColors.eventPrimary(context),
-          ),
-        );
-      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible d\'ouvrir le PDF'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -85,199 +108,13 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
               actions: [
                 if (hasGuide)
                   IconButton(
-                    icon: Icon(Icons.download, color: AppColors.eventPrimary(context)),
-                    onPressed: () => _downloadPdf(guideUrl),
+                    tooltip: 'Ouvrir dans une autre application',
+                    icon: const Icon(Icons.open_in_new),
+                    onPressed: () => _openPdfExternally(guideUrl),
                   ),
               ],
             ),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // PDF Container
-                  Container(
-                    width: double.infinity,
-                    height: MediaQuery.of(context).size.height * 0.7,
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderColor(context)),
-                    ),
-                    child: Column(
-                      children: [
-                        // PDF Header
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.eventPrimary(context),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.picture_as_pdf,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Guide de l\'événement',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary(context),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Document PDF • 1.8 MB',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary(context),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // PDF Preview/Viewer Area
-                        Expanded(
-                          child: Center(
-                            child: hasGuide
-                                ? Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.map,
-                                        size: 80,
-                                        color: AppColors.textHint(context),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Guide PDF disponible',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textSecondary(context),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Le guide complet avec tous les lieux\net les informations pratiques',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColors.textSecondary(context),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
-                                      ElevatedButton.icon(
-                                        onPressed: () => _openPdfUrl(guideUrl),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.eventPrimary(context),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        icon: const Icon(Icons.open_in_new),
-                                        label: const Text('Ouvrir le PDF'),
-                                      ),
-                                    ],
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.info_outline,
-                                        size: 80,
-                                        color: AppColors.textHint(context),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Guide non disponible',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textSecondary(context),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Le guide de l\'événement\nn\'a pas encore été publié',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColors.textHint(context),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Guide Info
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderColor(context)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'À propos du guide',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary(context),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildInfoRow(Icons.location_city, 'Lieu',
-                            'Centre de Conférences'),
-                        const SizedBox(height: 8),
-                        _buildInfoRow(Icons.meeting_room, 'Salles',
-                            '8 salles de conférences'),
-                        const SizedBox(height: 8),
-                        _buildInfoRow(Icons.restaurant, 'Restaurants',
-                            '3 espaces restauration'),
-                        const SizedBox(height: 8),
-                        _buildInfoRow(Icons.local_parking, 'Parking',
-                            'Parking gratuit disponible'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 80), // Extra space for bottom navbar
-                ],
-              ),
-            ),
+            body: _buildPdfView(context, hasGuide, guideUrl),
             bottomNavigationBar: BottomNavBar(
               currentIndex: _getCurrentIndex(context),
               userRole: 'participant',
@@ -311,27 +148,92 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: AppColors.eventPrimary(context)),
-        const SizedBox(width: 12),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary(context),
-          ),
+  Widget _buildPdfView(BuildContext context, bool hasGuide, String? guideUrl) {
+    if (!hasGuide) {
+      return _buildMessage(
+        context,
+        icon: Icons.info_outline,
+        title: 'Guide non disponible',
+        message: 'Le guide de l\'événement n\'a pas encore été publié.',
+      );
+    }
+    if (_isLoadingPdf || (_pdfPath == null && _pdfError == null)) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_pdfError != null) {
+      return _buildMessage(
+        context,
+        icon: Icons.error_outline,
+        title: 'Erreur',
+        message: _pdfError!,
+        action: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+              onPressed: () => _loadPdf(guideUrl!),
+              child: const Text('Réessayer'),
+            ),
+            TextButton(
+              onPressed: () => _openPdfExternally(guideUrl!),
+              child: const Text('Ouvrir dans une autre application'),
+            ),
+          ],
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary(context),
-          ),
+      );
+    }
+    return PDFView(
+      filePath: _pdfPath!,
+      enableSwipe: true,
+      swipeHorizontal: false,
+      autoSpacing: true,
+      pageFling: true,
+      onError: (error) {
+        if (mounted) {
+          setState(() => _pdfError = 'Impossible d\'afficher le PDF.');
+        }
+      },
+    );
+  }
+
+  Widget _buildMessage(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String message,
+    Widget? action,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: AppColors.textHint(context)),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary(context),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textHint(context),
+              ),
+            ),
+            if (action != null) ...[
+              const SizedBox(height: 16),
+              action,
+            ],
+          ],
         ),
-      ],
+      ),
     );
   }
 }
