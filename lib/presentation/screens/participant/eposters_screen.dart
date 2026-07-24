@@ -29,6 +29,7 @@ class _EpostersScreenState extends State<EpostersScreen> {
   List<EposterGalleryItem>? _items;
   bool _isLoading = false;
   String? _error;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -99,26 +100,43 @@ class _EpostersScreenState extends State<EpostersScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('E-Posters'),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _debounce?.cancel();
+                  _loadGallery();
+                }
+              });
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Rechercher par titre ou auteur...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: AppColors.surfaceContainer(context),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+          if (_isSearching)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                onChanged: _onSearchChanged,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher par titre ou auteur...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: AppColors.surfaceContainer(context),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
-          ),
           Expanded(child: _buildBody(context)),
         ],
       ),
