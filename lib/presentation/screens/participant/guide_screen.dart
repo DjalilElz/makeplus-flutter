@@ -40,9 +40,9 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ouverture du PDF...'),
-            backgroundColor: AppColors.primary,
+          SnackBar(
+            content: const Text('Ouverture du PDF...'),
+            backgroundColor: AppColors.eventPrimary(context),
           ),
         );
       }
@@ -85,7 +85,7 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
               actions: [
                 if (hasGuide)
                   IconButton(
-                    icon: const Icon(Icons.download, color: AppColors.primary),
+                    icon: Icon(Icons.download, color: AppColors.eventPrimary(context)),
                     onPressed: () => _downloadPdf(guideUrl),
                   ),
               ],
@@ -110,7 +110,7 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
+                            color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(12),
                             ),
@@ -120,7 +120,7 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary,
+                                  color: AppColors.eventPrimary(context),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
@@ -190,7 +190,7 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
                                       ElevatedButton.icon(
                                         onPressed: () => _openPdfUrl(guideUrl),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
+                                          backgroundColor: AppColors.eventPrimary(context),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 24,
@@ -314,7 +314,7 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
+        Icon(icon, size: 20, color: AppColors.eventPrimary(context)),
         const SizedBox(width: 12),
         Text(
           '$label: ',

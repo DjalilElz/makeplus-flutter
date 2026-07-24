@@ -163,7 +163,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                   icon: Icons.qr_code_scanner,
                                   label: 'Total Scans',
                                   value: myCheckInsToday.toString(),
-                                  color: AppColors.primary,
+                                  color: AppColors.eventPrimary(context),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -314,13 +314,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                             const EdgeInsets.all(12),
                                         leading: CircleAvatar(
                                           radius: 28,
-                                          backgroundColor: AppColors.primary
+                                          backgroundColor: AppColors.eventPrimary(context)
                                               .withValues(alpha: 0.1),
                                           child: Text(
                                             firstInitial,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.primary,
+                                              color: AppColors.eventPrimary(context),
                                               fontSize: 20,
                                             ),
                                           ),

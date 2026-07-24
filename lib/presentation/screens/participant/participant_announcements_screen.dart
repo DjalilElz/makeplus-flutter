@@ -86,7 +86,7 @@ class _ParticipantAnnouncementsScreenState
       case 'tous':
         return AppColors.error;
       case 'participants':
-        return AppColors.primary;
+        return AppColors.eventPrimary(context);
       case 'exposants':
         return AppColors.warning;
       default:

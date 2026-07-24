@@ -262,7 +262,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                               Text(isLive ? 'Regarder en direct' : 'Regarder'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.eventPrimary(context),
                             disabledBackgroundColor:
                                 AppColors.surfaceContainerHigh(context),
                           ),
@@ -280,7 +280,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           label: const Text('Poser une question'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            foregroundColor: AppColors.primary,
+                            foregroundColor: AppColors.eventPrimary(context),
                           ),
                         ),
                       ),
@@ -302,12 +302,12 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
-            color: AppColors.primary,
+            color: AppColors.eventPrimary(context),
             size: 20,
           ),
         ),

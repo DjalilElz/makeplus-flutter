@@ -434,9 +434,9 @@ class _DiffusionScreenState extends State<DiffusionScreen>
                   const SizedBox(width: 6),
                   Text(
                     session['time'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primary,
+                      color: AppColors.eventPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

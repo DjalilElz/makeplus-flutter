@@ -66,7 +66,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
         // Scanner Overlay
         CustomPaint(
           painter: ScannerOverlay(
-            borderColor: AppColors.qrFrame,
+            borderColor: AppColors.eventPrimary(context),
             borderRadius: 16,
             borderLength: 40,
             borderWidth: 8,

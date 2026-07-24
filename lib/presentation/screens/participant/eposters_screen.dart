@@ -164,7 +164,7 @@ class _EpostersScreenState extends State<EpostersScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.7),
+                  AppColors.eventPrimary(context).withValues(alpha: 0.7),
                   AppColors.accent.withValues(alpha: 0.7),
                 ],
                 begin: Alignment.topLeft,
@@ -263,7 +263,7 @@ class _EpostersScreenState extends State<EpostersScreen> {
                     icon: const Icon(Icons.visibility),
                     label: const Text('Consulter'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.eventPrimary(context),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(

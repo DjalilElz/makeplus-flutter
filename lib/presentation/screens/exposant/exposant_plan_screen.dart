@@ -40,9 +40,9 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ouverture du PDF...'),
-            backgroundColor: AppColors.primary,
+          SnackBar(
+            content: const Text('Ouverture du PDF...'),
+            backgroundColor: AppColors.eventPrimary(context),
           ),
         );
       }
@@ -85,7 +85,7 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
               actions: [
                 if (hasGuide)
                   IconButton(
-                    icon: const Icon(Icons.download, color: AppColors.primary),
+                    icon: Icon(Icons.download, color: AppColors.eventPrimary(context)),
                     onPressed: () => _downloadPdf(guideUrl),
                   ),
               ],
@@ -110,7 +110,7 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
+                            color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(12),
                             ),
@@ -120,7 +120,7 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary,
+                                  color: AppColors.eventPrimary(context),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
@@ -301,7 +301,7 @@ class _ExposantPlanScreenState extends State<ExposantPlanScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
+        Icon(icon, size: 20, color: AppColors.eventPrimary(context)),
         const SizedBox(width: 12),
         Expanded(
           child: RichText(

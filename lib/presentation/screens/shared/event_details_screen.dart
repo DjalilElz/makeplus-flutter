@@ -45,7 +45,7 @@ class EventDetailsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Event Banner
-                _buildDefaultBanner(),
+                _buildDefaultBanner(context),
 
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -71,17 +71,17 @@ class EventDetailsScreen extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(event.status!)
+                            color: _getStatusColor(context, event.status!)
                                 .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _getStatusColor(event.status!),
+                              color: _getStatusColor(context, event.status!),
                             ),
                           ),
                           child: Text(
                             _getStatusText(event.status!),
                             style: TextStyle(
-                              color: _getStatusColor(event.status!),
+                              color: _getStatusColor(context, event.status!),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -153,15 +153,15 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultBanner() {
+  Widget _buildDefaultBanner(BuildContext context) {
     return Container(
       width: double.infinity,
       height: 200,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withValues(alpha: 0.8),
-            AppColors.primaryDark.withValues(alpha: 0.8),
+            AppColors.eventPrimary(context).withValues(alpha: 0.8),
+            AppColors.eventPrimaryDark(context).withValues(alpha: 0.8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -197,12 +197,12 @@ class EventDetailsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: AppColors.primary,
+              color: AppColors.eventPrimary(context),
               size: 24,
             ),
           ),
@@ -287,7 +287,7 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(BuildContext context, String status) {
     switch (status.toLowerCase()) {
       case 'active':
         return AppColors.success;
@@ -298,7 +298,7 @@ class EventDetailsScreen extends StatelessWidget {
       case 'cancelled':
         return AppColors.error;
       default:
-        return AppColors.primary;
+        return AppColors.eventPrimary(context);
     }
   }
 

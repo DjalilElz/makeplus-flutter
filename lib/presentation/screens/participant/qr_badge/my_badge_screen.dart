@@ -151,7 +151,7 @@ class _MyBadgeScreenState extends State<MyBadgeScreen> {
                       _buildActionButton(
                         'Ajouter au Wallet',
                         Icons.wallet,
-                        AppColors.primary,
+                        AppColors.eventPrimary(context),
                         _handleAddToWallet,
                       ),
                       const SizedBox(height: 12),
@@ -191,7 +191,7 @@ class _MyBadgeScreenState extends State<MyBadgeScreen> {
           Icon(
             icon,
             size: 20,
-            color: AppColors.primary,
+            color: AppColors.eventPrimary(context),
           ),
           const SizedBox(width: 12),
           Expanded(

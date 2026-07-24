@@ -138,4 +138,39 @@ class AppColors {
   /// primary/error/etc.) — e.g. a chevron, a muted leading icon.
   static Color iconMuted(BuildContext context) =>
       _isDark(context) ? textSecondaryDark : textSecondaryLight;
+
+  // ==================== Event-aware brand accessors ====================
+  // The app's real brand color is the *current event's* primary_color (see
+  // AppTheme._build/seedColor) -- these read the live ColorScheme instead
+  // of the static `primary`/`primaryDark`/`primaryLight` constants above,
+  // which only apply as the pre-login/no-event-selected fallback. Prefer
+  // these at any call site with a BuildContext, so buttons/icons/etc.
+  // actually follow whichever event's brand color is active.
+
+  /// The current event's brand color (falls back to the default purple
+  /// before an event/theme is known).
+  static Color eventPrimary(BuildContext context) =>
+      Theme.of(context).colorScheme.primary;
+
+  /// A darker tonal step of the current event's brand color.
+  static Color eventPrimaryDark(BuildContext context) =>
+      _darken(eventPrimary(context), 0.15);
+
+  /// A lighter tonal step of the current event's brand color.
+  static Color eventPrimaryLight(BuildContext context) =>
+      _lighten(eventPrimary(context), 0.2);
+
+  static Color _lighten(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withLightness((hsl.lightness + amount).clamp(0.0, 1.0))
+        .toColor();
+  }
+
+  static Color _darken(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
+        .toColor();
+  }
 }

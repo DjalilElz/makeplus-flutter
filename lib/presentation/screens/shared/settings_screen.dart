@@ -162,12 +162,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
+            color: (iconColor ?? AppColors.eventPrimary(context)).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
-            color: iconColor ?? AppColors.primary,
+            color: iconColor ?? AppColors.eventPrimary(context),
             size: 24,
           ),
         ),

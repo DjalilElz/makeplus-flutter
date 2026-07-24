@@ -167,7 +167,7 @@ class ParticipantInfoScreen extends StatelessWidget {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.eventPrimary(context),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -194,8 +194,8 @@ class ParticipantInfoScreen extends StatelessWidget {
                   Navigator.pop(context);
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  foregroundColor: AppColors.eventPrimary(context),
+                  side: BorderSide(color: AppColors.eventPrimary(context)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -224,7 +224,7 @@ class ParticipantInfoScreen extends StatelessWidget {
         Icon(
           icon,
           size: 20,
-          color: AppColors.primary,
+          color: AppColors.eventPrimary(context),
         ),
         const SizedBox(width: 12),
         Expanded(

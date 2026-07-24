@@ -93,7 +93,7 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                 // Navigate to Diffusion et Q&A
                 Navigator.pushNamed(context, '/participant/diffusion');
               },
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.eventPrimary(context),
               icon: const Icon(Icons.live_tv),
               label: const Text('Diffusion et Q&A'),
             ),

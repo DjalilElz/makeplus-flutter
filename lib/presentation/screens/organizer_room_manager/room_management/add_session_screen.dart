@@ -59,8 +59,8 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.light(
+              primary: AppColors.eventPrimary(context),
             ),
           ),
           child: child!,
@@ -128,7 +128,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                       _selectedType = type;
                     });
                   },
-                  selectedColor: AppColors.primary,
+                  selectedColor: AppColors.eventPrimary(context),
                   labelStyle: TextStyle(
                     color: isSelected
                         ? Colors.white

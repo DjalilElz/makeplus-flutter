@@ -157,7 +157,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             ? null
             : FloatingActionButton.extended(
                 onPressed: _showCreateAnnouncementModal,
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.eventPrimary(context),
                 icon: const Icon(Icons.add),
                 label: const Text('Nouvelle annonce'),
               ),
@@ -275,12 +275,12 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.campaign,
-                      color: AppColors.primary,
+                      color: AppColors.eventPrimary(context),
                       size: 32,
                     ),
                   ),
@@ -467,12 +467,12 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
     }
   }
 
-  final List<Map<String, dynamic>> _announcementTypes = [
+  List<Map<String, dynamic>> get _announcementTypes => [
     {
       'id': 'location',
       'label': 'Changement de salle',
       'icon': Icons.location_on,
-      'color': AppColors.primary,
+      'color': AppColors.eventPrimary(context),
     },
     {
       'id': 'delay',
@@ -731,15 +731,15 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
               _selectedTarget = target['value']!;
             });
           },
-          selectedColor: AppColors.primary.withValues(alpha: 0.2),
+          selectedColor: AppColors.eventPrimary(context).withValues(alpha: 0.2),
           labelStyle: TextStyle(
             color: isSelected
-                ? AppColors.primary
+                ? AppColors.eventPrimary(context)
                 : AppColors.textSecondary(context),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
           side: BorderSide(
-            color: isSelected ? AppColors.primary : AppColors.borderColor(context),
+            color: isSelected ? AppColors.eventPrimary(context) : AppColors.borderColor(context),
           ),
         );
       }).toList(),

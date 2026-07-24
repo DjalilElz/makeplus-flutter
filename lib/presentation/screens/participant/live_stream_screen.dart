@@ -206,7 +206,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
       player: YoutubePlayer(
         controller: _youtubeController,
         showVideoProgressIndicator: true,
-        progressIndicatorColor: AppColors.primary,
+        progressIndicatorColor: AppColors.eventPrimary(context),
         onReady: () {
           AppLogger.d('YouTube Player is ready');
         },
@@ -353,7 +353,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             bottom: 80,
             child: FloatingActionButton(
               heroTag: 'question',
-              backgroundColor: AppColors.primary.withValues(alpha: 0.9),
+              backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.9),
               onPressed: () {
                 setState(() {
                   _showQuestionBoxInFullscreen = true;
@@ -430,8 +430,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             color: AppColors.cardBackground(context),
             child: Row(
               children: [
-                const Icon(Icons.question_answer,
-                    color: AppColors.primary, size: 20),
+                Icon(Icons.question_answer,
+                    color: AppColors.eventPrimary(context), size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Mes Questions',
@@ -493,10 +493,10 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.account_circle,
                                         size: 20,
-                                        color: AppColors.primary,
+                                        color: AppColors.eventPrimary(context),
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
@@ -556,11 +556,11 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary
+                                        color: AppColors.eventPrimary(context)
                                             .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: AppColors.primary
+                                          color: AppColors.eventPrimary(context)
                                               .withValues(alpha: 0.3),
                                         ),
                                       ),
@@ -568,20 +568,20 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Row(
+                                          Row(
                                             children: [
                                               Icon(
                                                 Icons.record_voice_over,
                                                 size: 14,
-                                                color: AppColors.primary,
+                                                color: AppColors.eventPrimary(context),
                                               ),
-                                              SizedBox(width: 6),
+                                              const SizedBox(width: 6),
                                               Text(
                                                 'Réponse:',
                                                 style: TextStyle(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
-                                                  color: AppColors.primary,
+                                                  color: AppColors.eventPrimary(context),
                                                 ),
                                               ),
                                             ],
@@ -799,9 +799,9 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             IconButton(
               onPressed: _sendMessage,
               icon: const Icon(Icons.send),
-              color: AppColors.primary,
+              color: AppColors.eventPrimary(context),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                 padding: const EdgeInsets.all(12),
               ),
             ),
@@ -844,7 +844,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
               onPressed: _sendMessage,
               icon: const Icon(Icons.send, color: Colors.white),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.8),
+                backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.8),
                 padding: const EdgeInsets.all(12),
               ),
             ),

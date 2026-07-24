@@ -43,8 +43,8 @@ class EventSelectionScreen extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppColors.primary,
-                AppColors.primaryDark,
+                AppColors.eventPrimary(context),
+                AppColors.eventPrimaryDark(context),
               ],
             ),
           ),
@@ -262,15 +262,15 @@ class _EventCard extends StatelessWidget {
                   Icon(
                     _getRoleIcon(event.role),
                     size: 18,
-                    color: AppColors.primary,
+                    color: event.primaryColor ?? AppColors.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _getRoleLabel(event.role),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: event.primaryColor ?? AppColors.primary,
                     ),
                   ),
                 ],
@@ -333,14 +333,14 @@ class _EventCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: event.primaryColor ?? AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.arrow_forward,
                     size: 18,
-                    color: AppColors.primary,
+                    color: event.primaryColor ?? AppColors.primary,
                   ),
                 ],
               ),

@@ -87,8 +87,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Container(
                           height: 120,
                           width: 120,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: BoxDecoration(
+                            color: AppColors.eventPrimary(context),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -103,13 +103,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 32),
 
                       // Title
-                      const Text(
+                      Text(
                         'MakePlus',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: AppColors.eventPrimary(context),
                         ),
                       ),
                       const SizedBox(height: 8),

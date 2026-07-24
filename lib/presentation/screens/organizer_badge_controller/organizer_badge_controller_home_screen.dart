@@ -144,8 +144,8 @@ class _OrganizerBadgeControllerHomeScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: [AppColors.eventPrimary(context), AppColors.eventPrimaryDark(context)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

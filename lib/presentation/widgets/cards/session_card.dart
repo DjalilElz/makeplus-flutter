@@ -58,10 +58,10 @@ class SessionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${_formatDate(session.startTime)} • ${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: AppColors.eventPrimary(context),
                       ),
                     ),
                   ),
@@ -127,8 +127,8 @@ class SessionCard extends StatelessWidget {
                     if ((session.theme ?? '').isNotEmpty)
                       _Chip(
                         text: session.theme!,
-                        background: AppColors.primary.withValues(alpha: 0.1),
-                        foreground: AppColors.primary,
+                        background: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                        foreground: AppColors.eventPrimary(context),
                       ),
                     if ((session.theme ?? '').isNotEmpty && typeLabel != null)
                       const SizedBox(height: 4),
@@ -169,11 +169,11 @@ class SessionCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                      backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                       child: Text(
                         session.speakerName![0].toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.primary,
+                        style: TextStyle(
+                          color: AppColors.eventPrimary(context),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -368,7 +368,7 @@ class SessionCardCompact extends StatelessWidget {
           decoration: BoxDecoration(
             color: session.isLive
                 ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.primary.withValues(alpha: 0.1),
+                : AppColors.eventPrimary(context).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -379,7 +379,7 @@ class SessionCardCompact extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: session.isLive ? AppColors.success : AppColors.primary,
+                  color: session.isLive ? AppColors.success : AppColors.eventPrimary(context),
                 ),
               ),
             ],

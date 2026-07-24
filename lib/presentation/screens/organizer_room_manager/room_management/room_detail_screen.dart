@@ -84,9 +84,9 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Rechercher...',
-                  prefixIcon: Icon(Icons.search, color: AppColors.primary),
+                  prefixIcon: Icon(Icons.search, color: AppColors.eventPrimary(context)),
                 ),
                 onChanged: (value) {
                   // TODO: Implement search filtering
@@ -131,7 +131,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
         onPressed: () {
           Navigator.pushNamed(context, '/organizer/add-session');
         },
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.eventPrimary(context),
         icon: const Icon(Icons.add),
         label: const Text('Ajouter'),
       ),
@@ -169,8 +169,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withValues(alpha: 0.08),
-            AppColors.primaryLight.withValues(alpha: 0.03),
+            AppColors.eventPrimary(context).withValues(alpha: 0.08),
+            AppColors.eventPrimaryLight(context).withValues(alpha: 0.03),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -223,7 +223,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
                   icon: Icons.event_note,
                   value: '3',
                   label: 'Sessions',
-                  color: AppColors.primary,
+                  color: AppColors.eventPrimary(context),
                 ),
               ),
               const SizedBox(width: 12),
@@ -365,10 +365,10 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
               children: [
                 Text(
                   session['time'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: AppColors.eventPrimary(context),
                   ),
                 ),
                 const Spacer(),
@@ -424,14 +424,14 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     session['theme'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.primary,
+                      color: AppColors.eventPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -472,11 +472,11 @@ class _RoomDetailScreenState extends State<RoomDetailScreen>
         leading: Stack(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+              backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.2),
               child: Text(
                 participant['name'][0],
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: AppColors.eventPrimary(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),

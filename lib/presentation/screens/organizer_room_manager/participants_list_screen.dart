@@ -189,11 +189,11 @@ class _ParticipantsListScreenState extends State<ParticipantsListScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+          backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.2),
           child: Text(
             name[0],
-            style: const TextStyle(
-              color: AppColors.primary,
+            style: TextStyle(
+              color: AppColors.eventPrimary(context),
               fontWeight: FontWeight.bold,
             ),
           ),

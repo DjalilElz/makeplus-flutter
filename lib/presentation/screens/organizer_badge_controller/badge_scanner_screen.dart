@@ -217,7 +217,7 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
             ),
             // Custom overlay
             CustomPaint(
-              painter: _ScannerOverlay(),
+              painter: _ScannerOverlay(color: AppColors.eventPrimary(context)),
               child: Container(),
             ),
             // Instructions
@@ -288,6 +288,10 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
 }
 
 class _ScannerOverlay extends CustomPainter {
+  final Color color;
+
+  _ScannerOverlay({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final double scanAreaSize = size.width * 0.7;
@@ -310,7 +314,7 @@ class _ScannerOverlay extends CustomPainter {
 
     // Corner borders
     final borderPaint = Paint()
-      ..color = AppColors.primary
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 

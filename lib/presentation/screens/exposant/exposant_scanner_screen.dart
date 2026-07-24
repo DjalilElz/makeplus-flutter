@@ -130,8 +130,8 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
                 // Participant info (without background)
                 Row(
                   children: [
-                    const Icon(Icons.person,
-                        size: 20, color: AppColors.primary),
+                    Icon(Icons.person,
+                        size: 20, color: AppColors.eventPrimary(dialogContext)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -185,7 +185,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
-                          const BorderSide(color: AppColors.primary, width: 2),
+                          BorderSide(color: AppColors.eventPrimary(dialogContext), width: 2),
                     ),
                     contentPadding: const EdgeInsets.all(8),
                   ),
@@ -207,7 +207,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
                 Navigator.of(dialogContext).pop(true);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.eventPrimary(dialogContext),
                 foregroundColor: Colors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -357,7 +357,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
 
           // Overlay with scanning area
           CustomPaint(
-            painter: ScannerOverlay(),
+            painter: ScannerOverlay(color: AppColors.eventPrimary(context)),
             child: Container(),
           ),
 
@@ -425,6 +425,10 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
 
 // Custom painter for scanner overlay
 class ScannerOverlay extends CustomPainter {
+  final Color color;
+
+  ScannerOverlay({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final double scanAreaSize = size.width * 0.7;
@@ -451,7 +455,7 @@ class ScannerOverlay extends CustomPainter {
 
     // Draw corner borders
     final borderPaint = Paint()
-      ..color = AppColors.primary
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 

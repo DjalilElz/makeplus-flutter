@@ -33,7 +33,7 @@ class QRDisplayWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.2),
+            color: AppColors.eventPrimary(context).withValues(alpha: 0.2),
             blurRadius: 20,
             spreadRadius: 5,
           ),
@@ -45,13 +45,13 @@ class QRDisplayWidget extends StatelessWidget {
           // Header with gradient
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryDark],
+                colors: [AppColors.eventPrimary(context), AppColors.eventPrimaryDark(context)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
               ),
@@ -65,9 +65,9 @@ class QRDisplayWidget extends StatelessWidget {
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.event,
-                    color: AppColors.primary,
+                    color: AppColors.eventPrimary(context),
                     size: 32,
                   ),
                 ),
@@ -105,13 +105,13 @@ class QRDisplayWidget extends StatelessWidget {
                 else
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                     child: Text(
                       userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: AppColors.eventPrimary(context),
                       ),
                     ),
                   ),
@@ -136,14 +136,14 @@ class QRDisplayWidget extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     userRole,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.primary,
+                      color: AppColors.eventPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -157,7 +157,7 @@ class QRDisplayWidget extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: AppColors.eventPrimary(context).withValues(alpha: 0.2),
                       width: 2,
                     ),
                   ),

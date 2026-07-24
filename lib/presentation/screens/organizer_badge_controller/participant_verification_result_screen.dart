@@ -68,7 +68,7 @@ class ParticipantVerificationDialog {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.eventPrimary(dialogContext),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(12),
                       topRight: Radius.circular(12),
@@ -229,7 +229,7 @@ class ParticipantVerificationDialog {
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(dialogContext),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.eventPrimary(dialogContext),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

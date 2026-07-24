@@ -479,9 +479,9 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                                               const SizedBox(width: 6),
                                               Text(
                                                 atelier['time'],
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 14,
-                                                  color: AppColors.primary,
+                                                  color: AppColors.eventPrimary(context),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -593,7 +593,7 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 44,
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.eventPrimary(context),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'P',
                   style: const TextStyle(
@@ -632,14 +632,14 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Badge: $badgeId',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.primary,
+                        color: AppColors.eventPrimary(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -662,9 +662,9 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.primary,
+                          color: AppColors.eventPrimary(context),
                         ),
                       ),
                     )

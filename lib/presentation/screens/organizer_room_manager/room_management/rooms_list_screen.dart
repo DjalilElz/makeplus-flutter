@@ -296,9 +296,9 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   child: TextField(
                     controller: _searchController,
                     autofocus: true,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Rechercher une session...',
-                      prefixIcon: Icon(Icons.search, color: AppColors.primary),
+                      prefixIcon: Icon(Icons.search, color: AppColors.eventPrimary(context)),
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -456,7 +456,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: _selectedSessionId == session.id
-              ? AppColors.primary
+              ? AppColors.eventPrimary(context)
               : AppColors.borderColor(context),
           width: _selectedSessionId == session.id ? 2 : 1,
         ),
@@ -465,7 +465,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           color: _selectedSessionId == session.id
-              ? AppColors.primary.withValues(alpha: 0.05)
+              ? AppColors.eventPrimary(context).withValues(alpha: 0.05)
               : AppColors.cardBackground(context),
         ),
         child: Padding(
@@ -773,7 +773,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   const SizedBox(height: 12),
                   Center(
                     child: Icon(Icons.swap_vert,
-                        color: AppColors.primary, size: 24),
+                        color: AppColors.eventPrimary(context), size: 24),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -1168,8 +1168,8 @@ class _AddSessionModalState extends State<AddSessionModal> {
                                     Center(
                                       child: Text(
                                         'Image sélectionnée: ${_coverPhoto!.name}',
-                                        style: const TextStyle(
-                                            color: AppColors.primary),
+                                        style: TextStyle(
+                                            color: AppColors.eventPrimary(context)),
                                       ),
                                     ),
                                     Positioned(

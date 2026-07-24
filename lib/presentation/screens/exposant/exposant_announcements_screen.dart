@@ -80,13 +80,13 @@ class _ExposantAnnouncementsScreenState
     }
   }
 
-  Color _getColorForTarget(String target) {
+  Color _getColorForTarget(BuildContext context, String target) {
     switch (target.toLowerCase()) {
       case 'all':
       case 'tous':
         return AppColors.error;
       case 'participants':
-        return AppColors.primary;
+        return AppColors.eventPrimary(context);
       case 'exposants':
         return AppColors.warning;
       default:
@@ -163,7 +163,7 @@ class _ExposantAnnouncementsScreenState
                           itemCount: _announcements.length,
                           itemBuilder: (context, index) {
                             final announcement = _announcements[index];
-                            return _buildAnnouncementCard(announcement);
+                            return _buildAnnouncementCard(context, announcement);
                           },
                         ),
                       ),
@@ -268,10 +268,10 @@ class _ExposantAnnouncementsScreenState
     );
   }
 
-  Widget _buildAnnouncementCard(AnnouncementModel announcement) {
+  Widget _buildAnnouncementCard(BuildContext context, AnnouncementModel announcement) {
     final target = announcement.target;
     final icon = _getIconForTarget(target);
-    final color = _getColorForTarget(target);
+    final color = _getColorForTarget(context, target);
     final timestamp = _formatTimestamp(announcement.createdAt.toString());
 
     return Card(

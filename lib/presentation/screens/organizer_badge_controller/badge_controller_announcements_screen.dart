@@ -222,12 +222,12 @@ class _BadgeControllerAnnouncementsScreenState
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.campaign,
-                      color: AppColors.primary,
+                      color: AppColors.eventPrimary(context),
                       size: 32,
                     ),
                   ),

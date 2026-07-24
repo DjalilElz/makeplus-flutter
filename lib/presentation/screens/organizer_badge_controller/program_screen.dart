@@ -284,7 +284,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
             return items.map<Widget>((String item) {
               return Row(
                 children: [
-                  Icon(icon, size: 16, color: AppColors.primary),
+                  Icon(icon, size: 16, color: AppColors.eventPrimary(context)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -342,7 +342,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
           Container(
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -352,7 +352,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
               child: Icon(
                 Icons.music_note,
                 size: 48,
-                color: AppColors.primary.withValues(alpha: 0.5),
+                color: AppColors.eventPrimary(context).withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -383,14 +383,14 @@ class _ProgramScreenState extends State<ProgramScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         category,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.primary,
+                          color: AppColors.eventPrimary(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),

@@ -18,7 +18,7 @@ class BottomNavBar extends StatelessWidget {
     required this.onTap,
   });
 
-  List<BottomNavigationBarItem> _getNavItems() {
+  List<BottomNavigationBarItem> _getNavItems(BuildContext context) {
     // Normalize role name
     final normalizedRole =
         userRole.toLowerCase().replaceAll(' ', '_').replaceAll('-', '_');
@@ -70,8 +70,8 @@ class BottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: AppColors.eventPrimary(context),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.qr_code_scanner, color: Colors.white),
@@ -107,8 +107,8 @@ class BottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: AppColors.eventPrimary(context),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.person, color: Colors.white),
@@ -144,8 +144,8 @@ class BottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: AppColors.eventPrimary(context),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.qr_code_scanner, color: Colors.white),
@@ -195,7 +195,7 @@ class BottomNavBar extends StatelessWidget {
             elevation: 0,
             currentIndex: currentIndex,
             onTap: onTap,
-            items: _getNavItems(),
+            items: _getNavItems(context),
             type: BottomNavigationBarType.fixed,
             showUnselectedLabels: true,
           ),

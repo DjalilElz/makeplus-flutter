@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.eventPrimary(context),
         body: Center(
           child: AnimatedBuilder(
             animation: _animationController,

@@ -234,8 +234,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: Container(
                       height: 100,
                       width: 100,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      decoration: BoxDecoration(
+                        color: AppColors.eventPrimary(context),
                         shape: BoxShape.circle,
                       ),
                       child: const Center(
@@ -278,7 +278,7 @@ class _SignupScreenState extends State<SignupScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : inactiveColor,
+            color: isActive ? AppColors.eventPrimary(context) : inactiveColor,
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -296,7 +296,7 @@ class _SignupScreenState extends State<SignupScreen> {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: isActive ? AppColors.primary : inactiveText,
+            color: isActive ? AppColors.eventPrimary(context) : inactiveText,
           ),
         ),
       ],
@@ -309,7 +309,7 @@ class _SignupScreenState extends State<SignupScreen> {
       width: 60,
       height: 2,
       margin: const EdgeInsets.only(bottom: 20),
-      color: isActive ? AppColors.primary : AppColors.surfaceContainerHigh(context),
+      color: isActive ? AppColors.eventPrimary(context) : AppColors.surfaceContainerHigh(context),
     );
   }
 

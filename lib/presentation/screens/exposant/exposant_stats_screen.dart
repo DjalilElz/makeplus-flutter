@@ -157,8 +157,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     try {
       // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
+        SnackBar(
+          content: const Row(
             children: [
               SizedBox(
                 width: 20,
@@ -172,8 +172,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
               Text('Preparation du fichier...'),
             ],
           ),
-          backgroundColor: AppColors.primary,
-          duration: Duration(seconds: 30),
+          backgroundColor: AppColors.eventPrimary(context),
+          duration: const Duration(seconds: 30),
         ),
       );
 
@@ -313,7 +313,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                                     context,
                                     'Visiteurs total',
                                     _totalVisits.toString(),
-                                    AppColors.primary,
+                                    AppColors.eventPrimary(context),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -502,12 +502,12 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person,
-                  color: AppColors.primary,
+                  color: AppColors.eventPrimary(context),
                   size: 24,
                 ),
               ),

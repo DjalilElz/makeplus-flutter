@@ -29,11 +29,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: const Icon(
+                  backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                  child: Icon(
                     Icons.person,
                     size: 50,
-                    color: AppColors.primary,
+                    color: AppColors.eventPrimary(context),
                   ),
                 ),
                 Positioned(
@@ -41,8 +41,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   right: 0,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                    decoration: BoxDecoration(
+                      color: AppColors.eventPrimary(context),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -73,7 +73,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.eventPrimary(context),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

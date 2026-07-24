@@ -116,18 +116,18 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
             // Room Info Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: AppColors.primary.withValues(alpha: 0.05),
+              color: AppColors.eventPrimary(context).withValues(alpha: 0.05),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.meeting_room,
-                      color: AppColors.primary,
+                      color: AppColors.eventPrimary(context),
                       size: 20,
                     ),
                   ),
@@ -245,14 +245,14 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                 CircleAvatar(
                   backgroundColor: question['askerType'] == 'Exposant'
                       ? AppColors.accent.withValues(alpha: 0.2)
-                      : AppColors.primary.withValues(alpha: 0.2),
+                      : AppColors.eventPrimary(context).withValues(alpha: 0.2),
                   radius: 20,
                   child: Text(
                     question['asker'][0],
                     style: TextStyle(
                       color: question['askerType'] == 'Exposant'
                           ? AppColors.accent
-                          : AppColors.primary,
+                          : AppColors.eventPrimary(context),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -280,7 +280,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                             decoration: BoxDecoration(
                               color: question['askerType'] == 'Exposant'
                                   ? AppColors.accent.withValues(alpha: 0.1)
-                                  : AppColors.primary.withValues(alpha: 0.1),
+                                  : AppColors.eventPrimary(context).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -289,7 +289,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                                 fontSize: 11,
                                 color: question['askerType'] == 'Exposant'
                                     ? AppColors.accent
-                                    : AppColors.primary,
+                                    : AppColors.eventPrimary(context),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -452,7 +452,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.eventPrimary(context),
               ),
               child: const Text('Répondre'),
             ),

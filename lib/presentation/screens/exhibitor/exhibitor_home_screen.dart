@@ -75,7 +75,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
           onPressed: () {
             Navigator.pushNamed(context, '/exhibitor/scanner');
           },
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.eventPrimary(context),
           icon: const Icon(Icons.qr_code_scanner),
           label: const Text('Scanner'),
         ),
@@ -96,8 +96,8 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: [AppColors.eventPrimary(context), AppColors.eventPrimaryDark(context)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -193,7 +193,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
             '48',
             'Visiteurs\nScannés',
             Icons.people,
-            AppColors.primary,
+            AppColors.eventPrimary(context),
           ),
         ),
         const SizedBox(width: 12),
@@ -289,8 +289,8 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withValues(alpha: 0.1),
-            AppColors.primaryLight.withValues(alpha: 0.05),
+            AppColors.eventPrimary(context).withValues(alpha: 0.1),
+            AppColors.eventPrimaryLight(context).withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
