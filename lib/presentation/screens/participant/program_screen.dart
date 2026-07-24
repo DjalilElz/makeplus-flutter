@@ -287,16 +287,29 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
         .toList()
       ..sort();
 
+    final hasAnyFilter = types.length > 1 || statuses.length > 1 || dates.length > 1;
+    if (!hasAnyFilter) return const SizedBox.shrink();
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        border: Border(bottom: BorderSide(color: AppColors.borderColor(context))),
+        color: AppColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (types.length > 1)
+          if (types.length > 1) ...[
+            _FilterSectionLabel(icon: Icons.category_rounded, label: 'Type'),
+            const SizedBox(height: 10),
             _FilterRow<String>(
               selected: _typeFilter,
               options: [
@@ -305,9 +318,12 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               ],
               onSelected: (value) => setState(() => _typeFilter = value),
             ),
+          ],
           if (types.length > 1 && (statuses.length > 1 || dates.length > 1))
-            const SizedBox(height: 8),
-          if (statuses.length > 1)
+            const SizedBox(height: 18),
+          if (statuses.length > 1) ...[
+            _FilterSectionLabel(icon: Icons.timelapse_rounded, label: 'Statut'),
+            const SizedBox(height: 10),
             _FilterRow<SessionStatus>(
               selected: _statusFilter,
               options: [
@@ -316,8 +332,11 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               ],
               onSelected: (value) => setState(() => _statusFilter = value),
             ),
-          if (statuses.length > 1 && dates.length > 1) const SizedBox(height: 8),
-          if (dates.length > 1)
+          ],
+          if (statuses.length > 1 && dates.length > 1) const SizedBox(height: 18),
+          if (dates.length > 1) ...[
+            _FilterSectionLabel(icon: Icons.calendar_today_rounded, label: 'Date'),
+            const SizedBox(height: 10),
             _FilterRow<DateTime>(
               selected: _dateFilter,
               options: [
@@ -326,6 +345,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               ],
               onSelected: (value) => setState(() => _dateFilter = value),
             ),
+          ],
         ],
       ),
     );
@@ -359,43 +379,45 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
 
     final filtered = _applyFilters(sessions);
 
-    return Column(
-      children: [
-        _buildFilterBar(context, sessions),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadSessions,
-            child: filtered.isEmpty
-                ? ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                    children: [
-                      SizedBox(
-                        height: 300,
-                        child: _buildMessage(
-                          context,
-                          icon: Icons.filter_alt_off,
-                          title: 'Aucun résultat',
-                          message:
-                              'Aucune session ne correspond aux filtres sélectionnés.',
-                        ),
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final session = filtered[index];
-                      return SessionCard(
-                        session: session,
-                        typeLabel: SessionTypes.getDisplayName(session.sessionType),
-                        onTap: () => _openSessionDetail(session),
-                      );
-                    },
-                  ),
-          ),
-        ),
-      ],
+    // A single CustomScrollView (not a fixed filter bar + separate scroll
+    // area) so the filter card scrolls away with the rest of the content
+    // instead of staying pinned at the top.
+    return RefreshIndicator(
+      onRefresh: _loadSessions,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildFilterBar(context, sessions)),
+          if (filtered.isEmpty)
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 300,
+                child: _buildMessage(
+                  context,
+                  icon: Icons.filter_alt_off,
+                  title: 'Aucun résultat',
+                  message: 'Aucune session ne correspond aux filtres sélectionnés.',
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final session = filtered[index];
+                    return SessionCard(
+                      session: session,
+                      typeLabel: SessionTypes.getDisplayName(session.sessionType),
+                      onTap: () => _openSessionDetail(session),
+                    );
+                  },
+                  childCount: filtered.length,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -491,6 +513,34 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
   }
 }
 
+// Small caption-style header ("Type", "Statut", "Date") above a filter row.
+class _FilterSectionLabel extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _FilterSectionLabel({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: AppColors.eventPrimary(context)),
+        const SizedBox(width: 6),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+            color: AppColors.textSecondary(context),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // Single-select chip row for the program filters ("Tous" plus one chip per
 // distinct value present in the loaded sessions). Selecting a chip calls
 // [onSelected] with its value, or null when "Tous" is tapped -- callers
@@ -535,26 +585,43 @@ class _FilterRow<T> extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(
+          left: isSelected ? 10 : 14,
+          right: 14,
+          top: 8,
+          bottom: 8,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.eventPrimary(context)
               : AppColors.surfaceContainer(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.eventPrimary(context)
-                : AppColors.borderColor(context),
-          ),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textSecondary(context),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 150),
+              child: isSelected
+                  ? const Padding(
+                      key: ValueKey('check'),
+                      padding: EdgeInsets.only(right: 5),
+                      child: Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('nocheck')),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.textSecondary(context),
+              ),
+            ),
+          ],
         ),
       ),
     );
