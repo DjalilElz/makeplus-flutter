@@ -43,18 +43,11 @@ class SessionCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Date + time on its own row -- always shown in full (wraps
-              // to a 2nd line if it must, never shares space with the
-              // live badge, so nothing else can ever squeeze it).
+              // Date + time on the left, session status on the right --
+              // always shown in full (wraps to a 2nd line if it must).
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: AppColors.textSecondary(context),
-                  ),
-                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       '${_formatDate(session.startTime)} • ${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
@@ -65,104 +58,14 @@ class SessionCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (showLiveIndicator) ...[
+                    const SizedBox(width: 8),
+                    _StatusBadge(status: session.status),
+                  ],
                 ],
               ),
-              if (showLiveIndicator && session.isLive) ...[
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'EN DIRECT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
 
-              // Session Title
-              Text(
-                session.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              // Theme, then type directly below it in a column (not
-              // side-by-side) -- each capped at a max width with ellipsis
-              // so a long label can never overflow.
-              if ((session.theme ?? '').isNotEmpty || typeLabel != null) ...[
-                const SizedBox(height: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if ((session.theme ?? '').isNotEmpty)
-                      _Chip(
-                        text: session.theme!,
-                        background: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                        foreground: AppColors.eventPrimary(context),
-                      ),
-                    if ((session.theme ?? '').isNotEmpty && typeLabel != null)
-                      const SizedBox(height: 4),
-                    if (typeLabel != null)
-                      _Chip(
-                        text: typeLabel!,
-                        background: AppColors.accent.withValues(alpha: 0.15),
-                        foreground: AppColors.accent,
-                      ),
-                  ],
-                ),
-              ],
-
-              if ((session.roomName ?? '').isNotEmpty) ...[
-                const SizedBox(height: 6),
-                _IconLabel(
-                  icon: Icons.meeting_room_outlined,
-                  text: session.roomName!,
-                  color: AppColors.textSecondary(context),
-                ),
-              ],
-
-              if (session.description != null) ...[
-                const SizedBox(height: 10),
-                _ExpandableText(
-                  text: session.description!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary(context),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-
+              // Speaker / author -- right after the date/time, before the title.
               if (session.speakerName != null) ...[
                 const SizedBox(height: 12),
                 Row(
@@ -207,6 +110,63 @@ class SessionCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ],
+              const SizedBox(height: 12),
+
+              // Session Title
+              Text(
+                session.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              // Theme (shown in full, never truncated), then type directly
+              // below it in a column (not side-by-side).
+              if ((session.theme ?? '').isNotEmpty || typeLabel != null) ...[
+                const SizedBox(height: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if ((session.theme ?? '').isNotEmpty)
+                      _Chip(
+                        text: session.theme!,
+                        background: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                        foreground: AppColors.eventPrimary(context),
+                        fullWidth: true,
+                      ),
+                    if ((session.theme ?? '').isNotEmpty && typeLabel != null)
+                      const SizedBox(height: 4),
+                    if (typeLabel != null)
+                      _Chip(
+                        text: typeLabel!,
+                        background: AppColors.accent.withValues(alpha: 0.15),
+                        foreground: AppColors.accent,
+                      ),
+                  ],
+                ),
+              ],
+
+              if ((session.roomName ?? '').isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _IconLabel(
+                  icon: Icons.meeting_room_outlined,
+                  text: session.roomName!,
+                  color: AppColors.textSecondary(context),
+                ),
+              ],
+
+              if (session.description != null) ...[
+                const SizedBox(height: 10),
+                _ExpandableText(
+                  text: session.description!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary(context),
+                    height: 1.4,
+                  ),
                 ),
               ],
             ],
@@ -270,22 +230,25 @@ class _ExpandableTextState extends State<_ExpandableText> {
 
 // Small pill label (session type, theme) used in SessionCard's tags row.
 // Capped at a fixed max width with ellipsis so a long label can never
-// overflow its Wrap line, no matter how long the text is.
+// overflow its Wrap line, no matter how long the text is -- unless
+// [fullWidth] is set, in which case the text wraps and shows completely.
 class _Chip extends StatelessWidget {
   final String text;
   final Color background;
   final Color foreground;
+  final bool fullWidth;
 
   const _Chip({
     required this.text,
     required this.background,
     required this.foreground,
+    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 180),
+      constraints: fullWidth ? null : const BoxConstraints(maxWidth: 180),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: background,
@@ -298,8 +261,73 @@ class _Chip extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: foreground,
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        maxLines: fullWidth ? null : 1,
+        overflow: fullWidth ? TextOverflow.visible : TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+// Session status badge (Pas encore / En cours / Terminé) shown top-right
+// of SessionCard, next to the date/time.
+class _StatusBadge extends StatelessWidget {
+  final SessionStatus status;
+
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    late final String label;
+    late final Color color;
+    late final bool pulsing;
+
+    switch (status) {
+      case SessionStatus.inProgress:
+        label = 'En cours';
+        color = AppColors.success;
+        pulsing = true;
+        break;
+      case SessionStatus.finished:
+        label = 'Terminé';
+        color = AppColors.textHint(context);
+        pulsing = false;
+        break;
+      case SessionStatus.notStarted:
+        label = 'Pas encore';
+        color = AppColors.warning;
+        pulsing = false;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (pulsing) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

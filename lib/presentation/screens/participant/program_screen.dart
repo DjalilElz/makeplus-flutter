@@ -37,6 +37,13 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
   bool _isLoadingSessions = false;
   String? _sessionsError;
 
+  // Live, client-side filters for the cards view -- null means "Tous"
+  // (no filter on that dimension). Applied in-memory to the already-loaded
+  // session list, no re-fetch.
+  String? _typeFilter;
+  SessionStatus? _statusFilter;
+  DateTime? _dateFilter;
+
   String? _pdfPath;
   bool _isLoadingPdf = false;
   String? _pdfError;
@@ -239,6 +246,91 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
     );
   }
 
+  List<SessionModel> _applyFilters(List<SessionModel> sessions) {
+    return sessions.where((s) {
+      if (_typeFilter != null && s.sessionType != _typeFilter) return false;
+      if (_statusFilter != null && s.status != _statusFilter) return false;
+      if (_dateFilter != null) {
+        final d = s.startTime;
+        if (d.year != _dateFilter!.year ||
+            d.month != _dateFilter!.month ||
+            d.day != _dateFilter!.day) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  String _formatFilterDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+
+  String _statusLabel(SessionStatus status) {
+    switch (status) {
+      case SessionStatus.inProgress:
+        return 'En cours';
+      case SessionStatus.finished:
+        return 'Terminé';
+      case SessionStatus.notStarted:
+        return 'Pas encore';
+    }
+  }
+
+  Widget _buildFilterBar(BuildContext context, List<SessionModel> sessions) {
+    final types = sessions.map((s) => s.sessionType).toSet().toList();
+    final statuses = sessions.map((s) => s.status).toSet().toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    final dates = sessions
+        .map((s) => DateTime(s.startTime.year, s.startTime.month, s.startTime.day))
+        .toSet()
+        .toList()
+      ..sort();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        border: Border(bottom: BorderSide(color: AppColors.borderColor(context))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (types.length > 1)
+            _FilterRow<String>(
+              selected: _typeFilter,
+              options: [
+                for (final type in types)
+                  (label: SessionTypes.getDisplayName(type), value: type),
+              ],
+              onSelected: (value) => setState(() => _typeFilter = value),
+            ),
+          if (types.length > 1 && (statuses.length > 1 || dates.length > 1))
+            const SizedBox(height: 8),
+          if (statuses.length > 1)
+            _FilterRow<SessionStatus>(
+              selected: _statusFilter,
+              options: [
+                for (final status in statuses)
+                  (label: _statusLabel(status), value: status),
+              ],
+              onSelected: (value) => setState(() => _statusFilter = value),
+            ),
+          if (statuses.length > 1 && dates.length > 1) const SizedBox(height: 8),
+          if (dates.length > 1)
+            _FilterRow<DateTime>(
+              selected: _dateFilter,
+              options: [
+                for (final date in dates)
+                  (label: _formatFilterDate(date), value: date),
+              ],
+              onSelected: (value) => setState(() => _dateFilter = value),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSessionsView(BuildContext context) {
     if (_isLoadingSessions) {
       return const Center(child: CircularProgressIndicator());
@@ -264,20 +356,46 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
         message: 'Le programme détaillé n\'a pas encore été publié.',
       );
     }
-    return RefreshIndicator(
-      onRefresh: _loadSessions,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-        itemCount: sessions.length,
-        itemBuilder: (context, index) {
-          final session = sessions[index];
-          return SessionCard(
-            session: session,
-            typeLabel: SessionTypes.getDisplayName(session.sessionType),
-            onTap: () => _openSessionDetail(session),
-          );
-        },
-      ),
+
+    final filtered = _applyFilters(sessions);
+
+    return Column(
+      children: [
+        _buildFilterBar(context, sessions),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadSessions,
+            child: filtered.isEmpty
+                ? ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                    children: [
+                      SizedBox(
+                        height: 300,
+                        child: _buildMessage(
+                          context,
+                          icon: Icons.filter_alt_off,
+                          title: 'Aucun résultat',
+                          message:
+                              'Aucune session ne correspond aux filtres sélectionnés.',
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final session = filtered[index];
+                      return SessionCard(
+                        session: session,
+                        typeLabel: SessionTypes.getDisplayName(session.sessionType),
+                        onTap: () => _openSessionDetail(session),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -367,6 +485,76 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               action,
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Single-select chip row for the program filters ("Tous" plus one chip per
+// distinct value present in the loaded sessions). Selecting a chip calls
+// [onSelected] with its value, or null when "Tous" is tapped -- callers
+// apply this purely in-memory against the already-loaded session list.
+class _FilterRow<T> extends StatelessWidget {
+  final T? selected;
+  final List<({String label, T value})> options;
+  final ValueChanged<T?> onSelected;
+
+  const _FilterRow({
+    required this.selected,
+    required this.options,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildChip(context, label: 'Tous', isSelected: selected == null, onTap: () => onSelected(null)),
+          for (final option in options) ...[
+            const SizedBox(width: 8),
+            _buildChip(
+              context,
+              label: option.label,
+              isSelected: selected == option.value,
+              onTap: () => onSelected(option.value),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChip(
+    BuildContext context, {
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.eventPrimary(context)
+              : AppColors.surfaceContainer(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.eventPrimary(context)
+                : AppColors.borderColor(context),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.textSecondary(context),
+          ),
         ),
       ),
     );
