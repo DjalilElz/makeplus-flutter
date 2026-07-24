@@ -669,10 +669,18 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                       ),
                     )
                   : _qrCodeData != null
-                      ? QrImageView(
-                          data: _qrCodeData!,
-                          version: QrVersions.auto,
-                          size: 180,
+                      ? Container(
+                          width: 180,
+                          height: 180,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: QrImageView(
+                            data: _qrCodeData!,
+                            version: QrVersions.auto,
+                          ),
                         )
                       : Container(
                           width: 180,
