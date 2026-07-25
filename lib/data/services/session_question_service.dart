@@ -55,19 +55,13 @@ class SessionQuestionService {
     }
   }
 
-  /// Answer a question. Gestionnaire-only on the backend; [answerText] must
-  /// be non-empty (the DRF `answer` action rejects an empty string with a
-  /// 400 -- unlike the web dashboard's equivalent view, this endpoint has no
-  /// "clear the answer" mode).
-  Future<SessionQuestionModel> answerQuestion({
-    required String questionId,
-    required String answerText,
-  }) async {
+  /// Toggle a question's answered state. Gestionnaire-only on the backend.
+  /// These questions are answered orally, in the room -- there is nothing
+  /// to type or store, just who/when marked it. Calling this again on an
+  /// already-answered question unmarks it.
+  Future<SessionQuestionModel> toggleAnswered(String questionId) async {
     try {
-      final response = await _apiClient.post(
-        '/session-questions/$questionId/answer/',
-        data: {'answer_text': answerText},
-      );
+      final response = await _apiClient.post('/session-questions/$questionId/answer/');
       return SessionQuestionModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw Exception(_handleError(e));

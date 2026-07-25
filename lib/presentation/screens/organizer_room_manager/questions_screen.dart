@@ -34,25 +34,15 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
   bool _isLoading = false;
   String? _error;
 
-  // Tracks which question is currently being answered (its inline reply
-  // field is expanded) and whether a submit is in flight for it.
-  String? _replyingToId;
-  final Map<String, TextEditingController> _replyControllers = {};
-  bool _isSubmittingAnswer = false;
+  // Question currently being marked/unmarked, so only that card shows a
+  // spinner instead of blocking the whole list.
+  String? _togglingId;
 
   @override
   void initState() {
     super.initState();
     _questionService = SessionQuestionService(ApiClient());
     _loadQuestions();
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _replyControllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
   }
 
   Future<void> _loadQuestions() async {
@@ -77,32 +67,24 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
     }
   }
 
-  Future<void> _submitAnswer(SessionQuestionModel question) async {
-    final controller = _replyControllers[question.id];
-    final answerText = controller?.text.trim() ?? '';
-    if (answerText.isEmpty) return;
-
-    setState(() => _isSubmittingAnswer = true);
+  Future<void> _toggleAnswered(SessionQuestionModel question) async {
+    setState(() => _togglingId = question.id);
 
     try {
-      final updated = await _questionService.answerQuestion(
-        questionId: question.id,
-        answerText: answerText,
-      );
+      final updated = await _questionService.toggleAnswered(question.id);
       if (!mounted) return;
       setState(() {
         _questions = _questions
             ?.map((q) => q.id == question.id ? updated : q)
             .toList();
-        _replyingToId = null;
-        _isSubmittingAnswer = false;
+        _togglingId = null;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isSubmittingAnswer = false);
+      setState(() => _togglingId = null);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Impossible d\'envoyer la réponse.'),
+          content: Text('Impossible de mettre à jour la question.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -160,7 +142,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
   }
 
   Widget _buildQuestionCard(BuildContext context, SessionQuestionModel question) {
-    final isReplying = _replyingToId == question.id;
+    final isToggling = _togglingId == question.id;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -233,87 +215,44 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               ),
             ),
 
-            if (question.isAnswered) ...[
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if ((question.answeredByName ?? '').isNotEmpty)
-                      Text(
-                        'Réponse — ${question.answeredByName}',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary(context)),
-                      ),
-                    const SizedBox(height: 4),
-                    Text(question.answerText ?? '', style: TextStyle(fontSize: 14, color: AppColors.textPrimary(context))),
-                  ],
-                ),
+            if (question.isAnswered && (question.answeredByName ?? '').isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Marquée comme répondue par ${question.answeredByName}',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary(context)),
               ),
-            ] else ...[
-              const SizedBox(height: 10),
-              if (isReplying) ...[
-                TextField(
-                  controller: _replyControllers.putIfAbsent(question.id, () => TextEditingController()),
-                  autofocus: true,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Écrire une réponse...',
-                    filled: true,
-                    fillColor: AppColors.surfaceContainer(context),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _isSubmittingAnswer ? null : () => setState(() => _replyingToId = null),
-                        child: const Text('Annuler'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isSubmittingAnswer ? null : () => _submitAnswer(question),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.eventPrimary(context),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: _isSubmittingAnswer
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text('Envoyer'),
-                      ),
-                    ),
-                  ],
-                ),
-              ] else
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => setState(() => _replyingToId = question.id),
-                    icon: const Icon(Icons.reply, size: 18),
-                    label: const Text('Répondre'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.eventPrimary(context),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
             ],
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: question.isAnswered
+                  ? OutlinedButton.icon(
+                      onPressed: isToggling ? null : () => _toggleAnswered(question),
+                      icon: isToggling
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.replay, size: 18),
+                      label: const Text('Marquer comme non répondue'),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: isToggling ? null : () => _toggleAnswered(question),
+                      icon: isToggling
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.check, size: 18),
+                      label: const Text('Marquer comme répondue'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.eventPrimary(context),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
