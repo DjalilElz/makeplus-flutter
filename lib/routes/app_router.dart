@@ -333,7 +333,7 @@ class AppRouter {
 
       default:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
+          builder: (routeContext) => Scaffold(
             appBar: AppBar(
               title: const Text('Error'),
             ),
@@ -354,7 +354,7 @@ class AppRouter {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.of(_).pushReplacementNamed(login);
+                      Navigator.of(routeContext).pushReplacementNamed(login);
                     },
                     child: const Text('Go to Login'),
                   ),

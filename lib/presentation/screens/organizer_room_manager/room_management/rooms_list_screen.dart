@@ -63,7 +63,8 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
         throw Exception('No event or user selected');
       }
 
-      AppLogger.d('🏢 LOADING ASSIGNED ROOM - Event ID: $eventId, User ID: $userId');
+      AppLogger.d(
+          '🏢 LOADING ASSIGNED ROOM - Event ID: $eventId, User ID: $userId');
 
       // Fetch the user's assigned room from room assignments
       final assignedRoom = await _roomService.getAssignedRoom(
@@ -165,8 +166,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                 child: Text(_errorMessage!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary(context))),
+                        fontSize: 14, color: AppColors.textSecondary(context))),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -289,8 +289,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground(context),
                     border: Border(
-                      bottom:
-                          BorderSide(color: AppColors.borderColor(context)),
+                      bottom: BorderSide(color: AppColors.borderColor(context)),
                     ),
                   ),
                   child: TextField(
@@ -298,7 +297,8 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                     autofocus: true,
                     decoration: InputDecoration(
                       hintText: 'Rechercher une session...',
-                      prefixIcon: Icon(Icons.search, color: AppColors.eventPrimary(context)),
+                      prefixIcon: Icon(Icons.search,
+                          color: AppColors.eventPrimary(context)),
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -505,17 +505,29 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                       ),
                     ),
                   ),
-                  // Swap icon button
+                  // Swap icon button -- disabled while a swap is already in
+                  // flight so a second tap can't fire an overlapping request.
                   IconButton(
-                    icon: Icon(
-                      _selectedSessionId == session.id
-                          ? Icons.check_circle
-                          : Icons.swap_horiz,
-                      color: _selectedSessionId == session.id
-                          ? AppColors.success
-                          : AppColors.textSecondary(context),
-                    ),
-                    onPressed: () => _toggleSessionSelection(session),
+                    icon: _isSwapping && _selectedSessionId == session.id
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.eventPrimary(context),
+                            ),
+                          )
+                        : Icon(
+                            _selectedSessionId == session.id
+                                ? Icons.check_circle
+                                : Icons.swap_horiz,
+                            color: _selectedSessionId == session.id
+                                ? AppColors.success
+                                : AppColors.textSecondary(context),
+                          ),
+                    onPressed: _isSwapping
+                        ? null
+                        : () => _toggleSessionSelection(session),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     iconSize: 24,
@@ -657,9 +669,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isActive
-                ? color
-                : AppColors.surfaceContainer(context),
+            color: isActive ? color : AppColors.surfaceContainer(context),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isActive ? color : AppColors.borderColor(context),
@@ -670,9 +680,8 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: isActive
-                    ? Colors.white
-                    : AppColors.textSecondary(context),
+                color:
+                    isActive ? Colors.white : AppColors.textSecondary(context),
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
               ),
@@ -1015,8 +1024,7 @@ class _AddSessionModalState extends State<AddSessionModal> {
         return Container(
           decoration: BoxDecoration(
             color: AppColors.cardBackground(context),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
@@ -1181,8 +1189,8 @@ class _AddSessionModalState extends State<AddSessionModal> {
                           decoration: BoxDecoration(
                             color: AppColors.surfaceContainer(context),
                             borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: AppColors.borderColor(context)),
+                            border: Border.all(
+                                color: AppColors.borderColor(context)),
                           ),
                           child: _coverPhoto != null
                               ? Stack(
@@ -1191,7 +1199,8 @@ class _AddSessionModalState extends State<AddSessionModal> {
                                       child: Text(
                                         'Image sélectionnée: ${_coverPhoto!.name}',
                                         style: TextStyle(
-                                            color: AppColors.eventPrimary(context)),
+                                            color: AppColors.eventPrimary(
+                                                context)),
                                       ),
                                     ),
                                     Positioned(

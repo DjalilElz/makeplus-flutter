@@ -128,8 +128,8 @@ class EventDetailsScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.cardBackground(context),
                             borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: AppColors.borderColor(context)),
+                            border: Border.all(
+                                color: AppColors.borderColor(context)),
                           ),
                           child: Text(
                             event.description!,
@@ -240,47 +240,6 @@ class EventDetailsScreen extends StatelessWidget {
                 ],
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary(context),
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

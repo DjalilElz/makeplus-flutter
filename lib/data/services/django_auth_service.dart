@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
@@ -29,8 +31,8 @@ class DjangoAuthService {
     _initPrefs();
 
     // Longer connection timeout: Render cold starts + slow DNS on mobile networks.
-    (_dio.httpClientAdapter as IOHttpClientAdapter).onHttpClientCreate =
-        (client) {
+    (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 30);
       return client;
     };
