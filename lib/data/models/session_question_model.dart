@@ -32,7 +32,7 @@ class SessionQuestionModel {
 
   factory SessionQuestionModel.fromJson(Map<String, dynamic> json) {
     return SessionQuestionModel(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       sessionId: json['session'] ?? '',
       questionText: json['question_text'] ?? '',
       askedAt: json['asked_at'] != null
