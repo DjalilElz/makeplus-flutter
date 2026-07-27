@@ -65,13 +65,13 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // Wait for animation to complete before navigating
+        // Navigate as soon as the auth check resolves -- no artificial
+        // wait for the logo animation. On a fast/cached check this keeps
+        // the splash near-instant; on a slow one (Render cold start) it
+        // avoids piling an extra fixed delay on top of an already-slow
+        // network wait.
         if (state.status != AuthStatus.loading) {
-          Future.delayed(const Duration(milliseconds: 2500), () {
-            if (mounted) {
-              _navigateBasedOnAuthState(state);
-            }
-          });
+          _navigateBasedOnAuthState(state);
         }
       },
       child: Scaffold(

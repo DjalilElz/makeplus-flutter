@@ -66,7 +66,9 @@ class DjangoAuthService {
 
   Future<void> _initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
-    _token = _prefs?.getString('auth_token');
+    // The access token itself only ever lives in secure storage -- never
+    // in SharedPreferences, which is unencrypted plaintext on disk.
+    _token = await _secureStorage.read(key: 'access_token');
     if (_token != null) {
       _dio.options.headers['Authorization'] = 'Bearer $_token';
     }
@@ -128,10 +130,7 @@ class DjangoAuthService {
         _token = accessToken;
         _dio.options.headers['Authorization'] = 'Bearer $_token';
 
-        // Save to SharedPreferences for backward compatibility
-        await _prefs?.setString('auth_token', _token!);
-
-        // Save to FlutterSecureStorage for ApiClient to use
+        // Save to FlutterSecureStorage (encrypted) for ApiClient to use
         await _secureStorage.write(key: 'access_token', value: accessToken);
         if (refreshToken != null) {
           await _secureStorage.write(key: 'refresh_token', value: refreshToken);
@@ -299,10 +298,7 @@ class DjangoAuthService {
         _token = accessToken;
         _dio.options.headers['Authorization'] = 'Bearer $_token';
 
-        // Save to SharedPreferences
-        await _prefs?.setString('auth_token', _token!);
-
-        // Save to FlutterSecureStorage
+        // Save to FlutterSecureStorage (encrypted)
         await _secureStorage.write(key: 'access_token', value: accessToken);
         if (refreshToken != null) {
           await _secureStorage.write(key: 'refresh_token', value: refreshToken);
@@ -414,7 +410,6 @@ class DjangoAuthService {
       _dio.options.headers.remove('Authorization');
 
       // Clear SharedPreferences
-      await _prefs?.remove('auth_token');
       await _prefs?.remove('user_data');
       await _prefs?.remove('user_role');
       await _prefs?.remove('event_id');
@@ -589,6 +584,17 @@ class DjangoAuthService {
         '/auth/me/',
         data: {'password': password},
       );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Data portability: everything this app collects about the current
+  /// user, as a JSON map. See UserDataExportAPIView on the backend.
+  Future<Map<String, dynamic>> exportData() async {
+    try {
+      final response = await _dio.get('/auth/me/export/');
+      return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       throw _handleError(e);
     }

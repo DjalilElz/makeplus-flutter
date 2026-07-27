@@ -1,7 +1,13 @@
 // lib/presentation/screens/shared/settings_screen.dart
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../logic/authentication/auth_bloc.dart';
@@ -17,6 +23,43 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isExporting = false;
+
+  Future<void> _exportData(BuildContext context) async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+
+    try {
+      final data = await context.read<AuthRepository>().exportData();
+      final pretty = const JsonEncoder.withIndent('  ').convert(data);
+
+      final tempDir = await getTemporaryDirectory();
+      final timestamp = DateTime.now();
+      final filename = 'makeplus_mes_donnees_'
+          '${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}'
+          '${timestamp.day.toString().padLeft(2, '0')}.json';
+      final file = File('${tempDir.path}/$filename');
+      await file.writeAsString(pretty);
+
+      if (!context.mounted) return;
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Mes données MakePlus',
+        subject: 'Export de données MakePlus',
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return RootTabPopScope(
@@ -50,6 +93,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Mot de passe et authentification',
               onTap: () =>
                   Navigator.pushNamed(context, AppRouter.securitySettings),
+            ),
+            _buildSettingsTile(
+              context,
+              icon: Icons.download_outlined,
+              title: 'Exporter mes données',
+              subtitle: _isExporting
+                  ? 'Export en cours...'
+                  : 'Télécharger une copie de vos données',
+              onTap: () => _exportData(context),
             ),
             _buildSettingsTile(
               context,
@@ -87,6 +139,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Politique de confidentialité',
               onTap: () =>
                   Navigator.pushNamed(context, AppRouter.privacySettings),
+            ),
+            _buildSettingsTile(
+              context,
+              icon: Icons.description_outlined,
+              title: 'Conditions d\'utilisation',
+              subtitle: 'Termes et conditions d\'usage',
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRouter.termsSettings),
             ),
 
             const SizedBox(height: 20),

@@ -108,4 +108,13 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  /// Data portability: everything this app collects about the current user
+  Future<Map<String, dynamic>> exportData() async {
+    try {
+      return await _authService.exportData();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

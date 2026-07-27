@@ -43,6 +43,7 @@ import '../presentation/screens/shared/settings/help_screen.dart';
 import '../presentation/screens/shared/settings/privacy_policy_screen.dart';
 import '../presentation/screens/shared/settings/profile_settings_screen.dart';
 import '../presentation/screens/shared/settings/security_settings_screen.dart';
+import '../presentation/screens/shared/settings/terms_of_service_screen.dart';
 import '../presentation/screens/shared/settings_screen.dart';
 import '../presentation/screens/splash/splash_screen.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
@@ -117,6 +118,7 @@ class AppRouter {
   static const String helpSettings = '/settings/help';
   static const String aboutSettings = '/settings/about';
   static const String privacySettings = '/settings/privacy';
+  static const String termsSettings = '/settings/terms';
   static const String permissionDenied = '/permission-denied';
 
   // Get role-based home route
@@ -325,6 +327,9 @@ class AppRouter {
 
       case AppRouter.privacySettings:
         return MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen());
+
+      case AppRouter.termsSettings:
+        return MaterialPageRoute(builder: (_) => const TermsOfServiceScreen());
 
       default:
         return MaterialPageRoute(
