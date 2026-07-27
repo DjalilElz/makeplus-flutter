@@ -1,7 +1,12 @@
 // lib/presentation/screens/shared/settings/profile_settings_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/constants/theme/app_colors.dart';
+import '../../../../data/repositories/auth_repository.dart';
+import '../../../../logic/authentication/auth_bloc.dart';
+import '../../../../logic/authentication/auth_event.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -11,8 +16,79 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthBloc>().state.user;
+    _firstNameController = TextEditingController(text: user?.firstName ?? '');
+    _lastNameController = TextEditingController(text: user?.lastName ?? '');
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+
+    if (firstName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le prénom ne peut pas être vide'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final updatedUser = await context.read<AuthRepository>().updateProfile(
+            firstName: firstName,
+            lastName: lastName,
+          );
+
+      if (!mounted) return;
+
+      if (updatedUser != null) {
+        context.read<AuthBloc>().add(AuthUserUpdated(updatedUser));
+      }
+
+      setState(() => _isSaving = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profil mis à jour'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthBloc>().state.user;
+    final initial =
+        (user?.firstName.isNotEmpty ?? false) ? user!.firstName[0] : '?';
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -25,53 +101,45 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           Center(
-            child: Stack(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                  child: Icon(
-                    Icons.person,
-                    size: 50,
-                    color: AppColors.eventPrimary(context),
-                  ),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor:
+                  AppColors.eventPrimary(context).withValues(alpha: 0.1),
+              child: Text(
+                initial.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.eventPrimary(context),
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.eventPrimary(context),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 30),
-          _buildTextField(context, 'Nom complet', 'Mohamed ALAMI'),
+          _buildTextField(
+            context,
+            label: 'Prénom',
+            controller: _firstNameController,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(context, 'Email', 'mohamed.alami@example.com'),
+          _buildTextField(
+            context,
+            label: 'Nom',
+            controller: _lastNameController,
+          ),
           const SizedBox(height: 16),
-          _buildTextField(context, 'Téléphone', '+212 6 12 34 56 78'),
-          const SizedBox(height: 16),
-          _buildTextField(context, 'Organisation', 'MakePlus Event'),
+          // Email isn't editable here -- login authenticates against it
+          // server-side, so changing it isn't a simple field edit.
+          _buildReadOnlyField(
+            context,
+            label: 'Email',
+            value: user?.email ?? '',
+          ),
           const SizedBox(height: 30),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profil mis à jour')),
-                );
-              },
+              onPressed: _isSaving ? null : _save,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.eventPrimary(context),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -79,10 +147,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Enregistrer',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Enregistrer',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
             ),
           ),
         ],
@@ -90,7 +168,33 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  Widget _buildTextField(BuildContext context, String label, String hint) {
+  Widget _buildTextField(
+    BuildContext context, {
+    required String label,
+    required TextEditingController controller,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary(context),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(controller: controller),
+      ],
+    );
+  }
+
+  Widget _buildReadOnlyField(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -104,7 +208,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ),
         const SizedBox(height: 8),
         TextField(
-          decoration: InputDecoration(hintText: hint),
+          controller: TextEditingController(text: value),
+          enabled: false,
+          decoration: const InputDecoration(
+            helperText: 'Contactez les organisateurs pour changer votre email',
+          ),
         ),
       ],
     );

@@ -38,8 +38,9 @@ import '../presentation/screens/participant/program_screen.dart';
 import '../presentation/screens/participant/session_detail_screen.dart';
 import '../presentation/screens/shared/event_details_screen.dart';
 import '../presentation/screens/shared/permission_denied_screen.dart';
-import '../presentation/screens/shared/settings/generic_settings_screen.dart';
-import '../presentation/screens/shared/settings/notification_settings_screen.dart';
+import '../presentation/screens/shared/settings/about_screen.dart';
+import '../presentation/screens/shared/settings/help_screen.dart';
+import '../presentation/screens/shared/settings/privacy_policy_screen.dart';
 import '../presentation/screens/shared/settings/profile_settings_screen.dart';
 import '../presentation/screens/shared/settings/security_settings_screen.dart';
 import '../presentation/screens/shared/settings_screen.dart';
@@ -113,9 +114,6 @@ class AppRouter {
   static const String settings = '/settings';
   static const String profileSettings = '/settings/profile';
   static const String securitySettings = '/settings/security';
-  static const String notificationSettings = '/settings/notifications';
-  static const String languageSettings = '/settings/language';
-  static const String appearanceSettings = '/settings/appearance';
   static const String helpSettings = '/settings/help';
   static const String aboutSettings = '/settings/about';
   static const String privacySettings = '/settings/privacy';
@@ -319,54 +317,14 @@ class AppRouter {
         return MaterialPageRoute(
             builder: (_) => const SecuritySettingsScreen());
 
-      case AppRouter.notificationSettings:
-        return MaterialPageRoute(
-            builder: (_) => const NotificationSettingsScreen());
-
-      case AppRouter.languageSettings:
-        return MaterialPageRoute(
-          builder: (_) => const GenericSettingsScreen(
-            title: 'Langue',
-            content:
-                'Choisissez votre langue préférée:\n\n• Français\n• العربية\n• English\n\nLa langue sera mise à jour prochainement.',
-          ),
-        );
-
-      case AppRouter.appearanceSettings:
-        return MaterialPageRoute(
-          builder: (_) => const GenericSettingsScreen(
-            title: 'Apparence',
-            content:
-                'Personnalisez l\'apparence de l\'application:\n\n• Thème clair\n• Thème sombre\n• Automatique\n\nCette fonctionnalité sera disponible bientôt.',
-          ),
-        );
-
       case AppRouter.helpSettings:
-        return MaterialPageRoute(
-          builder: (_) => const GenericSettingsScreen(
-            title: 'Aide',
-            content:
-                'Questions fréquentes:\n\n1. Comment accéder aux sessions?\n2. Comment utiliser le scanner de badge?\n3. Comment contacter le support?\n\nPour plus d\'aide, contactez support@makeplus.com',
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const HelpScreen());
 
       case AppRouter.aboutSettings:
-        return MaterialPageRoute(
-          builder: (_) => const GenericSettingsScreen(
-            title: 'À propos',
-            content:
-                'MakePlus Event App\n\nVersion: 1.0.0\nBuild: 100\n\n© 2025 MakePlus. Tous droits réservés.\n\nDéveloppé avec ❤️ en Algérie',
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const AboutScreen());
 
       case AppRouter.privacySettings:
-        return MaterialPageRoute(
-          builder: (_) => const GenericSettingsScreen(
-            title: 'Confidentialité',
-            content:
-                'Politique de confidentialité\n\nVos données personnelles sont protégées conformément aux lois en vigueur.\n\nNous collectons uniquement les données nécessaires au bon fonctionnement de l\'application.\n\nPour plus d\'informations, consultez notre politique complète sur makeplus.com/privacy',
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen());
 
       default:
         return MaterialPageRoute(

@@ -84,4 +84,28 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  /// Update the current user's display name
+  Future<UserModel?> updateProfile({
+    required String firstName,
+    required String lastName,
+  }) async {
+    try {
+      return await _authService.updateProfile(
+        firstName: firstName,
+        lastName: lastName,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete (deactivate + anonymize) the current account
+  Future<void> deleteAccount({required String password}) async {
+    try {
+      await _authService.deleteAccount(password: password);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

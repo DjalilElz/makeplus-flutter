@@ -1,6 +1,7 @@
 // lib/logic/authentication/auth_event.dart
 
 import 'package:equatable/equatable.dart';
+import '../../data/models/user_model.dart';
 
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -63,4 +64,16 @@ class AuthEventSelectionRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [eventId];
+}
+
+/// Syncs a freshly-updated user (e.g. after editing the profile) back into
+/// AuthState, so screens reading the user from AuthBloc (like the home
+/// screen's "Bonjour {name}") reflect the change immediately.
+class AuthUserUpdated extends AuthEvent {
+  final UserModel user;
+
+  const AuthUserUpdated(this.user);
+
+  @override
+  List<Object?> get props => [user];
 }

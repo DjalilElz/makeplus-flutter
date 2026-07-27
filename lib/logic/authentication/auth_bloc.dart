@@ -16,6 +16,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthSignupRequested>(_onAuthSignupRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
     on<AuthPasswordResetRequested>(_onAuthPasswordResetRequested);
+    on<AuthUserUpdated>(_onAuthUserUpdated);
   }
 
   Future<void> _onAuthCheckRequested(
@@ -191,5 +192,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         errorMessage: e.toString(),
       ));
     }
+  }
+
+  void _onAuthUserUpdated(
+    AuthUserUpdated event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(state.copyWith(user: event.user));
   }
 }

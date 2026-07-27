@@ -212,7 +212,8 @@ class DjangoAuthService {
       if (e.response?.data is String &&
           (e.response?.data as String).contains('<html')) {
         AppLogger.d('⚠️ SERVER ERROR: Backend returned HTML instead of JSON');
-        AppLogger.d('💡 This means there\'s an error in your Django backend code');
+        AppLogger.d(
+            '💡 This means there\'s an error in your Django backend code');
         throw Exception(
             'Server error: Please check your Django backend logs. The login endpoint is returning an HTML error page instead of JSON.');
       }
@@ -248,7 +249,8 @@ class DjangoAuthService {
       if (!canFallback) {
         // If fallback also failed or not a DNS error, provide helpful message
         if (isDnsError) {
-          AppLogger.d('❌ DNS RESOLUTION FAILED for both primary and fallback URLs');
+          AppLogger.d(
+              '❌ DNS RESOLUTION FAILED for both primary and fallback URLs');
           AppLogger.d('💡 Your device cannot resolve .onrender.com domains');
           AppLogger.d('💡 Possible solutions:');
           AppLogger.d('   1. Check your internet connection');
@@ -511,7 +513,8 @@ class DjangoAuthService {
         AppLogger.d('🎪 EVENT FROM /auth/me/ - ${event.name}');
         AppLogger.d('📅 Start: ${event.startDate}, End: ${event.endDate}');
         AppLogger.d('📍 Location: ${event.location}');
-        AppLogger.d('📄 Programme: ${event.programmeFile}, Guide: ${event.guideFile}');
+        AppLogger.d(
+            '📄 Programme: ${event.programmeFile}, Guide: ${event.guideFile}');
       }
 
       // Fallback to stored event data if not in API response
@@ -549,6 +552,45 @@ class DjangoAuthService {
         await logout();
       }
       return null;
+    }
+  }
+
+  /// Update the user's display name. Email is deliberately not editable
+  /// here -- login authenticates with username=email server-side, so
+  /// changing email would need to stay in lockstep with username; the
+  /// backend doesn't support that yet, see UserProfileAPIView.patch.
+  Future<UserModel?> updateProfile({
+    required String firstName,
+    required String lastName,
+  }) async {
+    try {
+      await _dio.patch(
+        '/auth/me/',
+        data: {
+          'first_name': firstName,
+          'last_name': lastName,
+        },
+      );
+      // Re-fetch rather than reconstruct UserModel from the PATCH response,
+      // so role/qr_code/event come back merged exactly like every other
+      // read of this endpoint.
+      return getCurrentUser();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Delete (deactivate + anonymize) the current account. See
+  /// UserProfileAPIView.delete on the backend for why this isn't a hard
+  /// delete. Requires the current password as re-confirmation.
+  Future<void> deleteAccount({required String password}) async {
+    try {
+      await _dio.delete(
+        '/auth/me/',
+        data: {'password': password},
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
     }
   }
 
