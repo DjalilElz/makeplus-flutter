@@ -19,8 +19,18 @@ class SessionCard extends StatelessWidget {
   });
 
   static const List<String> _months = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
   ];
 
   String _formatTime(DateTime time) {
@@ -33,148 +43,198 @@ class SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date + time on the left, session status on the right --
-              // always shown in full (wraps to a 2nd line if it must).
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${_formatDate(session.startTime)} • ${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.eventPrimary(context),
-                      ),
-                    ),
-                  ),
-                  if (showLiveIndicator) ...[
-                    const SizedBox(width: 8),
-                    _StatusBadge(status: session.status),
-                  ],
-                ],
-              ),
-
-              // Speaker / author, with the session type chip beside the
-              // name -- right after the date/time, before the title.
-              if (session.speakerName != null) ...[
-                const SizedBox(height: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderColor(context), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: AppColors.eventPrimary(context).withValues(alpha: 0.08),
+          highlightColor:
+              AppColors.eventPrimary(context).withValues(alpha: 0.04),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date + time on the left, session status on the right --
+                // always shown in full (wraps to a 2nd line if it must).
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                    Expanded(
                       child: Text(
-                        session.speakerName![0].toUpperCase(),
+                        '${_formatDate(session.startTime)} • ${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
                         style: TextStyle(
-                          color: AppColors.eventPrimary(context),
-                          fontWeight: FontWeight.bold,
                           fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.eventPrimary(context),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            session.speakerName!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    if (showLiveIndicator) ...[
+                      const SizedBox(width: 8),
+                      _StatusBadge(status: session.status),
+                    ],
+                  ],
+                ),
+
+                // Speaker / author, with the session type chip beside the
+                // name -- right after the date/time, before the title.
+                if (session.speakerName != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: AppColors.eventPrimary(context)
+                            .withValues(alpha: 0.1),
+                        child: Text(
+                          session.speakerName![0].toUpperCase(),
+                          style: TextStyle(
+                            color: AppColors.eventPrimary(context),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
-                          if (session.speakerTitle != null)
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              session.speakerTitle!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary(context),
+                              session.speakerName!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+                            if (session.speakerTitle != null)
+                              Text(
+                                session.speakerTitle!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary(context),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
                       ),
+                      if (typeLabel != null) ...[
+                        const SizedBox(width: 8),
+                        _Chip(
+                          text: typeLabel!,
+                          background: AppColors.accent.withValues(alpha: 0.15),
+                          foreground: AppColors.accent,
+                        ),
+                      ],
+                    ],
+                  ),
+                ] else if (typeLabel != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _Chip(
+                      text: typeLabel!,
+                      background: AppColors.accent.withValues(alpha: 0.15),
+                      foreground: AppColors.accent,
                     ),
-                    if (typeLabel != null) ...[
-                      const SizedBox(width: 8),
-                      _Chip(
-                        text: typeLabel!,
-                        background: AppColors.accent.withValues(alpha: 0.15),
-                        foreground: AppColors.accent,
+                  ),
+                ],
+                const SizedBox(height: 12),
+
+                // Session Title
+                Text(
+                  session.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                // Theme, shown in full, never truncated.
+                if ((session.theme ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _Chip(
+                    text: session.theme!,
+                    background:
+                        AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                    foreground: AppColors.eventPrimary(context),
+                    fullWidth: true,
+                  ),
+                ],
+
+                if (session.description != null) ...[
+                  const SizedBox(height: 10),
+                  _ExpandableText(
+                    text: session.description!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary(context),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+
+                // Salle -- moved to the bottom of the card.
+                if ((session.roomName ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _IconLabel(
+                    icon: Icons.meeting_room_outlined,
+                    text: session.roomName!,
+                    color: AppColors.textSecondary(context),
+                  ),
+                ],
+
+                // Tappable affordance -- makes it obvious the whole card
+                // navigates to the session detail screen.
+                if (onTap != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Voir les détails',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.eventPrimary(context),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: AppColors.eventPrimary(context),
                       ),
                     ],
-                  ],
-                ),
-              ] else if (typeLabel != null) ...[
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _Chip(
-                    text: typeLabel!,
-                    background: AppColors.accent.withValues(alpha: 0.15),
-                    foreground: AppColors.accent,
                   ),
-                ),
+                ],
               ],
-              const SizedBox(height: 12),
-
-              // Session Title
-              Text(
-                session.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              // Theme, shown in full, never truncated.
-              if ((session.theme ?? '').isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _Chip(
-                  text: session.theme!,
-                  background: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                  foreground: AppColors.eventPrimary(context),
-                  fullWidth: true,
-                ),
-              ],
-
-              if (session.description != null) ...[
-                const SizedBox(height: 10),
-                _ExpandableText(
-                  text: session.description!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary(context),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-
-              // Salle -- moved to the bottom of the card.
-              if ((session.roomName ?? '').isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _IconLabel(
-                  icon: Icons.meeting_room_outlined,
-                  text: session.roomName!,
-                  color: AppColors.textSecondary(context),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -412,7 +472,9 @@ class SessionCardCompact extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: session.isLive ? AppColors.success : AppColors.eventPrimary(context),
+                  color: session.isLive
+                      ? AppColors.success
+                      : AppColors.eventPrimary(context),
                 ),
               ),
             ],
