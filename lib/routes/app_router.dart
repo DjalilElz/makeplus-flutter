@@ -27,7 +27,6 @@ import '../presentation/screens/organizer_room_manager/participants_list_screen.
 import '../presentation/screens/organizer_room_manager/questions_screen.dart';
 import '../presentation/screens/organizer_room_manager/room_management/room_detail_screen.dart';
 import '../presentation/screens/organizer_room_manager/room_management/rooms_list_screen.dart';
-import '../presentation/screens/participant/diffusion_screen.dart';
 import '../presentation/screens/participant/eposters_screen.dart';
 import '../presentation/screens/participant/guide_screen.dart';
 import '../presentation/screens/participant/live_stream_screen.dart';
@@ -87,7 +86,6 @@ class AppRouter {
   static const String myBadge = '/participant/my-badge';
   static const String guide = '/participant/guide';
   static const String exhibitors = '/participant/exhibitors';
-  static const String diffusion = '/participant/diffusion';
   static const String sessionDetail = '/participant/session-detail';
   static const String liveStream = '/participant/live-stream';
   static const String eposters = '/participant/eposters';
@@ -200,9 +198,6 @@ class AppRouter {
       // Participant routes
       case participantHome:
         return MaterialPageRoute(builder: (_) => const ParticipantHomeScreen());
-
-      case diffusion:
-        return MaterialPageRoute(builder: (_) => const DiffusionScreen());
 
       case sessionDetail:
         final session = settings.arguments as Map<String, dynamic>?;
