@@ -45,7 +45,8 @@ class _ParticipantAnnouncementsScreenState
       // No need to pass event_id parameter
       final announcements = await _announcementService.getAnnouncements();
 
-      AppLogger.d('📢 PARTICIPANT - Loaded ${announcements.length} announcements');
+      AppLogger.d(
+          '📢 PARTICIPANT - Loaded ${announcements.length} announcements');
 
       setState(() {
         _announcements = announcements;
@@ -144,21 +145,22 @@ class _ParticipantAnnouncementsScreenState
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _buildErrorState()
-                : _announcements.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                        onRefresh: _loadAnnouncements,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _announcements.length,
-                          itemBuilder: (context, index) {
-                            final announcement = _announcements[index];
-                            return _buildAnnouncementCard(announcement);
-                          },
-                        ),
-                      ),
+            : RefreshIndicator(
+                onRefresh: _loadAnnouncements,
+                child: _errorMessage != null
+                    ? _buildErrorState()
+                    : _announcements.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _announcements.length,
+                            itemBuilder: (context, index) {
+                              final announcement = _announcements[index];
+                              return _buildAnnouncementCard(announcement);
+                            },
+                          ),
+              ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: _getCurrentIndex(context),
           userRole: 'participant',
@@ -186,77 +188,80 @@ class _ParticipantAnnouncementsScreenState
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 80,
-            color: AppColors.textHint(context),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Erreur',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary(context),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              _errorMessage ?? 'Une erreur est survenue',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary(context),
+  // Wrapped in a scrollable (not just Center) so RefreshIndicator's drag
+  // gesture is recognized even though the message is short enough not to
+  // overflow the viewport on its own.
+  Widget _buildScrollableMessage({
+    required IconData icon,
+    required String title,
+    required String message,
+    Widget? action,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, size: 80, color: AppColors.textHint(context)),
+                      const SizedBox(height: 16),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary(context),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary(context),
+                        ),
+                      ),
+                      if (action != null) ...[
+                        const SizedBox(height: 16),
+                        action,
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _loadAnnouncements,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Réessayer'),
-          ),
-        ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorState() {
+    return _buildScrollableMessage(
+      icon: Icons.error_outline,
+      title: 'Erreur',
+      message: _errorMessage ?? 'Une erreur est survenue',
+      action: ElevatedButton.icon(
+        onPressed: _loadAnnouncements,
+        icon: const Icon(Icons.refresh),
+        label: const Text('Réessayer'),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.campaign_outlined,
-            size: 80,
-            color: AppColors.textHint(context),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Aucune annonce',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary(context),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Aucune annonce pour le moment',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary(context),
-            ),
-          ),
-        ],
-      ),
+    return _buildScrollableMessage(
+      icon: Icons.campaign_outlined,
+      title: 'Aucune annonce',
+      message: 'Aucune annonce pour le moment',
     );
   }
 

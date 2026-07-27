@@ -122,9 +122,8 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
 
   void _toggleView(bool hasProgram, String? programmeUrl) {
     setState(() {
-      _view = _view == _ProgramView.cards
-          ? _ProgramView.pdf
-          : _ProgramView.cards;
+      _view =
+          _view == _ProgramView.cards ? _ProgramView.pdf : _ProgramView.cards;
     });
     if (_view == _ProgramView.pdf &&
         hasProgram &&
@@ -284,7 +283,8 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
     final statuses = sessions.map((s) => s.status).toSet().toList()
       ..sort((a, b) => a.index.compareTo(b.index));
     final dates = sessions
-        .map((s) => DateTime(s.startTime.year, s.startTime.month, s.startTime.day))
+        .map((s) =>
+            DateTime(s.startTime.year, s.startTime.month, s.startTime.day))
         .toSet()
         .toList()
       ..sort();
@@ -345,10 +345,12 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               onSelected: (value) => setState(() => _statusFilter = value),
             ),
           ],
-          if (statuses.length > 1 && (roomEntries.length > 1 || dates.length > 1))
+          if (statuses.length > 1 &&
+              (roomEntries.length > 1 || dates.length > 1))
             const SizedBox(height: 18),
           if (roomEntries.length > 1) ...[
-            _FilterSectionLabel(icon: Icons.meeting_room_rounded, label: 'Salle'),
+            _FilterSectionLabel(
+                icon: Icons.meeting_room_rounded, label: 'Salle'),
             const SizedBox(height: 10),
             _FilterRow<String>(
               selected: _roomFilter,
@@ -359,9 +361,11 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
               onSelected: (value) => setState(() => _roomFilter = value),
             ),
           ],
-          if (roomEntries.length > 1 && dates.length > 1) const SizedBox(height: 18),
+          if (roomEntries.length > 1 && dates.length > 1)
+            const SizedBox(height: 18),
           if (dates.length > 1) ...[
-            _FilterSectionLabel(icon: Icons.calendar_today_rounded, label: 'Date'),
+            _FilterSectionLabel(
+                icon: Icons.calendar_today_rounded, label: 'Date'),
             const SizedBox(height: 10),
             _FilterRow<DateTime>(
               selected: _dateFilter,
@@ -411,6 +415,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
     return RefreshIndicator(
       onRefresh: _loadSessions,
       child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(child: _buildFilterBar(context, sessions)),
           if (filtered.isEmpty)
@@ -421,7 +426,8 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
                   context,
                   icon: Icons.filter_alt_off,
                   title: 'Aucun résultat',
-                  message: 'Aucune session ne correspond aux filtres sélectionnés.',
+                  message:
+                      'Aucune session ne correspond aux filtres sélectionnés.',
                 ),
               ),
             )
@@ -434,7 +440,8 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
                     final session = filtered[index];
                     return SessionCard(
                       session: session,
-                      typeLabel: SessionTypes.getDisplayName(session.sessionType),
+                      typeLabel:
+                          SessionTypes.getDisplayName(session.sessionType),
                       onTap: () => _openSessionDetail(session),
                     );
                   },
@@ -454,8 +461,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
         context,
         icon: Icons.info_outline,
         title: 'Programme non disponible',
-        message:
-            'Le programme PDF de l\'événement n\'a pas encore été publié.',
+        message: 'Le programme PDF de l\'événement n\'a pas encore été publié.',
       );
     }
     if (_isLoadingPdf || (_pdfPath == null && _pdfError == null)) {
@@ -588,7 +594,10 @@ class _FilterRow<T> extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildChip(context, label: 'Tous', isSelected: selected == null, onTap: () => onSelected(null)),
+          _buildChip(context,
+              label: 'Tous',
+              isSelected: selected == null,
+              onTap: () => onSelected(null)),
           for (final option in options) ...[
             const SizedBox(width: 8),
             _buildChip(
@@ -635,7 +644,8 @@ class _FilterRow<T> extends StatelessWidget {
                   ? const Padding(
                       key: ValueKey('check'),
                       padding: EdgeInsets.only(right: 5),
-                      child: Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                      child: Icon(Icons.check_rounded,
+                          size: 14, color: Colors.white),
                     )
                   : const SizedBox.shrink(key: ValueKey('nocheck')),
             ),
@@ -644,7 +654,9 @@ class _FilterRow<T> extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textSecondary(context),
+                color: isSelected
+                    ? Colors.white
+                    : AppColors.textSecondary(context),
               ),
             ),
           ],
