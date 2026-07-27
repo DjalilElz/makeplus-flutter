@@ -71,28 +71,46 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
 
       _questionController.clear();
 
-      if (!dialogContext.mounted) return;
-      Navigator.pop(dialogContext);
+      // The dialog may already be gone by the time the request resolves
+      // (barrier tap, back gesture, or the keyboard-dismiss tap landing on
+      // the barrier) -- that must never swallow the confirmation. Closing
+      // the dialog and showing the success message are independent: only
+      // the former needs the dialog to still be there.
+      if (dialogContext.mounted) {
+        Navigator.pop(dialogContext);
+      }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Question envoyée ! Elle sera posée à l\'oral pendant la session.',
+      FocusScope.of(context).unfocus();
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Question envoyée ! Elle sera posée à l\'oral pendant la session.',
+            ),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 3),
           ),
-          backgroundColor: AppColors.success,
-        ),
-      );
+        );
     } catch (e) {
       AppLogger.d('❌ ERROR SUBMITTING QUESTION: $e');
-      if (!dialogContext.mounted) return;
-      setDialogState(() => setSubmitting(false));
-      ScaffoldMessenger.of(dialogContext).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      if (dialogContext.mounted) {
+        setDialogState(() => setSubmitting(false));
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
@@ -105,61 +123,67 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Poser une question'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Votre question sera posée à l\'oral par l\'intervenant '
-                    'pendant la session.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary(context),
+            return PopScope(
+              // Block the barrier tap / back gesture while the request is
+              // in flight so the loading state can't be interrupted --
+              // the response handler needs the dialog to still be there.
+              canPop: !isSubmitting,
+              child: AlertDialog(
+                title: const Text('Poser une question'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Votre question sera posée à l\'oral par l\'intervenant '
+                      'pendant la session.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary(context),
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _questionController,
+                      autofocus: true,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        hintText: 'Écrivez votre question ici...',
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () {
+                            _questionController.clear();
+                            Navigator.pop(dialogContext);
+                          },
+                    child: const Text('Annuler'),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _questionController,
-                    autofocus: true,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      hintText: 'Écrivez votre question ici...',
-                    ),
+                  ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => _submitQuestion(
+                              dialogContext,
+                              setDialogState,
+                              (value) => isSubmitting = value,
+                            ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : const Text('Envoyer'),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () {
-                          _questionController.clear();
-                          Navigator.pop(dialogContext);
-                        },
-                  child: const Text('Annuler'),
-                ),
-                ElevatedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () => _submitQuestion(
-                            dialogContext,
-                            setDialogState,
-                            (value) => isSubmitting = value,
-                          ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : const Text('Envoyer'),
-                ),
-              ],
             );
           },
         );
