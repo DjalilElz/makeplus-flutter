@@ -73,31 +73,15 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
             ],
           ),
         ),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            FloatingActionButton.extended(
-              heroTag: 'eposters',
-              onPressed: () {
-                // Navigate to E-posters
-                Navigator.pushNamed(context, '/participant/eposters');
-              },
-              backgroundColor: AppColors.accent,
-              icon: const Icon(Icons.article),
-              label: const Text('E-posters'),
-            ),
-            const SizedBox(height: 12),
-            FloatingActionButton.extended(
-              heroTag: 'diffusion',
-              onPressed: () {
-                // Navigate to Diffusion et Q&A
-                Navigator.pushNamed(context, '/participant/diffusion');
-              },
-              backgroundColor: AppColors.eventPrimary(context),
-              icon: const Icon(Icons.live_tv),
-              label: const Text('Diffusion et Q&A'),
-            ),
-          ],
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'eposters',
+          onPressed: () {
+            // Navigate to E-posters
+            Navigator.pushNamed(context, '/participant/eposters');
+          },
+          backgroundColor: AppColors.accent,
+          icon: const Icon(Icons.article),
+          label: const Text('E-posters'),
         ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: _getCurrentIndex(context),
