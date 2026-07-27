@@ -87,7 +87,6 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             'question': q.questionText,
             'time': _formatTime(q.askedAt.toIso8601String()),
             'is_answered': q.isAnswered,
-            'answer': q.answerText,
             'is_mine': _myQuestionIds.contains(q.id),
           };
         }).toList();
@@ -157,7 +156,6 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
           'question': questionText,
           'time': _formatTime(question.askedAt.toIso8601String()),
           'is_answered': false,
-          'answer': null,
           'is_mine': true,
         });
         _isSendingQuestion = false;
@@ -177,7 +175,9 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Question envoyée avec succès!'),
+          content: Text(
+            'Question envoyée ! Elle sera posée à l\'oral pendant la session.',
+          ),
           duration: Duration(seconds: 2),
           backgroundColor: AppColors.success,
         ),
@@ -482,7 +482,6 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                         itemBuilder: (context, index) {
                           final question = _userQuestions[index];
                           final isAnswered = question['is_answered'] == true;
-                          final answer = question['answer'] as String?;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -548,54 +547,25 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                       color: AppColors.textPrimary(context),
                                     ),
                                   ),
-                                  // Show answer if available
-                                  if (isAnswered &&
-                                      answer != null &&
-                                      answer.isNotEmpty) ...[
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.eventPrimary(context)
-                                            .withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: AppColors.eventPrimary(context)
-                                              .withValues(alpha: 0.3),
+                                  if (isAnswered) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.record_voice_over,
+                                          size: 13,
+                                          color: AppColors.success,
                                         ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.record_voice_over,
-                                                size: 14,
-                                                color: AppColors.eventPrimary(context),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                'Réponse:',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.eventPrimary(context),
-                                                ),
-                                              ),
-                                            ],
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Traitée à l\'oral par l\'intervenant',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontStyle: FontStyle.italic,
+                                            color: AppColors.textSecondary(context),
                                           ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            answer,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: AppColors.textPrimary(context),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ],
@@ -645,7 +615,6 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             itemBuilder: (context, index) {
               final question = _userQuestions[index];
               final isAnswered = question['is_answered'] == true;
-              final answer = question['answer'] as String?;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -714,46 +683,25 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                       question['question'] ?? '',
                       style: const TextStyle(fontSize: 13, color: Colors.white),
                     ),
-                    // Show answer if available
-                    if (isAnswered && answer != null && answer.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.record_voice_over,
-                                  size: 12,
-                                  color: AppColors.success,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Réponse:',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.success,
-                                  ),
-                                ),
-                              ],
+                    if (isAnswered) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.record_voice_over,
+                            size: 12,
+                            color: AppColors.success,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Traitée à l\'oral par l\'intervenant',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.white.withValues(alpha: 0.7),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              answer,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ],

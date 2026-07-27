@@ -21,8 +21,6 @@ class SessionDetailScreen extends StatefulWidget {
 class _SessionDetailScreenState extends State<SessionDetailScreen> {
   final TextEditingController _questionController = TextEditingController();
   late final SessionQuestionService _questionService;
-  bool _showQuestionForm = false;
-  bool _isSubmittingQuestion = false;
 
   @override
   void initState() {
@@ -36,7 +34,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _submitQuestion() async {
+  Future<void> _submitQuestion(
+    BuildContext dialogContext,
+    StateSetter setDialogState,
+    void Function(bool) setSubmitting,
+  ) async {
     final questionText = _questionController.text.trim();
     if (questionText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,7 +61,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
       return;
     }
 
-    setState(() => _isSubmittingQuestion = true);
+    setDialogState(() => setSubmitting(true));
 
     try {
       await _questionService.askQuestion(
@@ -67,30 +69,102 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
         questionText: questionText,
       );
 
-      if (!mounted) return;
-      setState(() {
-        _questionController.clear();
-        _showQuestionForm = false;
-        _isSubmittingQuestion = false;
-      });
+      _questionController.clear();
 
+      if (!dialogContext.mounted) return;
+      Navigator.pop(dialogContext);
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Question envoyée avec succès!'),
+          content: Text(
+            'Question envoyée ! Elle sera posée à l\'oral pendant la session.',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
       AppLogger.d('❌ ERROR SUBMITTING QUESTION: $e');
-      if (!mounted) return;
-      setState(() => _isSubmittingQuestion = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!dialogContext.mounted) return;
+      setDialogState(() => setSubmitting(false));
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceFirst('Exception: ', '')),
           backgroundColor: AppColors.error,
         ),
       );
     }
+  }
+
+  void _showAskQuestionDialog() {
+    bool isSubmitting = false;
+    _questionController.clear();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Poser une question'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Votre question sera posée à l\'oral par l\'intervenant '
+                    'pendant la session.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _questionController,
+                    autofocus: true,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'Écrivez votre question ici...',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () {
+                          _questionController.clear();
+                          Navigator.pop(dialogContext);
+                        },
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () => _submitQuestion(
+                            dialogContext,
+                            setDialogState,
+                            (value) => isSubmitting = value,
+                          ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : const Text('Envoyer'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -179,70 +253,6 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Question Form (above buttons)
-                  if (_showQuestionForm) ...[
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Poser une question',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary(context),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _questionController,
-                              maxLines: 4,
-                              decoration: const InputDecoration(
-                                hintText: 'Écrivez votre question ici...',
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: _isSubmittingQuestion
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            _showQuestionForm = false;
-                                            _questionController.clear();
-                                          });
-                                        },
-                                  child: const Text('Annuler'),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed:
-                                      _isSubmittingQuestion ? null : _submitQuestion,
-                                  child: _isSubmittingQuestion
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation(
-                                                Colors.white),
-                                          ),
-                                        )
-                                      : const Text('Envoyer'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
                   // Action Buttons
                   Row(
                     children: [
@@ -270,17 +280,30 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _showQuestionForm = !_showQuestionForm;
-                            });
-                          },
-                          icon: const Icon(Icons.question_answer),
-                          label: const Text('Poser une question'),
+                        child: OutlinedButton(
+                          onPressed: _showAskQuestionDialog,
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 8,
+                            ),
                             foregroundColor: AppColors.eventPrimary(context),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.question_answer, size: 20),
+                              SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'Poser une question',
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
