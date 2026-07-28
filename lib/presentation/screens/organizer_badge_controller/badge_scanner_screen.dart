@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -63,37 +61,13 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
       AppLogger.d(qrData);
       AppLogger.d('═══════════════════════════════════════════════════════');
 
-      Map<String, dynamic>? qrDataMap;
-
-      try {
-        qrDataMap = jsonDecode(qrData) as Map<String, dynamic>?;
-
-        AppLogger.d('✅ QR CODE PARSED SUCCESSFULLY');
-        AppLogger.d('📋 PARSED DATA:');
-        AppLogger.d('   - user_id: ${qrDataMap?['user_id']}');
-        AppLogger.d('   - badge_id: ${qrDataMap?['badge_id']}');
-        AppLogger.d('   - email: ${qrDataMap?['email']}');
-        AppLogger.d('   - first_name: ${qrDataMap?['first_name']}');
-        AppLogger.d('   - last_name: ${qrDataMap?['last_name']}');
-        AppLogger.d('═══════════════════════════════════════════════════════');
-      } catch (e) {
-        AppLogger.d('❌ ERROR PARSING QR CODE: $e');
-        _showErrorDialog('Erreur', 'Format QR invalide.');
-        setState(() => _isProcessing = false);
-        return;
-      }
-
-      if (qrDataMap == null) {
-        AppLogger.d('❌ QR DATA MAP IS NULL');
-        _showErrorDialog('Erreur', 'Données QR invalides');
-        setState(() => _isProcessing = false);
-        return;
-      }
+      // The scanned value is just the user id as plain text -- passed
+      // straight through to the API below, which does its own validation
+      // and returns a proper 'invalid' status if it's malformed. No local
+      // parsing needed (and none possible: a bare id isn't JSON).
 
       // NEW SIMPLIFIED APPROACH: No room selection needed
       // Controllers can scan badges anywhere and see ALL paid items
-
-      AppLogger.d('🌐 CALLING NEW SCAN API - User ID: ${qrDataMap['user_id']}');
 
       try {
         final response = await _roomService.scanParticipant(

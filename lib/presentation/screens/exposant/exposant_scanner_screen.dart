@@ -1,7 +1,5 @@
 // lib/presentation/screens/exposant/exposant_scanner_screen.dart
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -71,11 +69,16 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
     });
 
     try {
-      // Parse QR code to get participant info
-      final qrData = jsonDecode(code);
-      final participantName = qrData['full_name'] ??
-          '${qrData['first_name'] ?? ''} ${qrData['last_name'] ?? ''}'.trim();
-      final participantEmail = qrData['email'] ?? '';
+      // QR content is just the scanned user's id -- look up their display
+      // info fresh rather than decoding it from the code itself (see
+      // dashboard/views.py _qr_display_payload on the backend).
+      final participant = await _exposantScanService.lookupByUserId(code);
+      if (participant == null) {
+        throw Exception('Participant introuvable');
+      }
+
+      final participantName = participant['full_name'] as String? ?? '';
+      final participantEmail = participant['email'] as String? ?? '';
 
       if (!mounted) return;
 
@@ -184,8 +187,9 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide:
-                          BorderSide(color: AppColors.eventPrimary(dialogContext), width: 2),
+                      borderSide: BorderSide(
+                          color: AppColors.eventPrimary(dialogContext),
+                          width: 2),
                     ),
                     contentPadding: const EdgeInsets.all(8),
                   ),

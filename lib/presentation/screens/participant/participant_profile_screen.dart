@@ -1,7 +1,5 @@
 // lib/presentation/screens/participant/participant_profile_screen.dart
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -60,30 +58,21 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
         if (data['qr_code'] != null) {
           final qrCode = data['qr_code'];
 
-          // ⚠️ CRITICAL: QR Code contains ONLY identification data
-          // According to the new architecture, QR code should NOT contain payment data
-          // Payment data is fetched fresh from database via API when controller scans
-          final qrCodeIdentification = {
-            'user_id': qrCode['user_id'],
-            'badge_id': qrCode['badge_id'],
-            'email': qrCode['email'],
-            'first_name': qrCode['first_name'] ?? data['first_name'],
-            'last_name': qrCode['last_name'] ?? data['last_name'],
-          };
-
-          // Encode ONLY identification data as JSON for scanning
-          final qrString = jsonEncode(qrCodeIdentification);
+          // QR content is just the user id, as plain text -- not even
+          // wrapped in JSON. Everything else (badge_id, payment status,
+          // check-in state) is looked up fresh from the database by every
+          // scan endpoint, keyed off this id, so nothing else belongs in
+          // the code itself. Must match dashboard/views.py
+          // _qr_display_payload on the web side exactly, or the two QR
+          // codes for the same user render differently.
+          final qrString = qrCode['user_id'].toString();
 
           setState(() {
             _qrCodeData = qrString;
             _isLoadingQrCode = false;
           });
 
-          AppLogger.d('✅ QR CODE LOADED with identification data only');
-          AppLogger.d(
-              '📋 QR Code contains: user_id, badge_id, email, first_name, last_name');
-          AppLogger.d(
-              '⚠️  Payment data NOT included (fetched from database when scanned)');
+          AppLogger.d('✅ QR CODE LOADED: user_id only');
         } else {
           AppLogger.d('⚠️ No qr_code in profile response');
           setState(() => _isLoadingQrCode = false);
@@ -170,9 +159,11 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
               'has_access': item['has_access'] ?? true,
             });
 
-            AppLogger.d('✅ Added session with full details: ${sessionData['title']}');
+            AppLogger.d(
+                '✅ Added session with full details: ${sessionData['title']}');
           } catch (e) {
-            AppLogger.d('⚠️ Failed to fetch session details for ${item['id']}: $e');
+            AppLogger.d(
+                '⚠️ Failed to fetch session details for ${item['id']}: $e');
             // Fallback to basic info from paid_items
             items.add({
               'id': item['id'],
@@ -443,8 +434,9 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                                                 atelier['speaker'],
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: AppColors.textSecondary(
-                                                      context),
+                                                  color:
+                                                      AppColors.textSecondary(
+                                                          context),
                                                 ),
                                               ),
                                             ],
@@ -465,8 +457,9 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                                                 atelier['room'],
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: AppColors.textSecondary(
-                                                      context),
+                                                  color:
+                                                      AppColors.textSecondary(
+                                                          context),
                                                 ),
                                               ),
                                               const SizedBox(width: 16),
@@ -481,7 +474,8 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
                                                 atelier['time'],
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: AppColors.eventPrimary(context),
+                                                  color: AppColors.eventPrimary(
+                                                      context),
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -574,187 +568,188 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
     return RootTabPopScope(
       homeRoute: '/participant/home',
       child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Profil'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _loadProfileAndQrCode();
-            },
-            tooltip: 'Actualiser le profil',
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 44,
-                backgroundColor: AppColors.eventPrimary(context),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'P',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary(context),
-                ),
-              ),
-              if (user?.email != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
+        appBar: AppBar(
+          title: const Text('Profil'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                _loadProfileAndQrCode();
+              },
+              tooltip: 'Actualiser le profil',
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 44,
+                  backgroundColor: AppColors.eventPrimary(context),
                   child: Text(
-                    user!.email,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary(context),
+                    name.isNotEmpty ? name[0].toUpperCase() : 'P',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              if (badgeId != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+                if (user?.email != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      'Badge: $badgeId',
+                      user!.email,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.eventPrimary(context),
-                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ),
-                ),
-              const SizedBox(height: 20),
-
-              // QR code with loading state.
-              //
-              // These boxes are deliberately always light grey, not theme-aware:
-              // QrImageView renders black-on-white (required for scanner
-              // contrast/reliability) regardless of app theme, so the loading
-              // and unavailable placeholders match that fixed white backing
-              // rather than flashing dark-then-white when the QR loads.
-              _isLoadingQrCode
-                  ? Container(
-                      width: 180,
-                      height: 180,
+                if (badgeId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: AppColors.eventPrimary(context)
+                            .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Center(
-                        child: CircularProgressIndicator(
+                      child: Text(
+                        'Badge: $badgeId',
+                        style: TextStyle(
+                          fontSize: 12,
                           color: AppColors.eventPrimary(context),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    )
-                  : _qrCodeData != null
-                      ? Container(
-                          width: 180,
-                          height: 180,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: QrImageView(
-                            data: _qrCodeData!,
-                            version: QrVersions.auto,
-                          ),
-                        )
-                      : Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.qr_code,
-                                size: 60,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'QR code indisponible',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                    ),
+                  ),
+                const SizedBox(height: 20),
+
+                // QR code with loading state.
+                //
+                // These boxes are deliberately always light grey, not theme-aware:
+                // QrImageView renders black-on-white (required for scanner
+                // contrast/reliability) regardless of app theme, so the loading
+                // and unavailable placeholders match that fixed white backing
+                // rather than flashing dark-then-white when the QR loads.
+                _isLoadingQrCode
+                    ? Container(
+                        width: 180,
+                        height: 180,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.eventPrimary(context),
                           ),
                         ),
+                      )
+                    : _qrCodeData != null
+                        ? Container(
+                            width: 180,
+                            height: 180,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: QrImageView(
+                              data: _qrCodeData!,
+                              version: QrVersions.auto,
+                            ),
+                          )
+                        : Container(
+                            width: 180,
+                            height: 180,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.qr_code,
+                                  size: 60,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'QR code indisponible',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
 
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () => _showPaidItemsModal(context),
-                icon: const Icon(Icons.shopping_bag),
-                label: const Text('Mes articles payés'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () => _showPaidItemsModal(context),
+                  icon: const Icon(Icons.shopping_bag),
+                  label: const Text('Mes articles payés'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
-              Text(
-                'Scannez ce QR pour partager votre profil',
-                style: TextStyle(color: AppColors.textSecondary(context)),
-              ),
+                const SizedBox(height: 20),
+                Text(
+                  'Scannez ce QR pour partager votre profil',
+                  style: TextStyle(color: AppColors.textSecondary(context)),
+                ),
 
-              const Spacer(),
-              const SizedBox(height: 24),
-            ],
+                const Spacer(),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 2,
-        userRole: 'participant',
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/participant/home');
-              break;
-            case 1:
-              Navigator.pushReplacementNamed(context, '/participant/program');
-              break;
-            case 2:
-              // Already on Profile
-              break;
-            case 3:
-              Navigator.pushReplacementNamed(context, '/participant/guide');
-              break;
-            case 4:
-              Navigator.pushReplacementNamed(
-                  context, '/participant/announcements');
-              break;
-          }
-        },
-      ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: 2,
+          userRole: 'participant',
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.pushReplacementNamed(context, '/participant/home');
+                break;
+              case 1:
+                Navigator.pushReplacementNamed(context, '/participant/program');
+                break;
+              case 2:
+                // Already on Profile
+                break;
+              case 3:
+                Navigator.pushReplacementNamed(context, '/participant/guide');
+                break;
+              case 4:
+                Navigator.pushReplacementNamed(
+                    context, '/participant/announcements');
+                break;
+            }
+          },
+        ),
       ), // End Scaffold
     ); // End RootTabPopScope
   }

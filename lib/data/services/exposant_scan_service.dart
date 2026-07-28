@@ -10,6 +10,36 @@ class ExposantScanService {
 
   ExposantScanService(this._apiClient);
 
+  /// Look up a participant's display info (name, email, badge_id) by the
+  /// scanned user id, for the pre-save confirmation dialog. The QR code
+  /// itself only carries the id now (see dashboard/views.py
+  /// _qr_display_payload on the backend), so this replaces decoding those
+  /// fields straight out of the scanned code.
+  Future<Map<String, dynamic>?> lookupByUserId(String userId) async {
+    try {
+      final response = await _apiClient.get(
+        '/participants/',
+        queryParameters: {'user_id': userId},
+      );
+
+      final data = response.data;
+      final results = data is Map ? (data['results'] ?? data) : data;
+      if (results is! List || results.isEmpty) return null;
+
+      final participant = results.first as Map<String, dynamic>;
+      final user = participant['user'] as Map<String, dynamic>?;
+
+      return {
+        'full_name':
+            '${user?['first_name'] ?? ''} ${user?['last_name'] ?? ''}'.trim(),
+        'email': user?['email'] ?? '',
+        'badge_id': participant['badge_id'],
+      };
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
   /// Scan participant QR code (create booth visit record)
   /// NEW: Uses scan_participant endpoint that accepts QR data directly
   Future<ExposantScanModel> scanParticipant({
