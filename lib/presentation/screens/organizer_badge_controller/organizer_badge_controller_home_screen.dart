@@ -59,12 +59,6 @@ class _OrganizerBadgeControllerHomeScreenState
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {
-                    // TODO: Navigate to notifications
-                  },
-                ),
-                IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   onPressed: () {
                     Navigator.pushNamed(context, AppRouter.settings);
@@ -145,7 +139,10 @@ class _OrganizerBadgeControllerHomeScreenState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.eventPrimary(context), AppColors.eventPrimaryDark(context)],
+          colors: [
+            AppColors.eventPrimary(context),
+            AppColors.eventPrimaryDark(context)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

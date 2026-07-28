@@ -42,6 +42,27 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showForgotPasswordDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Mot de passe oublié'),
+        content: const Text(
+          'La réinitialisation du mot de passe n\'est pas disponible '
+          'directement dans l\'application. Veuillez contacter les '
+          'organisateurs de votre événement pour réinitialiser votre '
+          'mot de passe.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,13 +200,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Forgot Password
+                      // Forgot Password -- no self-service reset exists;
+                      // point to the organizers rather than leave a dead link.
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {
-                            // TODO: Navigate to forgot password screen
-                          },
+                          onPressed: () => _showForgotPasswordDialog(context),
                           child: const Text('Mot de passe oublié ?'),
                         ),
                       ),
@@ -218,7 +238,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Text(
                             'Pas encore de compte ? ',
-                            style: TextStyle(color: AppColors.textSecondary(context)),
+                            style: TextStyle(
+                                color: AppColors.textSecondary(context)),
                           ),
                           TextButton(
                             onPressed: () {

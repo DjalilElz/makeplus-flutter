@@ -15,7 +15,6 @@ import '../presentation/screens/exposant/exposant_home_screen.dart';
 import '../presentation/screens/exposant/exposant_plan_screen.dart';
 import '../presentation/screens/exposant/exposant_scanner_screen.dart';
 import '../presentation/screens/exposant/exposant_stats_screen.dart';
-import '../presentation/screens/exposant/participant_info_screen.dart';
 import '../presentation/screens/organizer_badge_controller/badge_controller_announcements_screen.dart';
 import '../presentation/screens/organizer_badge_controller/badge_scanner_screen.dart';
 import '../presentation/screens/organizer_badge_controller/organizer_badge_controller_home_screen.dart';
@@ -23,9 +22,7 @@ import '../presentation/screens/organizer_badge_controller/program_pdf_screen.da
 import '../presentation/screens/organizer_badge_controller/statistics_screen.dart';
 import '../presentation/screens/organizer_room_manager/announcements_screen.dart';
 import '../presentation/screens/organizer_room_manager/organizer_room_manager_home_screen.dart';
-import '../presentation/screens/organizer_room_manager/participants_list_screen.dart';
 import '../presentation/screens/organizer_room_manager/questions_screen.dart';
-import '../presentation/screens/organizer_room_manager/room_management/room_detail_screen.dart';
 import '../presentation/screens/organizer_room_manager/room_management/rooms_list_screen.dart';
 import '../presentation/screens/participant/eposters_screen.dart';
 import '../presentation/screens/participant/guide_screen.dart';
@@ -33,7 +30,6 @@ import '../presentation/screens/participant/live_stream_screen.dart';
 import '../presentation/screens/participant/participant_announcements_screen.dart';
 import '../presentation/screens/participant/participant_home_screen.dart';
 import '../presentation/screens/participant/participant_profile_screen.dart';
-import '../presentation/screens/participant/qr_badge/my_badge_screen.dart';
 import '../presentation/screens/participant/program_screen.dart';
 import '../presentation/screens/participant/session_detail_screen.dart';
 import '../presentation/screens/shared/event_details_screen.dart';
@@ -56,10 +52,7 @@ class AppRouter {
 
   // Organizer Room Manager routes (Organisateur Gestion des Salles)
   static const String organizerRoomManagerHome = '/organizer-room-manager/home';
-  static const String participantsList = '/organizer-room-manager/participants';
   static const String roomsList = '/organizer-room-manager/rooms';
-  static const String roomDetail = '/organizer-room-manager/room-detail';
-  static const String addSession = '/organizer-room-manager/add-session';
   static const String announcements = '/organizer-room-manager/announcements';
   static const String createAnnouncement =
       '/organizer-room-manager/create-announcement';
@@ -85,7 +78,6 @@ class AppRouter {
   // Participant routes
   static const String participantHome = '/participant/home';
   static const String program = '/participant/program';
-  static const String myBadge = '/participant/my-badge';
   static const String guide = '/participant/guide';
   static const String exhibitors = '/participant/exhibitors';
   static const String sessionDetail = '/participant/session-detail';
@@ -106,10 +98,8 @@ class AppRouter {
   static const String exposantScanner = '/exposant/scanner';
   static const String exposantStats = '/exposant/stats';
   static const String exposantAnnouncements = '/exposant/announcements';
-  static const String exposantParticipantInfo = '/exposant/participant-info';
 
   // Shared routes
-  static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String eventDetails = '/event-details';
   static const String settings = '/settings';
@@ -158,10 +148,6 @@ class AppRouter {
         return MaterialPageRoute(
             builder: (_) => const OrganizerRoomManagerHomeScreen());
 
-      case participantsList:
-        return MaterialPageRoute(
-            builder: (_) => const ParticipantsListScreen());
-
       case announcements:
         return MaterialPageRoute(builder: (_) => const AnnouncementsScreen());
 
@@ -187,12 +173,6 @@ class AppRouter {
             ),
             child: const RoomsListScreen(),
           ),
-        );
-
-      case roomDetail:
-        final roomId = settings.arguments as String?;
-        return MaterialPageRoute(
-          builder: (_) => RoomDetailScreen(roomId: roomId ?? ''),
         );
 
       // Participant routes
@@ -227,9 +207,6 @@ class AppRouter {
 
       case eposters:
         return MaterialPageRoute(builder: (_) => const EpostersScreen());
-
-      case myBadge:
-        return MaterialPageRoute(builder: (_) => const MyBadgeScreen());
 
       case participantProfile:
         return MaterialPageRoute(
@@ -285,19 +262,6 @@ class AppRouter {
       case exposantAnnouncements:
         return MaterialPageRoute(
             builder: (_) => const ExposantAnnouncementsScreen());
-
-      case exposantParticipantInfo:
-        final scannedCode = settings.arguments as String?;
-        if (scannedCode == null) {
-          return MaterialPageRoute(
-            builder: (_) => const Scaffold(
-              body: Center(child: Text('Code invalide')),
-            ),
-          );
-        }
-        return MaterialPageRoute(
-          builder: (_) => ParticipantInfoScreen(scannedData: scannedCode),
-        );
 
       // Permission denied
       case permissionDenied:

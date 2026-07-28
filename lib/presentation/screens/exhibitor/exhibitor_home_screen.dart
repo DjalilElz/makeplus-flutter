@@ -32,12 +32,6 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                Navigator.pushNamed(context, '/notifications');
-              },
-            ),
-            IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () {
                 Navigator.pushNamed(context, '/settings');
@@ -97,7 +91,10 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.eventPrimary(context), AppColors.eventPrimaryDark(context)],
+          colors: [
+            AppColors.eventPrimary(context),
+            AppColors.eventPrimaryDark(context)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
