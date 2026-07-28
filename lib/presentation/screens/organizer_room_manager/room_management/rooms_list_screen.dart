@@ -108,143 +108,153 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text(''), // Empty title while loading
-          elevation: 1,
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-        bottomNavigationBar: BottomNavBar(
-          currentIndex: 2, // Salle tab
-          userRole: 'organizer',
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerRoomManagerHome);
-                break;
-              case 1:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.announcements);
-                break;
-              case 2:
-                // Already on Salles
-                break;
-              case 3:
-                Navigator.pushReplacementNamed(context, AppRouter.questions);
-                break;
-            }
-          },
+      return RootTabPopScope(
+        homeRoute: AppRouter.organizerRoomManagerHome,
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            title: const Text(''), // Empty title while loading
+            elevation: 1,
+          ),
+          body: const Center(
+            child: CircularProgressIndicator(),
+          ),
+          bottomNavigationBar: BottomNavBar(
+            currentIndex: 2, // Salle tab
+            userRole: 'organizer',
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.organizerRoomManagerHome);
+                  break;
+                case 1:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.announcements);
+                  break;
+                case 2:
+                  // Already on Salles
+                  break;
+                case 3:
+                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  break;
+              }
+            },
+          ),
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text(''),
-          elevation: 1,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline,
-                  size: 64, color: AppColors.textHint(context)),
-              const SizedBox(height: 16),
-              Text('Erreur de chargement',
-                  style: TextStyle(
-                      fontSize: 18, color: AppColors.textSecondary(context))),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(_errorMessage!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 14, color: AppColors.textSecondary(context))),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadRoomsAndSessions,
-                child: const Text('Réessayer'),
-              ),
-            ],
+      return RootTabPopScope(
+        homeRoute: AppRouter.organizerRoomManagerHome,
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            title: const Text(''),
+            elevation: 1,
           ),
-        ),
-        bottomNavigationBar: BottomNavBar(
-          currentIndex: 2, // Salle tab
-          userRole: 'organizer',
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerRoomManagerHome);
-                break;
-              case 1:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.announcements);
-                break;
-              case 2:
-                // Already on Salles
-                break;
-              case 3:
-                Navigator.pushReplacementNamed(context, AppRouter.questions);
-                break;
-            }
-          },
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline,
+                    size: 64, color: AppColors.textHint(context)),
+                const SizedBox(height: 16),
+                Text('Erreur de chargement',
+                    style: TextStyle(
+                        fontSize: 18, color: AppColors.textSecondary(context))),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(_errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary(context))),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadRoomsAndSessions,
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: BottomNavBar(
+            currentIndex: 2, // Salle tab
+            userRole: 'organizer',
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.organizerRoomManagerHome);
+                  break;
+                case 1:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.announcements);
+                  break;
+                case 2:
+                  // Already on Salles
+                  break;
+                case 3:
+                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  break;
+              }
+            },
+          ),
         ),
       );
     }
 
     if (_assignedRoom == null) {
-      return Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text(''),
-          elevation: 1,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.meeting_room_outlined,
-                  size: 64, color: AppColors.textHint(context)),
-              const SizedBox(height: 16),
-              Text('Aucune salle assignée',
-                  style: TextStyle(
-                      fontSize: 18, color: AppColors.textSecondary(context))),
-              const SizedBox(height: 8),
-              Text('Vous n\'êtes assigné à aucune salle',
-                  style: TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary(context))),
-            ],
+      return RootTabPopScope(
+        homeRoute: AppRouter.organizerRoomManagerHome,
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            title: const Text(''),
+            elevation: 1,
           ),
-        ),
-        bottomNavigationBar: BottomNavBar(
-          currentIndex: 2, // Salle tab
-          userRole: 'organizer',
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.organizerRoomManagerHome);
-                break;
-              case 1:
-                Navigator.pushReplacementNamed(
-                    context, AppRouter.announcements);
-                break;
-              case 2:
-                // Already on Salles
-                break;
-              case 3:
-                Navigator.pushReplacementNamed(context, AppRouter.questions);
-                break;
-            }
-          },
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.meeting_room_outlined,
+                    size: 64, color: AppColors.textHint(context)),
+                const SizedBox(height: 16),
+                Text('Aucune salle assignée',
+                    style: TextStyle(
+                        fontSize: 18, color: AppColors.textSecondary(context))),
+                const SizedBox(height: 8),
+                Text('Vous n\'êtes assigné à aucune salle',
+                    style: TextStyle(
+                        fontSize: 14, color: AppColors.textSecondary(context))),
+              ],
+            ),
+          ),
+          bottomNavigationBar: BottomNavBar(
+            currentIndex: 2, // Salle tab
+            userRole: 'organizer',
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.organizerRoomManagerHome);
+                  break;
+                case 1:
+                  Navigator.pushReplacementNamed(
+                      context, AppRouter.announcements);
+                  break;
+                case 2:
+                  // Already on Salles
+                  break;
+                case 3:
+                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  break;
+              }
+            },
+          ),
         ),
       );
     }

@@ -275,7 +275,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                      color: AppColors.eventPrimary(context)
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -468,25 +469,25 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
   }
 
   List<Map<String, dynamic>> get _announcementTypes => [
-    {
-      'id': 'location',
-      'label': 'Changement de salle',
-      'icon': Icons.location_on,
-      'color': AppColors.eventPrimary(context),
-    },
-    {
-      'id': 'delay',
-      'label': 'Retard \n',
-      'icon': Icons.access_time,
-      'color': AppColors.warning,
-    },
-    {
-      'id': 'important',
-      'label': 'Annonce importante',
-      'icon': Icons.campaign,
-      'color': AppColors.error,
-    },
-  ];
+        {
+          'id': 'location',
+          'label': 'Changement de salle',
+          'icon': Icons.location_on,
+          'color': AppColors.eventPrimary(context),
+        },
+        {
+          'id': 'delay',
+          'label': 'Retard \n',
+          'icon': Icons.access_time,
+          'color': AppColors.warning,
+        },
+        {
+          'id': 'important',
+          'label': 'Annonce importante',
+          'icon': Icons.campaign,
+          'color': AppColors.error,
+        },
+      ];
 
   final List<Map<String, String>> _targetOptions = [
     {'value': 'all', 'label': 'Tous'},
@@ -510,150 +511,166 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground(context),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerHigh(context),
-                  borderRadius: BorderRadius.circular(2),
+        return GestureDetector(
+          // Tapping anywhere in the sheet that isn't a field (drag handle,
+          // header, labels, empty space) dismisses the keyboard. Opaque so
+          // it also catches taps on the empty background, not just on
+          // widgets that already handle their own taps.
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground(context),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                // Drag handle
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerHigh(context),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Nouvelle annonce',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(),
-              // Content
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Type selection
                       const Text(
-                        'Type d\'annonce',
+                        'Nouvelle annonce',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _buildTypeSelection(),
-                      const SizedBox(height: 24),
-
-                      // Title
-                      const Text(
-                        'Titre',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          hintText: 'Entrez le titre de l\'annonce',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Message
-                      const Text(
-                        'Message',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _messageController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: 'Entrez le message détaillé',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Target selection
-                      const Text(
-                        'Cible',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTargetSelection(),
-                      const SizedBox(height: 32),
-
-                      // Submit button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _titleController.text.isNotEmpty &&
-                                  _messageController.text.isNotEmpty &&
-                                  !_isSubmitting
-                              ? _createAnnouncement
-                              : null,
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  widget.announcement != null
-                                      ? 'Modifier l\'annonce'
-                                      : 'Publier l\'annonce',
-                                ),
-                        ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                const Divider(),
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    // Extra bottom padding equal to the keyboard height, so
+                    // there's always enough room to scroll the submit button
+                    // up above the keyboard instead of it being stuck behind.
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      20,
+                      20,
+                      20 + MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Type selection
+                        const Text(
+                          'Type d\'annonce',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildTypeSelection(),
+                        const SizedBox(height: 24),
+
+                        // Title
+                        const Text(
+                          'Titre',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            hintText: 'Entrez le titre de l\'annonce',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Message
+                        const Text(
+                          'Message',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _messageController,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: 'Entrez le message détaillé',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Target selection
+                        const Text(
+                          'Cible',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildTargetSelection(),
+                        const SizedBox(height: 32),
+
+                        // Submit button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _titleController.text.isNotEmpty &&
+                                    _messageController.text.isNotEmpty &&
+                                    !_isSubmitting
+                                ? _createAnnouncement
+                                : null,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    widget.announcement != null
+                                        ? 'Modifier l\'annonce'
+                                        : 'Publier l\'annonce',
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -739,7 +756,9 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
           side: BorderSide(
-            color: isSelected ? AppColors.eventPrimary(context) : AppColors.borderColor(context),
+            color: isSelected
+                ? AppColors.eventPrimary(context)
+                : AppColors.borderColor(context),
           ),
         );
       }).toList(),
@@ -761,7 +780,8 @@ class _CreateAnnouncementModalState extends State<CreateAnnouncementModal> {
 
       if (widget.announcement != null) {
         // Update existing announcement
-        AppLogger.d('📢 UPDATING ANNOUNCEMENT - ID: ${widget.announcement!.id}');
+        AppLogger.d(
+            '📢 UPDATING ANNOUNCEMENT - ID: ${widget.announcement!.id}');
         await _announcementService.updateAnnouncement(
           id: widget.announcement!.id,
           title: _titleController.text,

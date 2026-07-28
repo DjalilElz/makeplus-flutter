@@ -13,6 +13,7 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_event.dart';
 import '../../../routes/app_router.dart';
+import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../widgets/navigation/root_tab_pop_scope.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -166,6 +167,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 30),
           ],
         ),
+        // Only the room-manager reaches this screen as a bottom-nav tab
+        // (pushReplacementNamed, nothing to pop to -- see RootTabPopScope
+        // above). Every other role pushes it from a gear icon on their own
+        // screen and should keep seeing that screen's own nav bar, not this
+        // one, so canPop() being true there correctly hides it.
+        bottomNavigationBar: Navigator.of(context).canPop()
+            ? null
+            : BottomNavBar(
+                currentIndex: 3,
+                userRole: 'organizer',
+                onTap: (index) {
+                  switch (index) {
+                    case 0:
+                      Navigator.pushReplacementNamed(
+                          context, AppRouter.organizerRoomManagerHome);
+                      break;
+                    case 1:
+                      Navigator.pushReplacementNamed(
+                          context, AppRouter.announcements);
+                      break;
+                    case 2:
+                      Navigator.pushReplacementNamed(
+                          context, AppRouter.roomsList);
+                      break;
+                    case 3:
+                      // Already on Paramètres
+                      break;
+                  }
+                },
+              ),
       ), // End Scaffold
     ); // End RootTabPopScope
   }
