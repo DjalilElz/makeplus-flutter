@@ -1,5 +1,7 @@
 // lib/presentation/screens/participant/guide_screen.dart
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,7 +45,12 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
     try {
       final dir = await getTemporaryDirectory();
       final path = '${dir.path}/event_guide.pdf';
-      await Dio().download(url, path);
+      final file = File(path);
+      // The guide rarely changes -- if it's already on disk from an earlier
+      // load this session, use it directly instead of re-downloading.
+      if (!await file.exists()) {
+        await Dio().download(url, path);
+      }
       if (!mounted) return;
       setState(() {
         _pdfPath = path;

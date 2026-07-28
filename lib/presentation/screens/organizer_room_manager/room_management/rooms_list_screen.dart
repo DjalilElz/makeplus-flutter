@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/theme/app_colors.dart';
 import '../../../../data/models/room_model.dart';
 import '../../../../data/services/api_client.dart';
+import '../../../../data/services/page_cache_service.dart';
 import '../../../../data/services/room_service.dart';
 import '../../../../data/services/session_service.dart';
 import '../../../../logic/authentication/auth_bloc.dart';
@@ -44,14 +45,37 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
     super.initState();
     _roomService = RoomService(ApiClient());
     _sessionService = SessionService(ApiClient());
-    _loadRoomsAndSessions();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadRoomsAndSessions() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  void _loadFromCacheThenRefresh() {
+    final authState = context.read<AuthBloc>().state;
+    final eventId = authState.event?.id;
+    final userId = authState.user?.id;
+    final cachedRoom = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<RoomModel>('rooms_list_room_${eventId}_$userId');
+    final cachedSessions = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<List<SessionModel>>('rooms_list_sessions_${eventId}_$userId');
+    final hasCachedData = cachedRoom != null && cachedSessions != null;
+    if (hasCachedData) {
+      _assignedRoom = cachedRoom;
+      _sessions = cachedSessions;
+      _isLoading = false;
+    }
+    _loadRoomsAndSessions(showSpinner: !hasCachedData);
+  }
+
+  Future<void> _loadRoomsAndSessions({bool showSpinner = true}) async {
+    if (showSpinner) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final authState = context.read<AuthBloc>().state;
@@ -81,20 +105,32 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
         roomId: assignedRoom.id,
       );
 
+      PageCacheService.instance
+          .set('rooms_list_room_${eventId}_$userId', assignedRoom);
+      PageCacheService.instance
+          .set('rooms_list_sessions_${eventId}_$userId', sessions);
+
+      if (!mounted) return;
       setState(() {
         _assignedRoom = assignedRoom;
         _sessions = sessions;
         _isLoading = false;
+        _errorMessage = null;
       });
 
       AppLogger.d(
           '🏢 LOADED room: ${assignedRoom.name} with ${sessions.length} sessions');
     } catch (e) {
       AppLogger.d('❌ ERROR LOADING ROOM/SESSIONS: $e');
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      // Only surface the error when there's nothing cached to fall back on;
+      // a failed background refresh should leave the visible data alone.
+      if (showSpinner) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -287,7 +323,7 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
           ],
         ),
         body: RefreshIndicator(
-          onRefresh: _loadRoomsAndSessions,
+          onRefresh: () => _loadRoomsAndSessions(showSpinner: false),
           child: Column(
             children: [
               // Search bar (when active)

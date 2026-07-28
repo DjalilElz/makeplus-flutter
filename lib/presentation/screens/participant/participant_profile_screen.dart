@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../widgets/navigation/root_tab_pop_scope.dart';
@@ -31,6 +32,24 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
   void initState() {
     super.initState();
     _apiClient = ApiClient();
+    _loadFromCacheThenRefresh();
+  }
+
+  void _loadFromCacheThenRefresh() {
+    final userId = context.read<AuthBloc>().state.user?.id;
+    if (userId != null) {
+      final cachedProfile = PageCacheService.instance
+          .get<Map<String, dynamic>>('participant_profile_$userId');
+      final cachedQr =
+          PageCacheService.instance.get<String>('participant_qr_$userId');
+      if (cachedProfile != null) _profileData = cachedProfile;
+      if (cachedQr != null) {
+        _qrCodeData = cachedQr;
+        _isLoadingQrCode = false;
+      }
+    }
+    // Doesn't reset loading state at entry, so calling it again here to
+    // refresh in the background never re-shows a spinner over cached data.
     _loadProfileAndQrCode();
   }
 
@@ -46,6 +65,8 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
 
       AppLogger.d('✅ PROFILE RESPONSE: ${response.data}');
 
+      if (!mounted) return;
+
       if (response.data != null) {
         final data = response.data;
 
@@ -53,6 +74,12 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
         setState(() {
           _profileData = data;
         });
+
+        final userId = context.read<AuthBloc>().state.user?.id;
+        if (userId != null) {
+          PageCacheService.instance
+              .set('participant_profile_$userId', data as Map<String, dynamic>);
+        }
 
         // Extract QR code from response
         if (data['qr_code'] != null) {
@@ -66,6 +93,10 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
           // _qr_display_payload on the web side exactly, or the two QR
           // codes for the same user render differently.
           final qrString = qrCode['user_id'].toString();
+
+          if (userId != null) {
+            PageCacheService.instance.set('participant_qr_$userId', qrString);
+          }
 
           setState(() {
             _qrCodeData = qrString;
@@ -87,12 +118,15 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
     }
   }
 
-  Future<void> _loadMyPaidItems([Function? onComplete]) async {
+  Future<void> _loadMyPaidItems(
+      [Function? onComplete, bool showSpinner = true]) async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoadingPaidItems = true;
-    });
+    if (showSpinner) {
+      setState(() {
+        _isLoadingPaidItems = true;
+      });
+    }
 
     try {
       AppLogger.d('📚 LOADING MY PAID ITEMS');
@@ -199,6 +233,11 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
 
       if (!mounted) return;
 
+      final userId = context.read<AuthBloc>().state.user?.id;
+      if (userId != null) {
+        PageCacheService.instance.set('participant_paid_items_$userId', items);
+      }
+
       setState(() {
         _myPaidItems = items;
         _isLoadingPaidItems = false;
@@ -210,10 +249,14 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
       AppLogger.d('❌ ERROR LOADING PAID ITEMS: $e');
       if (!mounted) return;
 
-      setState(() {
-        _myPaidItems = [];
-        _isLoadingPaidItems = false;
-      });
+      // A silent background refresh failing shouldn't wipe out items
+      // already shown from cache.
+      if (showSpinner) {
+        setState(() {
+          _myPaidItems = [];
+          _isLoadingPaidItems = false;
+        });
+      }
       onComplete?.call();
     }
   }
@@ -252,6 +295,19 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
   }
 
   void _showPaidItemsModal(BuildContext context) {
+    if (_myPaidItems.isEmpty && !_isLoadingPaidItems) {
+      final userId = context.read<AuthBloc>().state.user?.id;
+      final cached = userId == null
+          ? null
+          : PageCacheService.instance.get<List<Map<String, dynamic>>>(
+              'participant_paid_items_$userId');
+      if (cached != null) {
+        _myPaidItems = cached;
+        // Refresh silently in the background; the modal's own "load if
+        // empty" check below will be skipped now that it's pre-filled.
+        _loadMyPaidItems(null, false);
+      }
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../data/services/session_question_service.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
 
@@ -70,33 +71,52 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
     });
 
     // Load questions from API
-    _loadQuestions();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadQuestions() async {
+  void _loadFromCacheThenRefresh() {
+    final cached = PageCacheService.instance
+        .get<List<Map<String, dynamic>>>('live_stream_questions_$_sessionId');
+    if (cached != null) {
+      _userQuestions = cached;
+      _isLoadingQuestions = false;
+    }
+    _loadQuestions(showSpinner: cached == null);
+  }
+
+  Future<void> _loadQuestions({bool showSpinner = true}) async {
     try {
       AppLogger.d('📡 LOADING QUESTIONS for session: $_sessionId');
 
       final questions = await _questionService.getQuestions(_sessionId);
       AppLogger.d('✅ LOADED ${questions.length} questions');
 
+      final mapped = questions.map<Map<String, dynamic>>((q) {
+        return {
+          'id': q.id,
+          'question': q.questionText,
+          'time': _formatTime(q.askedAt.toIso8601String()),
+          'is_answered': q.isAnswered,
+          'is_mine': _myQuestionIds.contains(q.id),
+        };
+      }).toList();
+
+      PageCacheService.instance
+          .set('live_stream_questions_$_sessionId', mapped);
+
+      if (!mounted) return;
       setState(() {
-        _userQuestions = questions.map<Map<String, dynamic>>((q) {
-          return {
-            'id': q.id,
-            'question': q.questionText,
-            'time': _formatTime(q.askedAt.toIso8601String()),
-            'is_answered': q.isAnswered,
-            'is_mine': _myQuestionIds.contains(q.id),
-          };
-        }).toList();
+        _userQuestions = mapped;
         _isLoadingQuestions = false;
       });
     } catch (e) {
       AppLogger.d('❌ ERROR LOADING QUESTIONS: $e');
-      setState(() {
-        _isLoadingQuestions = false;
-      });
+      if (!mounted) return;
+      if (showSpinner) {
+        setState(() {
+          _isLoadingQuestions = false;
+        });
+      }
     }
   }
 
@@ -353,7 +373,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
             bottom: 80,
             child: FloatingActionButton(
               heroTag: 'question',
-              backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.9),
+              backgroundColor:
+                  AppColors.eventPrimary(context).withValues(alpha: 0.9),
               onPressed: () {
                 setState(() {
                   _showQuestionBoxInFullscreen = true;
@@ -534,7 +555,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                         question['time'] ?? '',
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: AppColors.textSecondary(context),
+                                          color:
+                                              AppColors.textSecondary(context),
                                         ),
                                       ),
                                     ],
@@ -562,7 +584,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontStyle: FontStyle.italic,
-                                            color: AppColors.textSecondary(context),
+                                            color: AppColors.textSecondary(
+                                                context),
                                           ),
                                         ),
                                       ],
@@ -624,7 +647,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: isAnswered
                       ? Border.all(
-                          color: AppColors.success.withValues(alpha: 0.5), width: 1.5)
+                          color: AppColors.success.withValues(alpha: 0.5),
+                          width: 1.5)
                       : null,
                 ),
                 child: Column(
@@ -749,7 +773,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
               icon: const Icon(Icons.send),
               color: AppColors.eventPrimary(context),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.1),
+                backgroundColor:
+                    AppColors.eventPrimary(context).withValues(alpha: 0.1),
                 padding: const EdgeInsets.all(12),
               ),
             ),
@@ -772,7 +797,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Poser une question...',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                  hintStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
@@ -792,7 +818,8 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
               onPressed: _sendMessage,
               icon: const Icon(Icons.send, color: Colors.white),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.eventPrimary(context).withValues(alpha: 0.8),
+                backgroundColor:
+                    AppColors.eventPrimary(context).withValues(alpha: 0.8),
                 padding: const EdgeInsets.all(12),
               ),
             ),

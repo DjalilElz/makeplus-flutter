@@ -7,6 +7,7 @@ import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/services/announcement_service.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
@@ -30,14 +31,29 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   void initState() {
     super.initState();
     _announcementService = AnnouncementService(ApiClient());
-    _loadAnnouncements();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadAnnouncements() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  void _loadFromCacheThenRefresh() {
+    final eventId = context.read<AuthBloc>().state.event?.id;
+    final cached = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<List<AnnouncementModel>>('announcements_$eventId');
+    if (cached != null) {
+      _announcements = cached;
+      _isLoading = false;
+    }
+    _loadAnnouncements(showSpinner: cached == null);
+  }
+
+  Future<void> _loadAnnouncements({bool showSpinner = true}) async {
+    if (showSpinner) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final authState = context.read<AuthBloc>().state;
@@ -53,16 +69,25 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         AppLogger.d('  - ${a.title} (ID: ${a.id})');
       }
 
+      if (eventId != null) {
+        PageCacheService.instance.set('announcements_$eventId', announcements);
+      }
+
+      if (!mounted) return;
       setState(() {
         _announcements = announcements;
         _isLoading = false;
+        _errorMessage = null;
       });
     } catch (e) {
       AppLogger.d('❌ ERROR LOADING ANNOUNCEMENTS: $e');
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      if (showSpinner) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -142,7 +167,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 : _announcements.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
-                        onRefresh: _loadAnnouncements,
+                        onRefresh: () => _loadAnnouncements(showSpinner: false),
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _announcements.length,

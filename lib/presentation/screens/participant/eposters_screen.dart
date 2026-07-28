@@ -12,6 +12,7 @@ import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/eposter_gallery_item.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/eposter_service.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 
 class EpostersScreen extends StatefulWidget {
@@ -35,7 +36,17 @@ class _EpostersScreenState extends State<EpostersScreen> {
   void initState() {
     super.initState();
     _eposterService = EposterService(ApiClient());
-    _loadGallery();
+    _loadFromCacheThenRefresh();
+  }
+
+  void _loadFromCacheThenRefresh() {
+    final eventId = context.read<AuthBloc>().state.event?.id;
+    final cached = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<List<EposterGalleryItem>>('eposters_gallery_$eventId');
+    if (cached != null) _items = cached;
+    _loadGallery(showSpinner: cached == null);
   }
 
   @override
@@ -45,28 +56,37 @@ class _EpostersScreenState extends State<EpostersScreen> {
     super.dispose();
   }
 
-  Future<void> _loadGallery({String? query}) async {
+  Future<void> _loadGallery({String? query, bool showSpinner = true}) async {
     final event = context.read<AuthBloc>().state.event;
     if (event == null) return;
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    if (showSpinner) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
-      final items = await _eposterService.getGallery(eventId: event.id, query: query);
+      final items =
+          await _eposterService.getGallery(eventId: event.id, query: query);
       if (!mounted) return;
+      if (query == null || query.isEmpty) {
+        PageCacheService.instance.set('eposters_gallery_${event.id}', items);
+      }
       setState(() {
         _items = items;
         _isLoading = false;
+        _error = null;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _error = 'Impossible de charger la galerie des E-Posters.';
-        _isLoading = false;
-      });
+      if (showSpinner) {
+        setState(() {
+          _error = 'Impossible de charger la galerie des E-Posters.';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -174,7 +194,8 @@ class _EpostersScreenState extends State<EpostersScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => _loadGallery(query: _searchController.text.trim()),
+      onRefresh: () => _loadGallery(
+          query: _searchController.text.trim(), showSpinner: false),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final crossAxisCount = constraints.maxWidth >= 600 ? 3 : 2;
@@ -308,14 +329,17 @@ class _EposterCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.person_outline, size: 14, color: AppColors.textSecondary(context)),
+                      Icon(Icons.person_outline,
+                          size: 14, color: AppColors.textSecondary(context)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           item.authors,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary(context)),
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.textSecondary(context)),
                         ),
                       ),
                     ],
@@ -323,18 +347,23 @@ class _EposterCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     DateFormat('dd/MM/yyyy').format(item.submittedAt),
-                    style: TextStyle(fontSize: 11, color: AppColors.textHint(context)),
+                    style: TextStyle(
+                        fontSize: 11, color: AppColors.textHint(context)),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: item.pdfUrl != null ? () => onOpenPdf(item.pdfUrl!) : null,
+                      onPressed: item.pdfUrl != null
+                          ? () => onOpenPdf(item.pdfUrl!)
+                          : null,
                       icon: const Icon(Icons.picture_as_pdf_outlined, size: 15),
-                      label: const Text('Voir le PDF', style: TextStyle(fontSize: 12)),
+                      label: const Text('Voir le PDF',
+                          style: TextStyle(fontSize: 12)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.eventPrimary(context),
-                        side: BorderSide(color: AppColors.eventPrimary(context)),
+                        side:
+                            BorderSide(color: AppColors.eventPrimary(context)),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),

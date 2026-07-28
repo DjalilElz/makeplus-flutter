@@ -1,9 +1,12 @@
 // lib/presentation/screens/organizer_badge_controller/statistics_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
+import '../../../logic/authentication/auth_bloc.dart';
 import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../widgets/navigation/root_tab_pop_scope.dart';
@@ -29,14 +32,30 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   void initState() {
     super.initState();
     _apiClient = ApiClient();
-    _loadStatistics();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadStatistics() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  void _loadFromCacheThenRefresh() {
+    final eventId = context.read<AuthBloc>().state.event?.id;
+    final cached = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<_StatisticsCacheData>('badge_controller_stats_$eventId');
+    if (cached != null) {
+      _statistics = cached.statistics;
+      _recentScans = cached.recentScans;
+      _isLoading = false;
+    }
+    _loadStatistics(showSpinner: cached == null);
+  }
+
+  Future<void> _loadStatistics({bool showSpinner = true}) async {
+    if (showSpinner) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       AppLogger.d('📊 LOADING MY STATISTICS');
@@ -71,10 +90,21 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         }
       }
 
+      if (!mounted) return;
+
+      final eventId = context.read<AuthBloc>().state.event?.id;
+      if (eventId != null) {
+        PageCacheService.instance.set(
+          'badge_controller_stats_$eventId',
+          _StatisticsCacheData(statistics, recentScans),
+        );
+      }
+
       setState(() {
         _statistics = statistics;
         _recentScans = recentScans;
         _isLoading = false;
+        _errorMessage = null;
       });
 
       AppLogger.d(
@@ -96,10 +126,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         return;
       }
 
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      if (showSpinner) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -229,7 +262,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                             : 'Aucun résultat trouvé',
                                         style: TextStyle(
                                           fontSize: 16,
-                                          color: AppColors.textSecondary(context),
+                                          color:
+                                              AppColors.textSecondary(context),
                                         ),
                                       ),
                                     ],
@@ -299,7 +333,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                         break;
                                       default:
                                         statusText = 'Inconnu';
-                                        statusColor = AppColors.textHint(context);
+                                        statusColor =
+                                            AppColors.textHint(context);
                                         statusIcon = Icons.help;
                                     }
 
@@ -314,13 +349,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                             const EdgeInsets.all(12),
                                         leading: CircleAvatar(
                                           radius: 28,
-                                          backgroundColor: AppColors.eventPrimary(context)
-                                              .withValues(alpha: 0.1),
+                                          backgroundColor:
+                                              AppColors.eventPrimary(context)
+                                                  .withValues(alpha: 0.1),
                                           child: Text(
                                             firstInitial,
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: AppColors.eventPrimary(context),
+                                              color: AppColors.eventPrimary(
+                                                  context),
                                               fontSize: 20,
                                             ),
                                           ),
@@ -343,8 +380,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                                   Icon(
                                                     Icons.email_outlined,
                                                     size: 14,
-                                                    color: AppColors
-                                                        .textSecondary(context),
+                                                    color:
+                                                        AppColors.textSecondary(
+                                                            context),
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Expanded(
@@ -368,8 +406,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                                   Icon(
                                                     Icons.badge_outlined,
                                                     size: 14,
-                                                    color: AppColors
-                                                        .textSecondary(context),
+                                                    color:
+                                                        AppColors.textSecondary(
+                                                            context),
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
@@ -391,8 +430,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                                     Icons
                                                         .shopping_cart_outlined,
                                                     size: 14,
-                                                    color: AppColors
-                                                        .textSecondary(context),
+                                                    color:
+                                                        AppColors.textSecondary(
+                                                            context),
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
@@ -440,8 +480,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                                                   Icon(
                                                     Icons.access_time,
                                                     size: 14,
-                                                    color: AppColors
-                                                        .textSecondary(context),
+                                                    color:
+                                                        AppColors.textSecondary(
+                                                            context),
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
@@ -607,6 +648,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       ),
     );
   }
+}
+
+class _StatisticsCacheData {
+  final Map<String, dynamic>? statistics;
+  final List<Map<String, dynamic>> recentScans;
+
+  _StatisticsCacheData(this.statistics, this.recentScans);
 }
 
 // Custom delegate for pinned search bar

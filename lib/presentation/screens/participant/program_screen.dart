@@ -1,5 +1,7 @@
 // lib/presentation/screens/participant/program_screen.dart
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +13,7 @@ import '../../../core/constants/session_types.dart';
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/room_model.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../data/services/session_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
@@ -53,32 +56,48 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
   void initState() {
     super.initState();
     _sessionService = SessionService(ApiClient());
-    _loadSessions();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadSessions() async {
+  void _loadFromCacheThenRefresh() {
+    final eventId = context.read<AuthBloc>().state.event?.id;
+    final cached = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<List<SessionModel>>('program_sessions_$eventId');
+    if (cached != null) _sessions = cached;
+    _loadSessions(showSpinner: cached == null);
+  }
+
+  Future<void> _loadSessions({bool showSpinner = true}) async {
     final event = context.read<AuthBloc>().state.event;
     if (event == null) return;
 
-    setState(() {
-      _isLoadingSessions = true;
-      _sessionsError = null;
-    });
+    if (showSpinner) {
+      setState(() {
+        _isLoadingSessions = true;
+        _sessionsError = null;
+      });
+    }
 
     try {
       final sessions = await _sessionService.getSessions(eventId: event.id);
       sessions.sort((a, b) => a.startTime.compareTo(b.startTime));
       if (!mounted) return;
+      PageCacheService.instance.set('program_sessions_${event.id}', sessions);
       setState(() {
         _sessions = sessions;
         _isLoadingSessions = false;
+        _sessionsError = null;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _sessionsError = 'Impossible de charger le programme.';
-        _isLoadingSessions = false;
-      });
+      if (showSpinner) {
+        setState(() {
+          _sessionsError = 'Impossible de charger le programme.';
+          _isLoadingSessions = false;
+        });
+      }
     }
   }
 
@@ -91,7 +110,13 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
     try {
       final dir = await getTemporaryDirectory();
       final path = '${dir.path}/event_programme.pdf';
-      await Dio().download(url, path);
+      final file = File(path);
+      // The programme rarely changes -- if it's already on disk from an
+      // earlier load this session, use it directly instead of
+      // re-downloading.
+      if (!await file.exists()) {
+        await Dio().download(url, path);
+      }
       if (!mounted) return;
       setState(() {
         _pdfPath = path;
@@ -413,7 +438,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
     // area) so the filter card scrolls away with the rest of the content
     // instead of staying pinned at the top.
     return RefreshIndicator(
-      onRefresh: _loadSessions,
+      onRefresh: () => _loadSessions(showSpinner: false),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [

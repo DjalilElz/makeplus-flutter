@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
+import 'page_cache_service.dart';
 
 String? _emptyToNull(String? value) =>
     (value == null || value.isEmpty) ? null : value;
@@ -26,9 +27,10 @@ class DjangoAuthService {
   String? _token;
   SharedPreferences? _prefs;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  late final Future<void> _initFuture;
 
   DjangoAuthService() {
-    _initPrefs();
+    _initFuture = _initPrefs();
 
     // Longer connection timeout: Render cold starts + slow DNS on mobile networks.
     (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
@@ -428,12 +430,17 @@ class DjangoAuthService {
       await _secureStorage.delete(key: 'access_token');
       await _secureStorage.delete(key: 'refresh_token');
 
+      // Clear cached page data so the next account never sees a flash of
+      // this one's content.
+      PageCacheService.instance.clear();
+
       AppLogger.d('✅ LOGOUT - All tokens cleared');
     }
   }
 
   /// Get current user
   Future<UserModel?> getCurrentUser() async {
+    await _initFuture;
     if (_token == null) {
       AppLogger.d('⚠️ No token found');
       return null;
@@ -461,6 +468,7 @@ class DjangoAuthService {
 
   /// Get current user with event data (for session restoration)
   Future<LoginResponse?> getCurrentUserWithEvent() async {
+    await _initFuture;
     if (_token == null) {
       AppLogger.d('⚠️ No token found');
       return null;

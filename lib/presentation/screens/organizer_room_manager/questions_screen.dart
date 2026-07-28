@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/session_question_model.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../data/services/session_question_service.dart';
 
 /// Q&A for a single session -- reached by drilling into a session from the
@@ -38,32 +39,47 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
   // spinner instead of blocking the whole list.
   String? _togglingId;
 
+  String get _cacheKey => 'questions_${widget.sessionId}';
+
   @override
   void initState() {
     super.initState();
     _questionService = SessionQuestionService(ApiClient());
-    _loadQuestions();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadQuestions() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  void _loadFromCacheThenRefresh() {
+    final cached =
+        PageCacheService.instance.get<List<SessionQuestionModel>>(_cacheKey);
+    if (cached != null) _questions = cached;
+    _loadQuestions(showSpinner: cached == null);
+  }
+
+  Future<void> _loadQuestions({bool showSpinner = true}) async {
+    if (showSpinner) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
       final questions = await _questionService.getQuestions(widget.sessionId);
       if (!mounted) return;
+      PageCacheService.instance.set(_cacheKey, questions);
       setState(() {
         _questions = questions;
         _isLoading = false;
+        _error = null;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _error = 'Impossible de charger les questions.';
-        _isLoading = false;
-      });
+      if (showSpinner) {
+        setState(() {
+          _error = 'Impossible de charger les questions.';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -73,10 +89,13 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
     try {
       final updated = await _questionService.toggleAnswered(question.id);
       if (!mounted) return;
+      final updatedList =
+          _questions?.map((q) => q.id == question.id ? updated : q).toList();
+      if (updatedList != null) {
+        PageCacheService.instance.set(_cacheKey, updatedList);
+      }
       setState(() {
-        _questions = _questions
-            ?.map((q) => q.id == question.id ? updated : q)
-            .toList();
+        _questions = updatedList;
         _togglingId = null;
       });
     } catch (_) {
@@ -132,16 +151,18 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
       ..sort((a, b) => b.askedAt.compareTo(a.askedAt));
 
     return RefreshIndicator(
-      onRefresh: _loadQuestions,
+      onRefresh: () => _loadQuestions(showSpinner: false),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: sorted.length,
-        itemBuilder: (context, index) => _buildQuestionCard(context, sorted[index]),
+        itemBuilder: (context, index) =>
+            _buildQuestionCard(context, sorted[index]),
       ),
     );
   }
 
-  Widget _buildQuestionCard(BuildContext context, SessionQuestionModel question) {
+  Widget _buildQuestionCard(
+      BuildContext context, SessionQuestionModel question) {
     final isToggling = _togglingId == question.id;
 
     return Card(
@@ -162,21 +183,25 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.person_off_outlined, size: 16, color: AppColors.textSecondary(context)),
+                Icon(Icons.person_off_outlined,
+                    size: 16, color: AppColors.textSecondary(context)),
                 const SizedBox(width: 6),
                 Text(
                   'Question anonyme',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary(context)),
                 ),
                 const Spacer(),
                 Text(
                   question.formattedAskedAt,
-                  style: TextStyle(fontSize: 12, color: AppColors.textHint(context)),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textHint(context)),
                 ),
                 const SizedBox(width: 8),
                 if (question.isAnswered)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -184,20 +209,30 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_circle, size: 13, color: AppColors.success),
+                        Icon(Icons.check_circle,
+                            size: 13, color: AppColors.success),
                         SizedBox(width: 4),
-                        Text('Répondu', style: TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600)),
+                        Text('Répondu',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.success,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.warning.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('En attente', style: TextStyle(fontSize: 11, color: AppColors.warning, fontWeight: FontWeight.w600)),
+                    child: const Text('En attente',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w600)),
                   ),
               ],
             ),
@@ -211,15 +246,19 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               ),
               child: Text(
                 question.questionText,
-                style: TextStyle(fontSize: 15, height: 1.4, color: AppColors.textPrimary(context)),
+                style: TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: AppColors.textPrimary(context)),
               ),
             ),
-
-            if (question.isAnswered && (question.answeredByName ?? '').isNotEmpty) ...[
+            if (question.isAnswered &&
+                (question.answeredByName ?? '').isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(
                 'Marquée comme répondue par ${question.answeredByName}',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary(context)),
+                style: TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary(context)),
               ),
             ],
             const SizedBox(height: 10),
@@ -227,7 +266,8 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               width: double.infinity,
               child: question.isAnswered
                   ? OutlinedButton.icon(
-                      onPressed: isToggling ? null : () => _toggleAnswered(question),
+                      onPressed:
+                          isToggling ? null : () => _toggleAnswered(question),
                       icon: isToggling
                           ? const SizedBox(
                               width: 16,
@@ -238,12 +278,14 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                       label: const Text('Marquer comme non répondue'),
                     )
                   : ElevatedButton.icon(
-                      onPressed: isToggling ? null : () => _toggleAnswered(question),
+                      onPressed:
+                          isToggling ? null : () => _toggleAnswered(question),
                       icon: isToggling
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
                             )
                           : const Icon(Icons.check, size: 18),
                       label: const Text('Marquer comme répondue'),
@@ -276,13 +318,17 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
             const SizedBox(height: 16),
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textSecondary(context)),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary(context)),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textHint(context)),
+              style:
+                  TextStyle(fontSize: 14, color: AppColors.textHint(context)),
             ),
             if (action != null) ...[
               const SizedBox(height: 16),

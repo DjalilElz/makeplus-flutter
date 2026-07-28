@@ -1,11 +1,14 @@
 // lib/presentation/screens/participant/participant_announcements_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/services/announcement_service.dart';
 import '../../../data/services/api_client.dart';
+import '../../../data/services/page_cache_service.dart';
+import '../../../logic/authentication/auth_bloc.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../widgets/navigation/root_tab_pop_scope.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
@@ -29,14 +32,29 @@ class _ParticipantAnnouncementsScreenState
   void initState() {
     super.initState();
     _announcementService = AnnouncementService(ApiClient());
-    _loadAnnouncements();
+    _loadFromCacheThenRefresh();
   }
 
-  Future<void> _loadAnnouncements() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  void _loadFromCacheThenRefresh() {
+    final eventId = context.read<AuthBloc>().state.event?.id;
+    final cached = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<List<AnnouncementModel>>('participant_announcements_$eventId');
+    if (cached != null) {
+      _announcements = cached;
+      _isLoading = false;
+    }
+    _loadAnnouncements(showSpinner: cached == null);
+  }
+
+  Future<void> _loadAnnouncements({bool showSpinner = true}) async {
+    if (showSpinner) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       AppLogger.d('📢 PARTICIPANT - Loading announcements...');
@@ -48,16 +66,28 @@ class _ParticipantAnnouncementsScreenState
       AppLogger.d(
           '📢 PARTICIPANT - Loaded ${announcements.length} announcements');
 
+      if (!mounted) return;
+
+      final eventId = context.read<AuthBloc>().state.event?.id;
+      if (eventId != null) {
+        PageCacheService.instance
+            .set('participant_announcements_$eventId', announcements);
+      }
+
       setState(() {
         _announcements = announcements;
         _isLoading = false;
+        _errorMessage = null;
       });
     } catch (e) {
       AppLogger.d('❌ PARTICIPANT - Error loading announcements: $e');
-      setState(() {
-        _errorMessage = 'Erreur de chargement: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      if (showSpinner) {
+        setState(() {
+          _errorMessage = 'Erreur de chargement: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -146,7 +176,7 @@ class _ParticipantAnnouncementsScreenState
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: _loadAnnouncements,
+                onRefresh: () => _loadAnnouncements(showSpinner: false),
                 child: _errorMessage != null
                     ? _buildErrorState()
                     : _announcements.isEmpty

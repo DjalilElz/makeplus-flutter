@@ -11,6 +11,7 @@ import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/exposant_scan_model.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/exposant_scan_service.dart';
+import '../../../data/services/page_cache_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
@@ -48,6 +49,24 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     super.initState();
     final apiClient = ApiClient();
     _exposantScanService = ExposantScanService(apiClient);
+    _loadFromCacheThenRefresh();
+  }
+
+  void _loadFromCacheThenRefresh() {
+    final eventId = context.read<AuthBloc>().state.event?.id;
+    final cached = eventId == null
+        ? null
+        : PageCacheService.instance
+            .get<_ExposantStatsCacheData>('exposant_stats_$eventId');
+    if (cached != null) {
+      _scannedParticipants = cached.scans;
+      _totalVisits = cached.totalVisits;
+      _todayVisits = cached.todayVisits;
+      _lastLoadTime = cached.loadedAt;
+    }
+    // Reuses the screen's own 5-minute freshness window: if the cached
+    // data is still fresh, _loadScans below will skip the network call
+    // entirely instead of just skipping the spinner.
     _loadScans();
   }
 
@@ -74,11 +93,23 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
           eventId: authState.event!.id,
         );
 
+        if (!mounted) return;
+
+        final scans = result['scans'] as List<ExposantScanModel>;
+        final totalVisits = result['total_visits'] as int;
+        final todayVisits = result['today_visits'] as int;
+        final loadedAt = DateTime.now();
+
+        PageCacheService.instance.set(
+          'exposant_stats_${authState.event!.id}',
+          _ExposantStatsCacheData(scans, totalVisits, todayVisits, loadedAt),
+        );
+
         setState(() {
-          _scannedParticipants = result['scans'] as List<ExposantScanModel>;
-          _totalVisits = result['total_visits'] as int;
-          _todayVisits = result['today_visits'] as int;
-          _lastLoadTime = DateTime.now();
+          _scannedParticipants = scans;
+          _totalVisits = totalVisits;
+          _todayVisits = todayVisits;
+          _lastLoadTime = loadedAt;
           _isLoading = false;
         });
 
@@ -390,7 +421,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                                         'Aucun visiteur trouvé',
                                         style: TextStyle(
                                           fontSize: 16,
-                                          color: AppColors.textSecondary(context),
+                                          color:
+                                              AppColors.textSecondary(context),
                                         ),
                                       ),
                                     ],
@@ -562,6 +594,16 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       ),
     );
   }
+}
+
+class _ExposantStatsCacheData {
+  final List<ExposantScanModel> scans;
+  final int totalVisits;
+  final int todayVisits;
+  final DateTime loadedAt;
+
+  _ExposantStatsCacheData(
+      this.scans, this.totalVisits, this.todayVisits, this.loadedAt);
 }
 
 // Sticky Search Bar Delegate
