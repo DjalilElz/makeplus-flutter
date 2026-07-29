@@ -41,6 +41,7 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
 
   void _onDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
+    if (capture.barcodes.isEmpty) return;
 
     final barcode = capture.barcodes.first;
     final value = barcode.rawValue;
@@ -95,48 +96,44 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
             'email': participant['email'],
             'badge_id': participant['badge_id'],
             'paid_items': paidItems,
-            'free_items': [], // No free items in new response
             'total_paid_items':
                 response['total_paid_items'] ?? paidItems.length,
-            'total_free_items': 0,
             'total_amount': response['total_amount'] ?? 0.0,
             'event_name': event?['name'],
           };
 
           if (mounted) {
-            ParticipantVerificationDialog.show(context, dialogData);
-
-            // Reset after delay
-            Future.delayed(const Duration(milliseconds: 1000), () {
-              if (mounted) {
-                setState(() => _isProcessing = false);
-              }
-            });
+            // Keep the scanner locked for as long as the dialog is on
+            // screen -- the camera never stops, so clearing the flag any
+            // earlier lets the same still-in-frame badge retrigger a
+            // second (stacked) scan before the controller can react.
+            await ParticipantVerificationDialog.show(context, dialogData);
+            if (mounted) setState(() => _isProcessing = false);
           }
         } else if (response['status'] == 'error') {
-          _showErrorDialog(
+          await _showErrorDialog(
               'Erreur',
               response['message'] ??
                   'Participant non enregistré pour cet événement');
-          setState(() => _isProcessing = false);
+          if (mounted) setState(() => _isProcessing = false);
         } else {
-          _showErrorDialog('Erreur', 'QR code invalide');
-          setState(() => _isProcessing = false);
+          await _showErrorDialog('Erreur', 'QR code invalide');
+          if (mounted) setState(() => _isProcessing = false);
         }
       } catch (e) {
         AppLogger.d('❌ API CALL FAILED: $e');
-        _showErrorDialog('Erreur', 'Impossible de vérifier l\'accès: $e');
-        setState(() => _isProcessing = false);
+        await _showErrorDialog('Erreur', 'Impossible de vérifier l\'accès: $e');
+        if (mounted) setState(() => _isProcessing = false);
       }
     } catch (e) {
       AppLogger.d('❌ EXCEPTION IN _verifyAccess: $e');
-      _showErrorDialog('Erreur', 'Erreur inattendue: $e');
-      setState(() => _isProcessing = false);
+      await _showErrorDialog('Erreur', 'Erreur inattendue: $e');
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  void _showErrorDialog(String title, String message) {
-    showDialog(
+  Future<void> _showErrorDialog(String title, String message) {
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {

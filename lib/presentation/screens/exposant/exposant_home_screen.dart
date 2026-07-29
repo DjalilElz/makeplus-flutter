@@ -86,8 +86,8 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
                 // Already on Home
                 break;
               case 1:
-                // Plan
-                Navigator.pushReplacementNamed(context, '/exposant/plan');
+                // Guide
+                Navigator.pushReplacementNamed(context, '/exposant/guide');
                 break;
               case 2:
                 // QR Scanner (center button)
@@ -123,7 +123,10 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.eventPrimary(context), AppColors.eventPrimaryDark(context)],
+              colors: [
+                AppColors.eventPrimary(context),
+                AppColors.eventPrimaryDark(context)
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

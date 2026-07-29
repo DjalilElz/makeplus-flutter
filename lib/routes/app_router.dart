@@ -12,7 +12,7 @@ import '../presentation/screens/auth/signup_screen.dart';
 import '../presentation/screens/exhibitor/exhibitor_home_screen.dart';
 import '../presentation/screens/exposant/exposant_announcements_screen.dart';
 import '../presentation/screens/exposant/exposant_home_screen.dart';
-import '../presentation/screens/exposant/exposant_plan_screen.dart';
+import '../presentation/screens/exposant/exposant_guide_screen.dart';
 import '../presentation/screens/exposant/exposant_scanner_screen.dart';
 import '../presentation/screens/exposant/exposant_stats_screen.dart';
 import '../presentation/screens/organizer_badge_controller/badge_controller_announcements_screen.dart';
@@ -251,7 +251,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ExposantHomeScreen());
 
       case exposantGuide:
-        return MaterialPageRoute(builder: (_) => const ExposantPlanScreen());
+        return MaterialPageRoute(builder: (_) => const ExposantGuideScreen());
 
       case exposantScanner:
         return MaterialPageRoute(builder: (_) => const ExposantScannerScreen());

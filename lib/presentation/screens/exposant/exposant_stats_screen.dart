@@ -133,7 +133,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     switch (route) {
       case '/exposant/home':
         return 0;
-      case '/exposant/plan':
+      case '/exposant/guide':
         return 1;
       case '/exposant/scanner':
         return 2;
@@ -460,7 +460,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                 Navigator.pushReplacementNamed(context, '/exposant/home');
                 break;
               case 1:
-                Navigator.pushReplacementNamed(context, '/exposant/plan');
+                Navigator.pushReplacementNamed(context, '/exposant/guide');
                 break;
               case 2:
                 Navigator.pushNamed(context, '/exposant/scanner');

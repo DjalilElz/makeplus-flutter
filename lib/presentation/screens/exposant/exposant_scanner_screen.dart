@@ -408,7 +408,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
               Navigator.pushReplacementNamed(context, '/exposant/home');
               break;
             case 1:
-              Navigator.pushReplacementNamed(context, '/exposant/plan');
+              Navigator.pushReplacementNamed(context, '/exposant/guide');
               break;
             case 2:
               // Already on scanner

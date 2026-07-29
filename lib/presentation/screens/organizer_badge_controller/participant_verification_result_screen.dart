@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/theme/app_colors.dart';
 
 class ParticipantVerificationDialog {
-  static void show(
+  static Future<void> show(
     BuildContext context,
     Map<String, dynamic> qrData,
   ) {
@@ -13,22 +13,11 @@ class ParticipantVerificationDialog {
     final String fullName = qrData['full_name'] ?? qrData['name'] ?? 'N/A';
     final List<dynamic> paidItems = qrData['paid_items'] ?? [];
 
-    // 🔄 IMPORTANT: In production with API integration
-    // The paid_items shown here come from the QR code (may be stale)
-    // When calling scan_participant API, the backend returns FRESH data from database
-    // The backend queries CaisseTransaction table for real-time paid items
-    // This ensures controller always sees latest payments
-
-    // Separate paid and free items
-    final List<dynamic> actuallyPaidItems = paidItems.where((item) {
-      final paymentStatus = item['payment_status'] ?? 'free';
-      return paymentStatus == 'paid';
-    }).toList();
-
-    final List<dynamic> freeItems = paidItems.where((item) {
-      final paymentStatus = item['payment_status'] ?? 'free';
-      return paymentStatus == 'free';
-    }).toList();
+    // paid_items comes straight from /participants/scan/, built from the
+    // participant's completed CaisseTransaction records -- always real,
+    // always freshly queried for this scan (never a free/unpaid item, since
+    // the endpoint only ever returns items that were actually paid for).
+    final List<dynamic> actuallyPaidItems = paidItems;
 
     // Group paid items by type for better display
     final Map<String, List<dynamic>> groupedItems = {
@@ -47,7 +36,7 @@ class ParticipantVerificationDialog {
       }
     }
 
-    showDialog(
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
@@ -135,71 +124,8 @@ class ParticipantVerificationDialog {
                           const SizedBox(height: 12),
                         ],
 
-                        // Free Items
-                        if (freeItems.isNotEmpty) ...[
-                          Text(
-                            'Articles Gratuits (${freeItems.length})',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ...freeItems.map((item) {
-                            final String title = item['title'] ?? 'N/A';
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.info.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppColors.info,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      title,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.info,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Text(
-                                      'GRATUIT',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-
                         // No items
-                        if (actuallyPaidItems.isEmpty && freeItems.isEmpty)
+                        if (actuallyPaidItems.isEmpty)
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
