@@ -48,7 +48,7 @@ dependencies:
   image_picker: ^1.1.2
 
   # File sharing
-  share_plus: ^7.2.1
+  share_plus: ^12.0.2
   flutter_pdfview: ^1.4.4
 
 # Removed 2026-07: supabase_flutter (initialised, never used), firebase_core +

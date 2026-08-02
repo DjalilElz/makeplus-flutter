@@ -27,6 +27,7 @@ class ExposantStatsScreen extends StatefulWidget {
 
 class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
   String _searchQuery = '';
   late ExposantScanService _exposantScanService;
 
@@ -146,23 +147,6 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     }
   }
 
-  String _formatLastUpdate() {
-    if (_lastLoadTime == null) return '';
-
-    final now = DateTime.now();
-    final difference = now.difference(_lastLoadTime!);
-
-    if (difference.inSeconds < 60) {
-      return 'À l\'instant';
-    } else if (difference.inMinutes < 60) {
-      return 'Il y a ${difference.inMinutes} min';
-    } else if (difference.inHours < 24) {
-      return 'Il y a ${difference.inHours}h';
-    } else {
-      return 'Il y a ${difference.inDays}j';
-    }
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -231,10 +215,12 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       // Share using native share sheet
-      final result = await Share.shareXFiles(
-        [XFile(filePath)],
-        text: 'Statistiques des visiteurs du stand',
-        subject: 'Export Excel - Statistiques',
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(filePath)],
+          text: 'Statistiques des visiteurs du stand',
+          subject: 'Export Excel - Statistiques',
+        ),
       );
 
       if (!mounted) return;
@@ -280,30 +266,31 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredParticipants = _filteredParticipants;
+
     return RootTabPopScope(
       homeRoute: '/exposant/home',
       child: Scaffold(
         appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Statistiques'),
-              if (_lastLoadTime != null)
-                Text(
-                  'Mis à jour: ${_formatLastUpdate()}',
-                  style: TextStyle(
-                    color: AppColors.textSecondary(context),
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-            ],
+          title: const Text(
+            'Statistiques',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Actualiser',
-              onPressed: () => _loadScans(forceRefresh: true),
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) {
+                    _searchController.clear();
+                    _searchQuery = '';
+                  }
+                });
+              },
             ),
           ],
         ),
@@ -328,122 +315,119 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                       ],
                     ),
                   )
-                : RefreshIndicator(
-                    onRefresh: () => _loadScans(forceRefresh: true),
-                    child: CustomScrollView(
-                      slivers: [
-                        // Statistics Cards
-                        SliverToBoxAdapter(
-                          child: Container(
-                            color: AppColors.cardBackground(context),
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatCard(
-                                    context,
-                                    'Visiteurs total',
-                                    _totalVisits.toString(),
-                                    AppColors.eventPrimary(context),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildStatCard(
-                                    context,
-                                    'Aujourd\'hui',
-                                    _todayVisits.toString(),
-                                    AppColors.accent,
-                                  ),
-                                ),
-                              ],
+                : Column(
+                    children: [
+                      if (_isSearching)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: TextField(
+                            controller: _searchController,
+                            autofocus: true,
+                            decoration: InputDecoration(
+                              hintText: 'Rechercher un visiteur...',
+                              prefixIcon: const Icon(Icons.search),
+                              filled: true,
+                              fillColor: AppColors.surfaceContainer(context),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
-                          ),
-                        ),
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 8),
-                        ),
-
-                        // Search Bar - Fixed/Sticky
-                        SliverPersistentHeader(
-                          pinned: true,
-                          delegate: _SearchBarDelegate(
-                            searchController: _searchController,
-                            searchQuery: _searchQuery,
                             onChanged: (value) {
                               setState(() {
                                 _searchQuery = value;
                               });
                             },
-                            onClear: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchQuery = '';
-                              });
-                            },
                           ),
                         ),
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 8),
-                        ),
-
-                        // Participants List Header
-                        SliverToBoxAdapter(
-                          child: Container(
-                            color: AppColors.cardBackground(context),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            child: Text(
-                              'Liste des visiteurs (${_filteredParticipants.length})',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary(context),
+                      Container(
+                        color: AppColors.cardBackground(context),
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                context,
+                                'Visiteurs total',
+                                _totalVisits.toString(),
+                                AppColors.eventPrimary(context),
                               ),
                             ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                context,
+                                'Aujourd\'hui',
+                                _todayVisits.toString(),
+                                AppColors.accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        color: AppColors.cardBackground(context),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Text(
+                          'Liste des visiteurs (${filteredParticipants.length})',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
-
-                        // Participants List
-                        _filteredParticipants.isEmpty
-                            ? SliverFillRemaining(
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.search_off,
-                                        size: 64,
-                                        color: AppColors.textHint(context),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Aucun visiteur trouvé',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color:
-                                              AppColors.textSecondary(context),
+                      ),
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: () => _loadScans(forceRefresh: true),
+                          child: filteredParticipants.isEmpty
+                              ? ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.5,
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.search_off,
+                                              size: 64,
+                                              color:
+                                                  AppColors.textHint(context),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'Aucun visiteur trouvé',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: AppColors
+                                                    .textSecondary(context),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: filteredParticipants.length,
+                                  itemBuilder: (context, index) {
+                                    return _buildParticipantCard(
+                                        filteredParticipants[index]);
+                                  },
                                 ),
-                              )
-                            : SliverPadding(
-                                padding: const EdgeInsets.all(16),
-                                sliver: SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (context, index) {
-                                      final participant =
-                                          _filteredParticipants[index];
-                                      return _buildParticipantCard(participant);
-                                    },
-                                    childCount: _filteredParticipants.length,
-                                  ),
-                                ),
-                              ),
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _exportToExcel,
@@ -604,59 +588,4 @@ class _ExposantStatsCacheData {
 
   _ExposantStatsCacheData(
       this.scans, this.totalVisits, this.todayVisits, this.loadedAt);
-}
-
-// Sticky Search Bar Delegate
-class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
-  final TextEditingController searchController;
-  final String searchQuery;
-  final Function(String) onChanged;
-  final VoidCallback onClear;
-
-  _SearchBarDelegate({
-    required this.searchController,
-    required this.searchQuery,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  @override
-  double get minExtent =>
-      69.0; // 45 height + 12 vertical padding + 12 bottom padding
-
-  @override
-  double get maxExtent => 69.0;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: AppColors.cardBackground(context),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: SizedBox(
-        height: 45,
-        child: TextField(
-          controller: searchController,
-          decoration: InputDecoration(
-            hintText: 'Rechercher un visiteur...',
-            hintStyle: const TextStyle(fontSize: 14),
-            prefixIcon: const Icon(Icons.search, size: 20),
-            suffixIcon: searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 20),
-                    onPressed: onClear,
-                  )
-                : null,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
-          ),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_SearchBarDelegate oldDelegate) {
-    return searchQuery != oldDelegate.searchQuery;
-  }
 }

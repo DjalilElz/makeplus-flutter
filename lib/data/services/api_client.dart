@@ -2,12 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:makeplus/core/constants/api_constants.dart';
+import 'package:makeplus/data/services/secure_storage.dart';
 
 /// Base API Client that handles all HTTP requests
 /// Includes JWT authentication, token refresh, and error handling
 class ApiClient {
   late final Dio _dio;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = appSecureStorage;
 
   ApiClient() {
     _dio = Dio(

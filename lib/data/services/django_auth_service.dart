@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
 import 'page_cache_service.dart';
+import 'secure_storage.dart';
 
 String? _emptyToNull(String? value) =>
     (value == null || value.isEmpty) ? null : value;
@@ -26,7 +27,7 @@ class DjangoAuthService {
 
   String? _token;
   SharedPreferences? _prefs;
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage = appSecureStorage;
   late final Future<void> _initFuture;
 
   DjangoAuthService() {

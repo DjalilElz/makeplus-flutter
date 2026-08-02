@@ -43,10 +43,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await file.writeAsString(pretty);
 
       if (!context.mounted) return;
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Mes données MakePlus',
-        subject: 'Export de données MakePlus',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'Mes données MakePlus',
+          subject: 'Export de données MakePlus',
+        ),
       );
     } catch (e) {
       if (!context.mounted) return;
