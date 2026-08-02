@@ -1,5 +1,6 @@
 // lib/presentation/screens/exposant/exposant_home_screen.dart
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -69,10 +70,6 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
 
               // Event Overview
               _buildEventOverview(context),
-              const SizedBox(height: 24),
-
-              // President's Message
-              _buildPresidentMessage(context),
             ],
           ),
         ),
@@ -113,133 +110,174 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         final userName = authState.user?.fullName ?? 'Exposant';
-        final eventName = authState.event?.name ?? 'MakePlus 2025';
-        final eventLocation =
-            authState.event?.location ?? 'Centre de Conférences';
+        final eventName = authState.event?.name ?? 'MakePlus';
         final eventDates = formatEventDates(
             authState.event?.startDate, authState.event?.endDate);
+        final eventLocation = authState.event?.location;
+        final bannerUrl = authState.event?.bannerUrl;
+        final logoUrl = authState.event?.logoUrl;
+        final primary = Theme.of(context).colorScheme.primary;
+        final primaryDark = Color.lerp(primary, Colors.black, 0.25)!;
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.eventPrimary(context),
-                AppColors.eventPrimaryDark(context)
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Event banner — sits at the very top of the home screen.
+            // Fixed 2:1 aspect ratio (not a fixed height) so every device
+            // crops/frames the banner the same way — see the CLAUDE.md note
+            // on recommended source dimensions for designers.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: 2 / 1,
+                child: bannerUrl != null && bannerUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: bannerUrl,
+                        fit: BoxFit.cover,
+                        fadeInDuration: const Duration(milliseconds: 150),
+                        placeholder: (context, url) =>
+                            _bannerFallback(primary, primaryDark),
+                        errorWidget: (context, url, error) =>
+                            _bannerFallback(primary, primaryDark),
+                      )
+                    : _bannerFallback(primary, primaryDark),
+              ),
             ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text(
-                    'Bonjour ',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      '$userName,',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                eventName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+
+            // Event information — name, dates, location.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primary, primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 12),
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      eventDates,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+                  Row(
+                    children: [
+                      if (logoUrl != null && logoUrl.isNotEmpty) ...[
+                        ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: logoUrl,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            fadeInDuration: const Duration(milliseconds: 150),
+                            errorWidget: (context, url, error) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      const Text(
+                        'Bonjour ',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      Flexible(
+                        child: Text(
+                          '$userName,',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    eventName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  if (eventDates != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            eventDates,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (eventLocation != null && eventLocation.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            eventLocation,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      eventLocation,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/event-details');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white70),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  icon: const Icon(Icons.info_outline, size: 18),
-                  label: const Text(
-                    'Voir les details',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 
-  String formatEventDates(DateTime? startDate, DateTime? endDate) {
+  /// Shown in place of the event banner when the event has none set, or the
+  /// image fails to load — keeps the same visual footprint instead of
+  /// collapsing to nothing.
+  Widget _bannerFallback(Color primary, Color primaryDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primary, primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(Icons.event, color: Colors.white38, size: 48),
+      ),
+    );
+  }
+
+  String? formatEventDates(DateTime? startDate, DateTime? endDate) {
     if (startDate == null || endDate == null) {
-      return 'Dates à confirmer';
+      return null;
     }
 
     const months = [
@@ -259,117 +297,52 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
 
     if (startDate.year != endDate.year) {
       return '${startDate.day} ${months[startDate.month - 1]} ${startDate.year} - ${endDate.day} ${months[endDate.month - 1]} ${endDate.year}';
-    } else if (startDate.month != endDate.month) {
-      return '${startDate.day} ${months[startDate.month - 1]} - ${endDate.day} ${months[endDate.month - 1]} ${startDate.year}';
+    } else if (startDate.month == endDate.month) {
+      return '${startDate.day}-${endDate.day} ${months[startDate.month - 1]} ${startDate.year}';
     } else {
-      return '${startDate.day} - ${endDate.day} ${months[startDate.month - 1]} ${startDate.year}';
+      return '${startDate.day} ${months[startDate.month - 1]} - ${endDate.day} ${months[endDate.month - 1]} ${startDate.year}';
     }
   }
 
   Widget _buildEventOverview(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Sur l\'événement',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary(context),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Thématiques principales:\n'
-            '• Intelligence Artificielle & Data Science\n'
-            '• Santé & Innovation\n'
-            '• Technologies médicales\n'
-            '• Énergie renouvelable & écologie\n'
-            '• Réseaux & communications',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary(context),
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Faciliter les connexions, élever le networking.\n'
-            'Présence de centres de recherche innovants.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary(context),
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        final description = authState.event?.description?.trim();
+        if (description == null || description.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-  Widget _buildPresidentMessage(BuildContext context) {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // President Image (optional)
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerHigh(context),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.person,
-                size: 80,
-                color: AppColors.textHint(context),
-              ),
-            ),
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainer(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderColor(context)),
           ),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mot du Président',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary(context),
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sur l\'événement',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary(context),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Chers participants,\n\n'
-                  'C\'est avec un immense plaisir que je vous accueille à MakePlus 2025. '
-                  'Cette édition promet d\'être une plateforme exceptionnelle pour '
-                  'l\'innovation, les échanges et la collaboration.\n\n'
-                  'Nous sommes ravis de vous accompagner dans cette aventure scientifique '
-                  'et technologique qui façonnera l\'avenir.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary(context),
-                    height: 1.6,
-                  ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary(context),
+                  height: 1.6,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
