@@ -44,9 +44,6 @@ dependencies:
   path_provider: ^2.1.4
   url_launcher: ^6.3.1
 
-  # Image handling
-  image_picker: ^1.1.2
-
   # File sharing
   share_plus: ^12.0.2
   flutter_pdfview: ^1.4.4
@@ -54,8 +51,14 @@ dependencies:
 # Removed 2026-07: supabase_flutter (initialised, never used), firebase_core +
 # firebase_messaging + flutter_local_notifications (no native config existed — push
 # notifications were never implemented), permission_handler, connectivity_plus,
-# cached_network_image, flutter_svg, shimmer, flutter_spinkit, package_info_plus,
-# pretty_dio_logger, syncfusion_flutter_datepicker, table_calendar.
+# shimmer, flutter_spinkit, package_info_plus, pretty_dio_logger,
+# syncfusion_flutter_datepicker, table_calendar.
+#
+# Removed 2026-08: image_picker. It had zero imports in lib/, but still caused
+# ios/Runner/Info.plist to declare NSPhotoLibraryUsageDescription for a
+# room/session image feature that does not exist — reviewers check that
+# declared permissions map to real features (App Review Guideline 5.1.1).
+#
 # All had zero imports in lib/. Re-add deliberately if a feature needs them.
 
 dev_dependencies:

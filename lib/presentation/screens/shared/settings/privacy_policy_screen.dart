@@ -36,14 +36,6 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'transmis, ni stocké.',
     ),
     (
-      icon: Icons.photo_outlined,
-      title: 'Photos',
-      body: 'L\'accès à vos photos n\'est demandé que si vous choisissez, '
-          'en tant qu\'organisateur, une image pour illustrer une salle ou '
-          'une session. L\'image sélectionnée est alors envoyée au '
-          'tableau de bord de l\'événement.',
-    ),
-    (
       icon: Icons.phonelink_lock_outlined,
       title: 'Données techniques et stockage local',
       body: 'Un jeton d\'authentification (JWT) est stocké de façon '

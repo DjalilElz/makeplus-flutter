@@ -87,15 +87,26 @@ version: 1.0.0+1   # 1.0.0 = versionName (shown to users), 1 = versionCode
 
 These are Console/hosting items — they cannot be satisfied from inside the app.
 
-**a. Privacy policy URL (required).** Must be a public, non-expiring URL. The
-app has an in-app policy screen (`privacy_policy_screen.dart`), but Play needs a
-hosted page too. Publish the same text on your domain and paste the URL.
+**a. Privacy policy URL — ✅ hosted, paste this into the Console:**
 
-**b. Account deletion URL (required).** Because the app creates accounts
-(`signup_screen.dart`), Google requires a **web** route where a user can request
-deletion *without installing the app*. In-app deletion alone does not satisfy
-this. You need a public page (e.g. `https://…/account-deletion`) explaining what
-gets deleted and how to request it.
+```
+https://makeplus-events.onrender.com/legal/privacy/
+```
+
+**b. Account deletion URL — ✅ hosted, paste this into the Console:**
+
+```
+https://makeplus-events.onrender.com/legal/account-deletion/
+```
+
+Both are served by the Django backend (`dashboard/views_legal.py`, templates in
+`dashboard/templates/legal/`), require no authentication, and are reachable
+without installing the app — which is exactly what Google requires, since
+in-app deletion alone does not satisfy the policy.
+
+Their wording is kept in sync with the in-app screens
+(`privacy_policy_screen.dart`). **Update both together** — Play compares them
+and a contradiction is a rejection cause.
 
 **c. Data Safety form.** Based on what the code actually collects:
 
@@ -104,7 +115,8 @@ gets deleted and how to request it.
 | Email address | Yes | Account management | signup + login |
 | Name (first/last) | Yes | Account management | signup |
 | Password | Yes | Authentication | transmitted only, never stored on device |
-| Photos/Camera | Camera **used**, not collected | QR badge scanning | frames processed on-device, never uploaded |
+| Camera | **Used, not collected** | QR badge scanning | frames decoded on-device, never uploaded or stored |
+| Photos / media | **No** | — | `image_picker` was removed; the app has no photo-library access |
 | App activity (scans) | Yes | Event/booth attendance | exhibitor scan records |
 
 Declare: encrypted in transit ✅ · users can request deletion ✅.
@@ -118,29 +130,14 @@ descriptions), and target-audience declaration — all standard Console steps.
 
 ## 5. ⚠️ Open items worth deciding before you submit
 
-**a. `image_picker` is an unused dependency that declares photo access.**
-It has **zero imports** in `lib/`, yet `ios/Runner/Info.plist` declares
-`NSPhotoLibraryUsageDescription` ("choisir une image illustrant une salle ou une
-session") for a feature that does not exist in the app. Reviewers do check that
-declared permissions map to real features — this is a bigger risk on the App
-Store than on Play, but it is dead weight either way. Either remove it:
+**a. ~~`image_picker` unused~~ — ✅ resolved.** Removed from `pubspec.yaml`
+along with `NSPhotoLibraryUsageDescription` in `ios/Runner/Info.plist` and the
+"Photos" section of the in-app privacy policy, which described access the app
+no longer has. `get_it` is also unused but declares no permissions and is
+marked as planned DI, so it was left in place.
 
-```bash
-flutter pub remove image_picker
-# then delete NSPhotoLibraryUsageDescription from ios/Runner/Info.plist
-```
-
-…or keep it if the feature is genuinely coming. `get_it` is also unused but
-declares no permissions, so it is harmless.
-
-**b. Toolchain versions are near end-of-support.** The release build emits:
-
-- Gradle `8.12.0` → Flutter wants ≥ `8.14.0`
-- Android Gradle Plugin `8.9.1` → wants ≥ `8.11.1`
-- Kotlin `2.1.0` → wants ≥ `2.2.20`
-
-These are *warnings*, not errors, and do not block Play today. Upgrade before
-they become hard failures in a future Flutter release.
+**b. ~~Toolchain near end-of-support~~ — ✅ resolved.** Upgraded to
+Gradle `8.14.3`, AGP `8.11.1`, Kotlin `2.2.20` — the minimums Flutter named.
 
 **c. Bundle size is ~73 MB.** That is the AAB (all ABIs/densities); the actual
 per-device download is much smaller. Still worth checking the Play Console's

@@ -50,8 +50,6 @@
 	     NSMicrophoneUsageDescription was removed: the app records no audio. -->
 	<key>NSCameraUsageDescription</key>
 	<string>MakePlus utilise la caméra pour scanner les QR codes des badges des participants et vérifier leur accès aux salles et aux sessions.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>MakePlus accède à vos photos pour vous permettre de choisir une image illustrant une salle ou une session.</string>
 
 	<!-- The app only talks to its backend over HTTPS, which is exempt encryption.
 	     Declaring this here avoids the export-compliance prompt on every upload. -->
