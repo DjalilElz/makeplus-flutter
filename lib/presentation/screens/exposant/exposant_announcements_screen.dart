@@ -171,14 +171,6 @@ class _ExposantAnnouncementsScreenState
         appBar: AppBar(
           title: const Text('Annonces'),
           elevation: 0,
-          actions: [
-            if (!_isLoading)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _loadAnnouncements,
-                tooltip: 'Actualiser',
-              ),
-          ],
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
