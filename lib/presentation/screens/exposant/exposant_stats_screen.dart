@@ -64,14 +64,28 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       _totalVisits = cached.totalVisits;
       _todayVisits = cached.todayVisits;
       _lastLoadTime = cached.loadedAt;
+      // Cached data is displayable right now, so the screen must not start
+      // in its loading state. Without this the early return in _loadScans
+      // (taken whenever the cache is still fresh) leaves _isLoading stuck
+      // at its initial `true` and the screen shows a spinner forever --
+      // which is exactly what happened on every re-entry within the
+      // 5-minute window, while the very first visit worked because there
+      // was no cache yet and the full load path ran.
+      _isLoading = false;
     }
     // Reuses the screen's own 5-minute freshness window: if the cached
     // data is still fresh, _loadScans below will skip the network call
     // entirely instead of just skipping the spinner.
-    _loadScans();
+    _loadScans(showSpinner: cached == null);
   }
 
-  Future<void> _loadScans({bool forceRefresh = false}) async {
+  /// [showSpinner] false = refresh underneath whatever is already on screen
+  /// (cached rows, or the pull-to-refresh indicator) instead of replacing it
+  /// with a full-screen loader.
+  Future<void> _loadScans({
+    bool forceRefresh = false,
+    bool showSpinner = true,
+  }) async {
     // If cache is valid and not forcing refresh, skip loading
     if (!forceRefresh && _isCacheValid && _scannedParticipants.isNotEmpty) {
       AppLogger.d('📦 CACHE HIT - Using cached stats data');
@@ -81,7 +95,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
     AppLogger.d('🔄 LOADING - Fetching fresh stats data from API');
 
     setState(() {
-      _isLoading = true;
+      if (showSpinner) _isLoading = true;
       _errorMessage = null;
     });
 
@@ -115,17 +129,26 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
         });
 
         AppLogger.d('✅ CACHE UPDATED - Stats data cached at $_lastLoadTime');
-      } else {
+      } else if (mounted) {
         setState(() {
           _errorMessage = 'Événement non sélectionné';
           _isLoading = false;
         });
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Erreur de chargement: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      // A failed background refresh keeps the cached rows on screen rather
+      // than replacing them with a full-screen error -- the user still has
+      // usable data. Only surface the error when there was nothing to show
+      // in the first place.
+      if (showSpinner) {
+        setState(() {
+          _errorMessage = 'Erreur de chargement: ${e.toString()}';
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -234,8 +257,9 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
             duration: Duration(seconds: 3),
           ),
         );
-        // Reload data after successful share
-        _loadScans(forceRefresh: true);
+        // Refresh underneath the list -- the user just came back from the
+        // share sheet, blanking the screen to a loader would be jarring.
+        _loadScans(forceRefresh: true, showSpinner: false);
       } else if (result.status == ShareResultStatus.dismissed) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -381,7 +405,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                       ),
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: () => _loadScans(forceRefresh: true),
+                          onRefresh: () =>
+                              _loadScans(forceRefresh: true, showSpinner: false),
                           child: filteredParticipants.isEmpty
                               ? ListView(
                                   physics:
