@@ -46,7 +46,7 @@ class MakePlusApp extends StatelessWidget {
           selector: (state) => state.event?.primaryColor,
           builder: (context, eventColor) {
             return MaterialApp(
-              title: 'MakePlus 2025',
+              title: 'MakePlus',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light(seedColor: eventColor),
               darkTheme: AppTheme.dark(seedColor: eventColor),
