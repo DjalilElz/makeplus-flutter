@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
@@ -44,6 +45,31 @@ class _SignupScreenState extends State<SignupScreen> {
     _codeController.dispose();
     _resendTimer?.cancel();
     super.dispose();
+  }
+
+  /// The backend already replies with a French, user-facing message
+  /// (e.g. "Cet email est déjà utilisé par un compte existant") -- surface
+  /// that instead of dumping the raw DioException, which for something
+  /// like a DNS failure reads as an unreadable technical stack trace.
+  String _errorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['message'] is String) {
+        return data['message'] as String;
+      }
+      return 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
+    }
+    return 'Une erreur est survenue. Veuillez réessayer.';
+  }
+
+  int? _waitSecondsFrom(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['wait_seconds'] is int) {
+        return data['wait_seconds'] as int;
+      }
+    }
+    return null;
   }
 
   void _startResendTimer(int seconds) {
@@ -101,7 +127,7 @@ class _SignupScreenState extends State<SignupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
+            content: Text(_errorMessage(e)),
             backgroundColor: AppColors.error,
           ),
         );
@@ -138,15 +164,15 @@ class _SignupScreenState extends State<SignupScreen> {
         }
       }
     } catch (e) {
-      final waitSeconds = e.toString().contains('wait_seconds') ? 60 : 0;
-      if (waitSeconds > 0) {
+      final waitSeconds = _waitSecondsFrom(e);
+      if (waitSeconds != null && waitSeconds > 0) {
         _startResendTimer(waitSeconds);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
+            content: Text(_errorMessage(e)),
             backgroundColor: AppColors.error,
           ),
         );
@@ -196,7 +222,7 @@ class _SignupScreenState extends State<SignupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
+            content: Text(_errorMessage(e)),
             backgroundColor: AppColors.error,
           ),
         );
