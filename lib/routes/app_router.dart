@@ -7,6 +7,7 @@ import '../core/constants/user_roles.dart';
 import '../data/repositories/room_repository.dart';
 import '../data/services/django_api_service.dart';
 import '../logic/organizer_room_manager/room_management/room_bloc.dart';
+import '../presentation/screens/auth/forgot_password_screen.dart';
 import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/signup_screen.dart';
 import '../presentation/screens/exhibitor/exhibitor_home_screen.dart';
@@ -49,6 +50,7 @@ class AppRouter {
   static const String splash = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String forgotPassword = '/forgot-password';
 
   // Organizer Room Manager routes (Organisateur Gestion des Salles)
   static const String organizerRoomManagerHome = '/organizer-room-manager/home';
@@ -142,6 +144,9 @@ class AppRouter {
 
       case signup:
         return MaterialPageRoute(builder: (_) => const SignupScreen());
+
+      case forgotPassword:
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
 
       // Organizer Room Manager routes
       case organizerRoomManagerHome:

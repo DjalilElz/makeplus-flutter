@@ -42,27 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showForgotPasswordDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Mot de passe oublié'),
-        content: const Text(
-          'La réinitialisation du mot de passe n\'est pas disponible '
-          'directement dans l\'application. Veuillez contacter les '
-          'organisateurs de votre événement pour réinitialiser votre '
-          'mot de passe.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -200,12 +179,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Forgot Password -- no self-service reset exists;
-                      // point to the organizers rather than leave a dead link.
+                      // Forgot Password
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => _showForgotPasswordDialog(context),
+                          onPressed: () => Navigator.of(context)
+                              .pushNamed(AppRouter.forgotPassword),
                           child: const Text('Mot de passe oublié ?'),
                         ),
                       ),
