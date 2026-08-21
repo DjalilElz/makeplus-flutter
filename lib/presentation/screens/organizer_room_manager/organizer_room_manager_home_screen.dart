@@ -195,28 +195,6 @@ class _OrganizerRoomManagerHomeScreenState
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRouter.eventDetails);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white70),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: const Icon(Icons.info_outline, size: 18),
-              label: const Text(
-                'Voir les details',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ),
         ],
       ),
     );
