@@ -11,14 +11,14 @@ class TermsOfServiceScreen extends StatelessWidget {
     (
       icon: Icons.check_circle_outline,
       title: 'Acceptation des conditions',
-      body: 'En créant un compte ou en utilisant l\'application MakePlus, '
+      body: 'En créant un compte ou en utilisant l\'application Synapt, '
           'vous acceptez les présentes conditions d\'utilisation. Si vous '
           'n\'êtes pas d\'accord, veuillez ne pas utiliser l\'application.',
     ),
     (
       icon: Icons.apps_outlined,
       title: 'Description du service',
-      body: 'MakePlus est une application de gestion d\'événements : '
+      body: 'Synapt est une application de gestion d\'événements : '
           'programme des sessions, badge et code QR de participant, '
           'annonces, questions aux intervenants et soumissions '
           'scientifiques (e-posters). Certaines fonctionnalités varient '
@@ -53,7 +53,7 @@ class TermsOfServiceScreen extends StatelessWidget {
     (
       icon: Icons.event_outlined,
       title: 'Rôle des organisateurs',
-      body: 'MakePlus fournit la plateforme technique. Le contenu de '
+      body: 'Synapt fournit la plateforme technique. Le contenu de '
           'chaque événement (programme, salles, annonces, décisions '
           'd\'accès) est géré par les organisateurs de cet événement, qui '
           'en sont responsables.',
@@ -61,8 +61,8 @@ class TermsOfServiceScreen extends StatelessWidget {
     (
       icon: Icons.copyright_outlined,
       title: 'Propriété intellectuelle',
-      body: 'Le nom MakePlus, son logo et l\'application elle-même sont '
-          'la propriété de MakePlus. Vous ne pouvez pas les reproduire ou '
+      body: 'Le nom Synapt, son logo et l\'application elle-même sont '
+          'la propriété de Synapt. Vous ne pouvez pas les reproduire ou '
           'les utiliser en dehors de l\'usage prévu par l\'application '
           'sans autorisation.',
     ),
@@ -77,7 +77,7 @@ class TermsOfServiceScreen extends StatelessWidget {
     (
       icon: Icons.warning_amber_outlined,
       title: 'Limitation de responsabilité',
-      body: 'L\'application est fournie "en l\'état". MakePlus met tout '
+      body: 'L\'application est fournie "en l\'état". Synapt met tout '
           'en œuvre pour assurer son bon fonctionnement mais ne peut '
           'garantir une disponibilité ininterrompue et n\'est pas '
           'responsable des décisions prises par les organisateurs d\'un '

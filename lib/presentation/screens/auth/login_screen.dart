@@ -104,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Title
                       Text(
-                        'MakePlus',
+                        'Synapt',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 32,

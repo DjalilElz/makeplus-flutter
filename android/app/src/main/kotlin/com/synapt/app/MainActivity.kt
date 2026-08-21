@@ -1,4 +1,4 @@
-package com.makeplus.events
+package com.synapt.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -92,7 +92,7 @@ class AboutScreen extends StatelessWidget {
                 icon: Icons.description_outlined,
                 label: 'Description',
                 value: 'Application mobile officielle de gestion '
-                    'd\'événements MakePlus : programme, badges, '
+                    'd\'événements Synapt : programme, badges, '
                     'sessions et annonces en temps réel.',
               ),
             ],
@@ -119,7 +119,7 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 28),
           Center(
             child: Text(
-              '© 2026 MakePlus. Tous droits réservés.',
+              '© 2026 Synapt. Tous droits réservés.',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textHint(context),
