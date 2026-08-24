@@ -229,8 +229,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   Navigator.pushReplacementNamed(context, AppRouter.roomsList);
                   break;
                 case 3:
-                  // Questions
-                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  // Paramètres -- AppRouter.questions was this tab's route
+                  // constant under an old, misleading name (this item has
+                  // always opened Settings, not a Questions screen).
+                  Navigator.pushReplacementNamed(context, AppRouter.settings);
                   break;
               }
             }

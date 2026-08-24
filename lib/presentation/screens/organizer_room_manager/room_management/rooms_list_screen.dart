@@ -172,7 +172,10 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   // Already on Salles
                   break;
                 case 3:
-                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  // Paramètres -- AppRouter.questions is this tab's route
+                  // constant under an old, misleading name (it has always
+                  // opened Settings, not a Questions screen).
+                  Navigator.pushReplacementNamed(context, AppRouter.settings);
                   break;
               }
             },
@@ -234,7 +237,10 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   // Already on Salles
                   break;
                 case 3:
-                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  // Paramètres -- AppRouter.questions is this tab's route
+                  // constant under an old, misleading name (it has always
+                  // opened Settings, not a Questions screen).
+                  Navigator.pushReplacementNamed(context, AppRouter.settings);
                   break;
               }
             },
@@ -286,7 +292,10 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                   // Already on Salles
                   break;
                 case 3:
-                  Navigator.pushReplacementNamed(context, AppRouter.questions);
+                  // Paramètres -- AppRouter.questions is this tab's route
+                  // constant under an old, misleading name (it has always
+                  // opened Settings, not a Questions screen).
+                  Navigator.pushReplacementNamed(context, AppRouter.settings);
                   break;
               }
             },
@@ -376,8 +385,10 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                 // Already on Salles
                 break;
               case 3:
-                // Questions/Settings
-                Navigator.pushReplacementNamed(context, AppRouter.questions);
+                // Paramètres -- AppRouter.questions is this tab's route
+                // constant under an old, misleading name (it has always
+                // opened Settings, not a Questions screen).
+                Navigator.pushReplacementNamed(context, AppRouter.settings);
                 break;
             }
           },

@@ -58,7 +58,6 @@ class AppRouter {
   static const String announcements = '/organizer-room-manager/announcements';
   static const String createAnnouncement =
       '/organizer-room-manager/create-announcement';
-  static const String questions = '/organizer-room-manager/questions';
   static const String sessionQuestions =
       '/organizer-room-manager/session-questions';
 
@@ -155,9 +154,6 @@ class AppRouter {
 
       case announcements:
         return MaterialPageRoute(builder: (_) => const AnnouncementsScreen());
-
-      case questions:
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
 
       case sessionQuestions:
         final args = settings.arguments as Map<String, dynamic>?;
