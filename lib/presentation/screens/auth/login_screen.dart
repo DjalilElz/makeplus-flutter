@@ -82,37 +82,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo
+                      // Logo -- the DendrIQ wordmark already bakes the name
+                      // into the artwork itself (navy + white, drawn for a
+                      // light backdrop), so it replaces the old icon-in-a-
+                      // circle + separate name label combo entirely rather
+                      // than sitting inside one more colored shape.
                       Center(
-                        child: Container(
-                          height: 120,
-                          width: 120,
-                          decoration: BoxDecoration(
-                            color: AppColors.eventPrimary(context),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: SvgPicture.asset(
-                              'assets/logos/Les adidas.svg',
-                              width: 56,
-                              height: 56,
-                            ),
-                          ),
+                        child: SvgPicture.asset(
+                          'assets/images/Logo 1.svg',
+                          width: 260,
+                          height: 260 / (850.67 / 273.44),
                         ),
                       ),
                       const SizedBox(height: 32),
-
-                      // Title
-                      Text(
-                        'Synapt',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.eventPrimary(context),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
 
                       // Subtitle
                       Text(

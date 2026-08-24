@@ -1,4 +1,4 @@
-package com.synapt.app
+package com.dendriq.app
 
 import io.flutter.embedding.android.FlutterActivity
 

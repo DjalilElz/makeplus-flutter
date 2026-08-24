@@ -46,7 +46,7 @@ class MakePlusApp extends StatelessWidget {
           selector: (state) => state.event?.primaryColor,
           builder: (context, eventColor) {
             return MaterialApp(
-              title: 'Synapt',
+              title: 'DendrIQ',
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light(seedColor: eventColor),
               darkTheme: AppTheme.dark(seedColor: eventColor),

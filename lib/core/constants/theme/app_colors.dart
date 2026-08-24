@@ -13,12 +13,17 @@ class AppColors {
   AppColors._();
 
   // ==================== Brand ====================
-  static const Color primary = Color(0xFF9C27B0); // Purple/Magenta
-  static const Color primaryDark = Color(0xFF7B1FA2);
-  static const Color primaryLight = Color(0xFFBA68C8);
+  // DendrIQ's own brand palette (navy + sage green + white) -- the
+  // fallback used pre-login and for any event that hasn't set its own
+  // brand color (see AppTheme._build's seedColor). primaryDark/primaryLight
+  // are the same HSL lightness +/- 0.15/0.20 that AppTheme derives
+  // event colors with, precomputed here to keep these const.
+  static const Color primary = Color(0xFF163751); // DendrIQ navy
+  static const Color primaryDark = Color(0xFF060E15);
+  static const Color primaryLight = Color(0xFF2C6DA1);
 
-  static const Color accent = Color(0xFFE91E63); // Pink accent
-  static const Color accentLight = Color(0xFFF48FB1);
+  static const Color accent = Color(0xFF79A887); // DendrIQ sage green
+  static const Color accentLight = Color(0xFFB7D0BE);
 
   // ==================== Surfaces — Light ====================
   // A Material 3-style tonal ladder: each step is a little further from the
@@ -76,7 +81,7 @@ class AppColors {
 
   // ==================== QR Scanner ====================
   static const Color qrOverlay = Color(0xCC000000);
-  static const Color qrFrame = Color(0xFF9C27B0);
+  static const Color qrFrame = primary;
 
   // ==================== Status ====================
   static const Color accepted = Color(0xFF43A047);

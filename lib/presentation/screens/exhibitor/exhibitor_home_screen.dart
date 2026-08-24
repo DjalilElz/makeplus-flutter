@@ -132,7 +132,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Synapt 2025',
+            'DendrIQ 2025',
             style: TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -308,7 +308,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
           const SizedBox(height: 12),
           Text(
             'Chers exposants, nous vous remercions pour '
-            'votre participation à Synapt 2025. Vous êtes '
+            'votre participation à DendrIQ 2025. Vous êtes '
             'les piliers de l\'événement avenir et riche. '
             'Nous espérons que vos échanges seront '
             'fructueux et porteurs de collaborations durables.',
@@ -374,7 +374,7 @@ class _ExhibitorHomeScreenState extends State<ExhibitorHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bienvenue à Synapt 2025',
+                  'Bienvenue à DendrIQ 2025',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

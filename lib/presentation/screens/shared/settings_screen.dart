@@ -36,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now();
-      final filename = 'synapt_mes_donnees_'
+      final filename = 'dendriq_mes_donnees_'
           '${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}'
           '${timestamp.day.toString().padLeft(2, '0')}.json';
       final file = File('${tempDir.path}/$filename');
@@ -46,8 +46,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: 'Mes données Synapt',
-          subject: 'Export de données Synapt',
+          text: 'Mes données DendrIQ',
+          subject: 'Export de données DendrIQ',
         ),
       );
     } catch (e) {

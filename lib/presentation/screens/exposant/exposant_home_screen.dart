@@ -110,7 +110,7 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         final userName = authState.user?.fullName ?? 'Exposant';
-        final eventName = authState.event?.name ?? 'Synapt';
+        final eventName = authState.event?.name ?? 'DendrIQ';
         final eventDates = formatEventDates(
             authState.event?.startDate, authState.event?.endDate);
         final eventLocation = authState.event?.location;

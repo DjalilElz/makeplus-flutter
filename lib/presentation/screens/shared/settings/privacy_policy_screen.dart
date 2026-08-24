@@ -46,7 +46,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
     (
       icon: Icons.block_outlined,
       title: 'Ce que nous ne faisons pas',
-      body: 'Synapt n\'utilise aucun outil d\'analyse ou de suivi '
+      body: 'DendrIQ n\'utilise aucun outil d\'analyse ou de suivi '
           'publicitaire, ne partage aucune donnée à des fins commerciales '
           'ou publicitaires, et ne collecte pas votre position '
           'géographique.',
@@ -70,7 +70,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
     (
       icon: Icons.child_care_outlined,
       title: 'Données des mineurs',
-      body: 'Synapt n\'est pas destiné aux enfants et ne collecte pas '
+      body: 'DendrIQ n\'est pas destiné aux enfants et ne collecte pas '
           'sciemment de données concernant des mineurs.',
     ),
     (
@@ -112,7 +112,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Synapt respecte votre vie privée. Cette page explique '
+            'DendrIQ respecte votre vie privée. Cette page explique '
             'quelles données l\'application mobile collecte, pourquoi, et '
             'comment les gérer.',
             style: TextStyle(
