@@ -108,6 +108,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _buildSettingsTile(
               context,
+              icon: Icons.event_busy_outlined,
+              title: 'Supprimer mes données pour cet événement',
+              subtitle: 'Efface vos données liées à l\'événement en cours, '
+                  'sans supprimer votre compte',
+              textColor: AppColors.error,
+              iconColor: AppColors.error,
+              onTap: () => _showDeleteEventDataDialog(context),
+            ),
+            _buildSettingsTile(
+              context,
               icon: Icons.delete_outline,
               title: 'Supprimer mon compte',
               subtitle: 'Suppression définitive de votre compte',
@@ -299,6 +309,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDeleteEventDataDialog(BuildContext context) {
+    final event = context.read<AuthBloc>().state.event;
+    if (event == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun événement en cours.')),
+      );
+      return;
+    }
+
+    bool isDeleting = false;
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return PopScope(
+              canPop: !isDeleting,
+              child: AlertDialog(
+                title: Text('Supprimer mes données pour "${event.name}"'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Votre inscription, vos accès aux salles et sessions, '
+                      'et les questions posées lors de cet événement seront '
+                      'définitivement supprimés. Votre compte et vos autres '
+                      'événements ne sont pas concernés. Cette action est '
+                      'irréversible.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        errorText!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed:
+                        isDeleting ? null : () => Navigator.pop(dialogContext),
+                    child: const Text('Annuler'),
+                  ),
+                  TextButton(
+                    onPressed: isDeleting
+                        ? null
+                        : () async {
+                            setDialogState(() {
+                              isDeleting = true;
+                              errorText = null;
+                            });
+
+                            try {
+                              await context
+                                  .read<AuthRepository>()
+                                  .deleteEventData(eventId: event.id);
+
+                              if (!dialogContext.mounted) return;
+                              Navigator.pop(dialogContext);
+
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Vos données pour cet événement ont '
+                                    'été supprimées.',
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              if (!dialogContext.mounted) return;
+                              setDialogState(() {
+                                isDeleting = false;
+                                errorText = e
+                                    .toString()
+                                    .replaceFirst('Exception: ', '');
+                              });
+                            }
+                          },
+                    style:
+                        TextButton.styleFrom(foregroundColor: AppColors.error),
+                    child: isDeleting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Supprimer'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

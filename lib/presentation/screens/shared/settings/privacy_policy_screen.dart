@@ -63,7 +63,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
       icon: Icons.verified_user_outlined,
       title: 'Vos droits',
       body: 'Vous pouvez consulter et modifier votre prénom et votre nom '
-          'depuis Paramètres > Profil. Vous pouvez supprimer '
+          'depuis Paramètres > Profil. Depuis Paramètres > Compte > '
+          '"Supprimer mes données pour cet événement", vous pouvez '
+          'supprimer votre inscription, vos accès et vos questions posées '
+          'pour un événement particulier, sans supprimer votre compte ni '
+          'vos autres événements. Vous pouvez aussi supprimer '
           'définitivement votre compte et les données associées depuis '
           'Paramètres > Compte > Supprimer mon compte.',
     ),

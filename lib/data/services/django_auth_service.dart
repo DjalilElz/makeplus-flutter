@@ -611,6 +611,19 @@ class DjangoAuthService {
     }
   }
 
+  /// Partial data deletion: erase everything tied to one event (session
+  /// access, room access, Q&A questions, registration) without deleting
+  /// the whole account. See UserEventDataDeleteAPIView on the backend --
+  /// it blocks and throws if the registration for this event is already
+  /// paid/confirmed, so the organizer stays involved for real money.
+  Future<void> deleteEventData({required String eventId}) async {
+    try {
+      await _dio.delete('/auth/me/events/$eventId/');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// Reset password
   Future<void> resetPassword(String email) async {
     try {

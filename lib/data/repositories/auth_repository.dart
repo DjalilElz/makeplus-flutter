@@ -117,4 +117,14 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  /// Partial data deletion: erase everything tied to one event without
+  /// deleting the whole account.
+  Future<void> deleteEventData({required String eventId}) async {
+    try {
+      await _authService.deleteEventData(eventId: eventId);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
