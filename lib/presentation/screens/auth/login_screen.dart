@@ -45,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.accent,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
@@ -82,133 +83,158 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo -- the DendrIQ wordmark already bakes the name
-                      // into the artwork itself (navy + white, drawn for a
-                      // light backdrop), so it replaces the old icon-in-a-
-                      // circle + separate name label combo entirely rather
-                      // than sitting inside one more colored shape.
+                      // Logo -- the DendrIQ wordmark is navy+white by
+                      // default (drawn for a light backdrop); the page
+                      // background here is the brand green instead, so the
+                      // whole mark is recolored to a flat white knockout
+                      // (colorFilter overrides every fill in the SVG,
+                      // including what was navy) so it reads cleanly
+                      // against it rather than losing the navy strokes.
                       Center(
                         child: SvgPicture.asset(
                           'assets/images/Logo 1.svg',
                           width: 260,
                           height: 260 / (850.67 / 273.44),
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),
 
-                      // Subtitle
-                      Text(
-                        'Connectez-vous à votre compte',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textSecondary(context),
+                      // The green page background is only behind the logo --
+                      // the form itself sits on a white card so its normal
+                      // (light-background-tuned) text/input colors stay
+                      // readable, while the login button underneath keeps
+                      // using the brand navy (primary) from the theme, so
+                      // both brand colors show up on this one screen.
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      ),
-                      const SizedBox(height: 48),
-
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          hintText: 'votre.email@exemple.com',
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer votre email';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Veuillez entrer un email valide';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Mot de passe',
-                          hintText: '••••••••',
-                          prefixIcon: const Icon(Icons.lock_outlined),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Subtitle
+                            Text(
+                              'Connectez-vous à votre compte',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.textSecondary(context),
+                              ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Veuillez entrer votre mot de passe';
-                          }
-                          if (value.length < 6) {
-                            return 'Le mot de passe doit contenir au moins 6 caractères';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
+                            const SizedBox(height: 32),
 
-                      // Forgot Password
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => Navigator.of(context)
-                              .pushNamed(AppRouter.forgotPassword),
-                          child: const Text('Mot de passe oublié ?'),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                            // Email Field
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                hintText: 'votre.email@exemple.com',
+                                prefixIcon: Icon(Icons.email_outlined),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer votre email';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Veuillez entrer un email valide';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
 
-                      // Login Button
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: state.status == AuthStatus.loading
-                              ? null
-                              : _handleLogin,
-                          child: state.status == AuthStatus.loading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
+                            // Password Field
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              decoration: InputDecoration(
+                                labelText: 'Mot de passe',
+                                hintText: '••••••••',
+                                prefixIcon: const Icon(Icons.lock_outlined),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
                                   ),
-                                )
-                              : const Text('Se connecter'),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer votre mot de passe';
+                                }
+                                if (value.length < 6) {
+                                  return 'Le mot de passe doit contenir au moins 6 caractères';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 8),
 
-                      // Sign up link
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Pas encore de compte ? ',
-                            style: TextStyle(
-                                color: AppColors.textSecondary(context)),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed('/signup');
-                            },
-                            child: const Text('S\'inscrire'),
-                          ),
-                        ],
+                            // Forgot Password
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context)
+                                    .pushNamed(AppRouter.forgotPassword),
+                                child: const Text('Mot de passe oublié ?'),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Login Button
+                            SizedBox(
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: state.status == AuthStatus.loading
+                                    ? null
+                                    : _handleLogin,
+                                child: state.status == AuthStatus.loading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text('Se connecter'),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Sign up link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Pas encore de compte ? ',
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary(context)),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pushNamed('/signup');
+                                  },
+                                  child: const Text('S\'inscrire'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
