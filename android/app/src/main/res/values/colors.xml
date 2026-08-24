@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DendrIQ brand navy (AppColors.primary in Dart), used as the
+         native launch/window background so there's no white flash between
+         the OS starting the app and Flutter's own splash screen painting
+         its first frame (see launch_background.xml / styles.xml). -->
+    <color name="launch_background">#163751</color>
+</resources>
