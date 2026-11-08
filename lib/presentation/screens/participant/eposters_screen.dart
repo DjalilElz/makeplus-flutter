@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
 import '../../../data/models/eposter_gallery_item.dart';
@@ -14,6 +13,7 @@ import '../../../data/services/api_client.dart';
 import '../../../data/services/eposter_service.dart';
 import '../../../data/services/page_cache_service.dart';
 import '../../../logic/authentication/auth_bloc.dart';
+import '../shared/pdf_viewer_screen.dart';
 
 class EpostersScreen extends StatefulWidget {
   const EpostersScreen({super.key});
@@ -97,18 +97,16 @@ class _EpostersScreenState extends State<EpostersScreen> {
     });
   }
 
-  Future<void> _openPdf(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Impossible d\'ouvrir le PDF'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
+  // Inside the app: handing the URL to another app depended on the phone's
+  // installed PDF apps (see PdfViewerScreen).
+  void _openPdf(EposterGalleryItem item) {
+    final number = (item.contributionNumber ?? '').trim();
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => PdfViewerScreen(
+        url: item.pdfUrl!,
+        title: number.isNotEmpty ? 'E-Poster $number' : 'E-Poster',
+      ),
+    ));
   }
 
   @override
@@ -267,7 +265,7 @@ class _EpostersScreenState extends State<EpostersScreen> {
 // "Voir le PDF" button. No thumbnail/image, since none exists server-side.
 class _EposterCard extends StatelessWidget {
   final EposterGalleryItem item;
-  final ValueChanged<String> onOpenPdf;
+  final ValueChanged<EposterGalleryItem> onOpenPdf;
 
   const _EposterCard({required this.item, required this.onOpenPdf});
 
@@ -354,9 +352,8 @@ class _EposterCard extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: item.pdfUrl != null
-                          ? () => onOpenPdf(item.pdfUrl!)
-                          : null,
+                      onPressed:
+                          item.pdfUrl != null ? () => onOpenPdf(item) : null,
                       icon: const Icon(Icons.picture_as_pdf_outlined, size: 15),
                       label: const Text('Voir le PDF',
                           style: TextStyle(fontSize: 12)),
