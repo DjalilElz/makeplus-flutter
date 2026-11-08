@@ -451,7 +451,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
+                    // Decisions add up to the total (entered + refused +
+                    // undecided); "non inscrits" is a badge status that can
+                    // overlap them, so it comes last.
                     '${_count(totals, 'granted')} entrés · ${_count(totals, 'denied')} refusés · '
+                    '${_count(totals, 'undecided')} sans décision · '
                     '${_count(totals, 'not_registered')} non inscrits',
                     style: TextStyle(
                         fontSize: 13, color: AppColors.textPrimary(context)),

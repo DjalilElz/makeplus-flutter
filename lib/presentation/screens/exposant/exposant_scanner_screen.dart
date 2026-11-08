@@ -394,9 +394,10 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
             child: Container(),
           ),
 
-          // Instructions at bottom
+          // Instructions above the frame: at a fixed distance from the
+          // bottom they covered the frame's lower corners on tall phones.
           Positioned(
-            bottom: 100,
+            top: 16,
             left: 0,
             right: 0,
             child: Container(

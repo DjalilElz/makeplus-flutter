@@ -228,9 +228,10 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
               painter: _ScannerOverlay(color: AppColors.eventPrimary(context)),
               child: Container(),
             ),
-            // Instructions
+            // Instructions above the frame: at a fixed distance from the
+            // bottom they covered the frame's lower corners on tall phones.
             Positioned(
-              bottom: 100,
+              top: 16,
               left: 0,
               right: 0,
               child: Container(
