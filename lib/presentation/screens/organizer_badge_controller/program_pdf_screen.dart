@@ -32,6 +32,7 @@ class ProgramPdfScreen extends StatefulWidget {
 }
 
 class _ProgramPdfScreenState extends State<ProgramPdfScreen> {
+  PDFViewController? _pdfController;
   _ProgramView _view = _ProgramView.cards;
   late final SessionService _sessionService;
 
@@ -109,13 +110,17 @@ class _ProgramPdfScreenState extends State<ProgramPdfScreen> {
 
     try {
       final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/event_programme.pdf';
+      // One file per URL: a single shared name showed the previous
+      // event's file after switching events.
+      final path = '${dir.path}/programme_${url.hashCode.toUnsigned(32)}.pdf';
       final file = File(path);
-      // The programme rarely changes -- if it's already on disk from an
-      // earlier load this session, use it directly instead of
-      // re-downloading.
-      if (!await file.exists()) {
-        await Dio().download(url, path);
+      // Rarely changes -- reuse a complete earlier download.
+      if (!await file.exists() || await file.length() == 0) {
+        // Download next to it and rename only when complete, so a
+        // cut-off download never leaves a broken PDF that is reused.
+        final partial = '$path.part';
+        await Dio().download(url, partial);
+        await File(partial).rename(path);
       }
       if (!mounted) return;
       setState(() {
@@ -253,7 +258,9 @@ class _ProgramPdfScreenState extends State<ProgramPdfScreen> {
   List<SessionModel> _applyFilters(List<SessionModel> sessions) {
     return sessions.where((s) {
       if (_typeFilter != null && s.sessionType != _typeFilter) return false;
-      if (_statusFilter != null && s.status != _statusFilter) return false;
+      if (_statusFilter != null && s.displayStatus != _statusFilter) {
+        return false;
+      }
       if (_roomFilter != null && s.roomId != _roomFilter) return false;
       if (_dateFilter != null) {
         final d = s.startTime;
@@ -284,7 +291,7 @@ class _ProgramPdfScreenState extends State<ProgramPdfScreen> {
 
   Widget _buildFilterBar(BuildContext context, List<SessionModel> sessions) {
     final types = sessions.map((s) => s.sessionType).toSet().toList();
-    final statuses = sessions.map((s) => s.status).toSet().toList()
+    final statuses = sessions.map((s) => s.displayStatus).toSet().toList()
       ..sort((a, b) => a.index.compareTo(b.index));
     final dates = sessions
         .map((s) =>
@@ -496,7 +503,13 @@ class _ProgramPdfScreenState extends State<ProgramPdfScreen> {
       );
     }
     return PDFView(
+      // Fresh view per file, opened on the first page (it sometimes
+      // opened on a later page, e.g. page 9 of the programme).
+      key: ValueKey(_pdfPath),
       filePath: _pdfPath!,
+      defaultPage: 0,
+      onViewCreated: (controller) => _pdfController = controller,
+      onRender: (_) => _pdfController?.setPage(0),
       enableSwipe: true,
       swipeHorizontal: false,
       autoSpacing: true,

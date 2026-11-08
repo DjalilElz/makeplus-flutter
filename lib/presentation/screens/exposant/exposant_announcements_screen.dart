@@ -127,7 +127,7 @@ class _ExposantAnnouncementsScreenState
   String _formatTimestamp(String? createdAt) {
     if (createdAt == null) return '';
     try {
-      final dateTime = DateTime.parse(createdAt);
+      final dateTime = DateTime.parse(createdAt).toLocal();
       final now = DateTime.now();
       final difference = now.difference(dateTime);
 

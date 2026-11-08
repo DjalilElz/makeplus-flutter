@@ -93,7 +93,7 @@ class SessionCard extends StatelessWidget {
                     ),
                     if (showLiveIndicator) ...[
                       const SizedBox(width: 8),
-                      _StatusBadge(status: session.status),
+                      _StatusBadge(status: session.displayStatus),
                     ],
                   ],
                 ),

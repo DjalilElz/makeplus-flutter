@@ -28,31 +28,14 @@ class AnnouncementService {
 
       AppLogger.d('📢 ANNOUNCEMENT SERVICE - Query params: $queryParams');
 
-      final response = await _apiClient.get(
+      final results = await _apiClient.getAllPages(
         '/annonces/',
         queryParameters: queryParams,
       );
-
-      AppLogger.d(
-          '📢 ANNOUNCEMENT SERVICE - Response status: ${response.statusCode}');
-      AppLogger.d('📢 ANNOUNCEMENT SERVICE - Response data: ${response.data}');
-
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final results = data['results'] ?? data;
-
-        if (results is List) {
-          AppLogger.d(
-              '📢 ANNOUNCEMENT SERVICE - Found ${results.length} announcements');
-          for (var announcement in results) {
-            AppLogger.d('  - ${announcement['title']} (ID: ${announcement['id']})');
-          }
-          return results.map((e) => AnnouncementModel.fromJson(e)).toList();
-        }
-        return [];
-      } else {
-        throw Exception('Failed to load announcements');
-      }
+      AppLogger.d('📢 ANNOUNCEMENT SERVICE - Found ${results.length} announcements');
+      return results
+          .map((e) => AnnouncementModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       AppLogger.d('❌ ANNOUNCEMENT SERVICE ERROR: ${e.response?.data}');
       throw Exception(_handleError(e));

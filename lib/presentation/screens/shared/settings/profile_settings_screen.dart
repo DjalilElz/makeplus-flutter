@@ -212,6 +212,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           enabled: false,
           decoration: const InputDecoration(
             helperText: 'Contactez les organisateurs pour changer votre email',
+            helperMaxLines: 2,
           ),
         ),
       ],

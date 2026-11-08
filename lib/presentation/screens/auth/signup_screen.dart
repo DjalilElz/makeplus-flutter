@@ -335,7 +335,9 @@ class _SignupScreenState extends State<SignupScreen> {
       width: 60,
       height: 2,
       margin: const EdgeInsets.only(bottom: 20),
-      color: isActive ? AppColors.eventPrimary(context) : AppColors.surfaceContainerHigh(context),
+      color: isActive
+          ? AppColors.eventPrimary(context)
+          : AppColors.surfaceContainerHigh(context),
     );
   }
 

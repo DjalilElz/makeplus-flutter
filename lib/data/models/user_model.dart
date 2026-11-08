@@ -226,12 +226,15 @@ class EventModel extends Equatable {
       name: json['name'] as String,
       description: json['description'] as String?,
       startDate: json['start_date'] != null
-          ? DateTime.parse(json['start_date'] as String)
+          ? DateTime.parse(json['start_date'] as String).toLocal()
           : null,
       endDate: json['end_date'] != null
-          ? DateTime.parse(json['end_date'] as String)
+          ? DateTime.parse(json['end_date'] as String).toLocal()
           : null,
-      location: json['location'] as String?,
+      // Some locations were typed with a leading pin emoji ("📍 Hôtel ...");
+      // the app shows its own pin icon, so drop it.
+      location:
+          (json['location'] as String?)?.replaceFirst(RegExp(r'^\s*📍\s*'), ''),
       role: json['role'] as String?,
       status: json['status'] as String?,
       programmeFile: json['programme_file'] as String?,

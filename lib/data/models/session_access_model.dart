@@ -65,12 +65,12 @@ class SessionAccessModel extends Equatable {
       sessionType: json['session_type'] ?? 'conference',
       hasAccess: json['has_access'] ?? false,
       paymentStatus: status,
-      paidAt: json['paid_at'] != null ? DateTime.parse(json['paid_at']) : null,
+      paidAt: json['paid_at'] != null ? DateTime.parse(json['paid_at']).toLocal() : null,
       amountPaid: json['amount_paid'] != null
           ? double.tryParse(json['amount_paid'].toString()) ?? 0.0
           : 0.0,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? DateTime.parse(json['created_at']).toLocal()
           : DateTime.now(),
     );
   }

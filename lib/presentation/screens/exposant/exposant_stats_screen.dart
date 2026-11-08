@@ -16,6 +16,7 @@ import '../../../logic/authentication/auth_bloc.dart';
 import '../../../logic/authentication/auth_state.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../widgets/navigation/root_tab_pop_scope.dart';
+import '../../widgets/stats/stats_widgets.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
 
 class ExposantStatsScreen extends StatefulWidget {
@@ -34,6 +35,10 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
   List<ExposantScanModel> _scannedParticipants = [];
   int _totalVisits = 0;
   int _todayVisits = 0;
+  int? _distinctVisitors;
+  int? _todayDistinctVisitors;
+  Map<String, dynamic>? _hourlyToday;
+  Map<String, dynamic>? _peakToday;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -63,6 +68,10 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       _scannedParticipants = cached.scans;
       _totalVisits = cached.totalVisits;
       _todayVisits = cached.todayVisits;
+      _distinctVisitors = cached.extras['distinct_visitors'];
+      _todayDistinctVisitors = cached.extras['today_distinct_visitors'];
+      _hourlyToday = cached.extras['hourly_today'];
+      _peakToday = cached.extras['peak_today'];
       _lastLoadTime = cached.loadedAt;
       // Cached data is displayable right now, so the screen must not start
       // in its loading state. Without this the early return in _loadScans
@@ -114,16 +123,30 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
         final totalVisits = result['total_visits'] as int;
         final todayVisits = result['today_visits'] as int;
         final loadedAt = DateTime.now();
+        int? asInt(dynamic v) => v is num ? v.toInt() : null;
+        Map<String, dynamic>? asMap(dynamic v) =>
+            v is Map ? v.cast<String, dynamic>() : null;
+        final extras = <String, dynamic>{
+          'distinct_visitors': asInt(result['distinct_visitors']),
+          'today_distinct_visitors': asInt(result['today_distinct_visitors']),
+          'hourly_today': asMap(result['hourly_today']),
+          'peak_today': asMap(result['peak_today']),
+        };
 
         PageCacheService.instance.set(
           'exposant_stats_${authState.event!.id}',
-          _ExposantStatsCacheData(scans, totalVisits, todayVisits, loadedAt),
+          _ExposantStatsCacheData(
+              scans, totalVisits, todayVisits, loadedAt, extras),
         );
 
         setState(() {
           _scannedParticipants = scans;
           _totalVisits = totalVisits;
           _todayVisits = todayVisits;
+          _distinctVisitors = extras['distinct_visitors'];
+          _todayDistinctVisitors = extras['today_distinct_visitors'];
+          _hourlyToday = extras['hourly_today'];
+          _peakToday = extras['peak_today'];
           _lastLoadTime = loadedAt;
           _isLoading = false;
         });
@@ -389,11 +412,39 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                           ],
                         ),
                       ),
+                      if (_searchQuery.isEmpty &&
+                          (_distinctVisitors != null ||
+                              HourlyBarsCard.hasData(_hourlyToday)))
+                        Container(
+                          color: AppColors.cardBackground(context),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: Column(
+                            children: [
+                              if (_distinctVisitors != null)
+                                StatTile(
+                                  value: '$_distinctVisitors',
+                                  label: _todayDistinctVisitors != null
+                                      ? "Visiteurs distincts · $_todayDistinctVisitors aujourd'hui"
+                                      : 'Visiteurs distincts',
+                                  icon: Icons.people_alt_outlined,
+                                  color: AppColors.eventPrimary(context),
+                                ),
+                              if (HourlyBarsCard.hasData(_hourlyToday)) ...[
+                                const SizedBox(height: 10),
+                                HourlyBarsCard(
+                                  hourly: _hourlyToday,
+                                  peak: _peakToday,
+                                  unit: 'visite',
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       Container(
                         width: double.infinity,
                         color: AppColors.cardBackground(context),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         child: Text(
                           'Liste des visiteurs (${filteredParticipants.length})',
                           style: TextStyle(
@@ -405,8 +456,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                       ),
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: () =>
-                              _loadScans(forceRefresh: true, showSpinner: false),
+                          onRefresh: () => _loadScans(
+                              forceRefresh: true, showSpinner: false),
                           child: filteredParticipants.isEmpty
                               ? ListView(
                                   physics:
@@ -432,8 +483,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                                               'Aucun visiteur trouvé',
                                               style: TextStyle(
                                                 fontSize: 16,
-                                                color: AppColors
-                                                    .textSecondary(context),
+                                                color: AppColors.textSecondary(
+                                                    context),
                                               ),
                                             ),
                                           ],
@@ -610,7 +661,8 @@ class _ExposantStatsCacheData {
   final int totalVisits;
   final int todayVisits;
   final DateTime loadedAt;
+  final Map<String, dynamic> extras;
 
-  _ExposantStatsCacheData(
-      this.scans, this.totalVisits, this.todayVisits, this.loadedAt);
+  _ExposantStatsCacheData(this.scans, this.totalVisits, this.todayVisits,
+      this.loadedAt, this.extras);
 }

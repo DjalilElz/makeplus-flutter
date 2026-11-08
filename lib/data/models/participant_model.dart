@@ -35,7 +35,7 @@ class ParticipantModel {
       badgeNumber: json['badge_number'] ?? '',
       qrCodeData: json['qr_code_data'] ?? '',
       registrationDate: json['registration_date'] != null
-          ? DateTime.parse(json['registration_date'])
+          ? DateTime.parse(json['registration_date']).toLocal()
           : DateTime.now(),
       guideFile: json['guide_file'] ??
           json[

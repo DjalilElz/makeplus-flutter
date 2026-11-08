@@ -196,6 +196,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     final bool isLive = widget.session['isLive'] ?? false;
     final bool hasLiveStream = widget.session['hasLiveStream'] ?? false;
     final String youtubeUrl = widget.session['youtubeUrl'] ?? '';
+    final String speaker = (widget.session['speaker'] ?? '').toString().trim();
+    final String speakerTitle =
+        (widget.session['speakerTitle'] ?? '').toString().trim();
+    final String room = (widget.session['room'] ?? '').toString().trim();
+    final String theme = (widget.session['theme'] ?? '').toString().trim();
+    final String description =
+        (widget.session['description'] ?? '').toString().trim();
+    final bool finished = widget.session['finished'] ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -226,23 +234,29 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  if (theme.isNotEmpty) ...[
+                    _buildInfoRow(context, Icons.topic, 'Thème', theme),
+                    const SizedBox(height: 12),
+                  ],
+
                   // Speaker Info
-                  _buildInfoRow(
-                    context,
-                    Icons.person,
-                    'Intervenant',
-                    widget.session['speaker'],
-                  ),
-                  const SizedBox(height: 12),
+                  if (speaker.isNotEmpty) ...[
+                    _buildInfoRow(
+                      context,
+                      Icons.person,
+                      'Intervenant',
+                      speakerTitle.isNotEmpty
+                          ? '$speaker\n$speakerTitle'
+                          : speaker,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Room
-                  _buildInfoRow(
-                    context,
-                    Icons.meeting_room,
-                    'Salle',
-                    widget.session['room'],
-                  ),
-                  const SizedBox(height: 12),
+                  if (room.isNotEmpty) ...[
+                    _buildInfoRow(context, Icons.meeting_room, 'Salle', room),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Time
                   _buildInfoRow(
@@ -253,29 +267,27 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Description
-                  Text(
-                    'Description',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary(context),
+                  // Description -- the session's own text only.
+                  if (description.isNotEmpty) ...[
+                    Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary(context),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.session['description'] +
-                        '\n\nCette session explorera en profondeur les concepts '
-                            'clés et les applications pratiques dans le domaine. '
-                            'Les participants auront l\'opportunité d\'interagir avec '
-                            'l\'intervenant et de poser leurs questions en temps réel.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: AppColors.textSecondary(context),
-                      height: 1.6,
+                    const SizedBox(height: 12),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: AppColors.textSecondary(context),
+                        height: 1.6,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Action Buttons
                   Row(
@@ -305,7 +317,8 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _showAskQuestionDialog,
+                          // No questions once the session is over.
+                          onPressed: finished ? null : _showAskQuestionDialog,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               vertical: 16,
@@ -316,12 +329,14 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.question_answer, size: 20),
-                              SizedBox(width: 8),
+                            children: [
+                              const Icon(Icons.question_answer, size: 20),
+                              const SizedBox(width: 8),
                               Flexible(
                                 child: Text(
-                                  'Poser une question',
+                                  finished
+                                      ? 'Session terminée'
+                                      : 'Poser une question',
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -359,26 +374,28 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary(context),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary(context),
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary(context),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary(context),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

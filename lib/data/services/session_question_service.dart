@@ -17,19 +17,13 @@ class SessionQuestionService {
   /// Questions for one session, oldest first (matches backend ordering).
   Future<List<SessionQuestionModel>> getQuestions(String sessionId) async {
     try {
-      final response = await _apiClient.get(
+      final results = await _apiClient.getAllPages(
         '/session-questions/',
         queryParameters: {'session': sessionId},
       );
-
-      final data = response.data;
-      final results = data['results'] ?? data;
-      if (results is List) {
-        return results
-            .map((e) => SessionQuestionModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
+      return results
+          .map((e) => SessionQuestionModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw Exception(_handleError(e));
     }

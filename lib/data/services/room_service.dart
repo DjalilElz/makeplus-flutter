@@ -220,62 +220,66 @@ class RoomService {
   /// Scan participant badge (badge controller)
   /// NEW SIMPLIFIED ENDPOINT - No room_id required
   /// Fetches fresh payment data from database
+  /// Scan a badge (controller). Returns the backend's JSON for every
+  /// answer that carries a `status`: 'success', and also 'error' (403, not
+  /// registered for this event -- still logged, with a `scan_id` so the
+  /// controller can record "Refuser l'accès") and 'invalid' (unknown QR).
+  /// Only network/server failures throw. `message` is translated to French.
   Future<Map<String, dynamic>> scanParticipant({
     required String qrData,
   }) async {
     try {
-      AppLogger.d('🔍 SCANNING PARTICIPANT (NEW ENDPOINT)');
-      AppLogger.d('📍 Endpoint: /participants/scan/');
-      AppLogger.d('📦 QR Data length: ${qrData.length} characters');
-
       final response = await _apiClient.post(
-        '/participants/scan/', // ✅ CORRECT - No /events/ prefix
+        '/participants/scan/',
         data: {'qr_data': qrData},
       );
-
-      AppLogger.d('📡 Response status code: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        AppLogger.d('✅ SCAN SUCCESSFUL - Status: ${response.data['status']}');
-        return response.data as Map<String, dynamic>;
-      } else {
-        throw Exception('Failed to scan participant');
-      }
+      AppLogger.d('✅ SCAN - status: ${response.data['status']}');
+      return _withFrenchMessage(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      AppLogger.d('❌ ERROR SCANNING PARTICIPANT: $e');
-      AppLogger.d('❌ Request URL: ${e.requestOptions.uri}');
-      AppLogger.d('❌ Request method: ${e.requestOptions.method}');
-      AppLogger.d('❌ Response status: ${e.response?.statusCode}');
-      AppLogger.d('❌ Response data: ${e.response?.data}');
-
-      // Check if it's a 404 error
-      if (e.response?.statusCode == 404) {
-        AppLogger.d('');
-        AppLogger.d('⚠️  ════════════════════════════════════════════════════════');
-        AppLogger.d('⚠️  ENDPOINT NOT FOUND (404)');
-        AppLogger.d('⚠️  ════════════════════════════════════════════════════════');
-        AppLogger.d(
-            '⚠️  The backend endpoint does not exist or is not deployed yet.');
-        AppLogger.d('⚠️  ');
-        AppLogger.d('⚠️  Expected endpoint: POST /api/participants/scan/');
-        AppLogger.d('⚠️  Full URL: ${e.requestOptions.uri}');
-        AppLogger.d('⚠️  ');
-        AppLogger.d('⚠️  Possible causes:');
-        AppLogger.d('⚠️  1. Backend endpoint not deployed yet');
-        AppLogger.d('⚠️  2. Endpoint path mismatch');
-        AppLogger.d('⚠️  3. Backend server not running');
-        AppLogger.d('⚠️  ');
-        AppLogger.d('⚠️  Please verify with backend developer that the endpoint');
-        AppLogger.d('⚠️  is deployed and accessible.');
-        AppLogger.d('⚠️  ════════════════════════════════════════════════════════');
-        AppLogger.d('');
-
-        throw Exception(
-            'Endpoint not found: ${e.requestOptions.uri}\n\nThe backend endpoint /api/events/participants/scan/ does not exist.\nPlease verify with the backend developer.');
+      final data = e.response?.data;
+      AppLogger.d('❌ SCAN - HTTP ${e.response?.statusCode}: $data');
+      if (data is Map && data['status'] != null) {
+        return _withFrenchMessage(Map<String, dynamic>.from(data));
       }
-
       throw Exception(_handleError(e));
     }
+  }
+
+  /// "Laisser entrer" (granted) / "Refuser l'accès" (denied) after a scan.
+  /// Only the controller who made the scan can record it (backend check).
+  Future<void> recordScanDecision({
+    required int scanId,
+    required String decision,
+  }) async {
+    try {
+      await _apiClient.post(
+        '/participants/scan-decision/',
+        data: {'scan_id': scanId, 'decision': decision},
+      );
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  static const Map<String, String> _scanMessages = {
+    'Participant not registered for this event':
+        "Ce participant n'est pas inscrit à cet événement.",
+    'Invalid QR code - user not found':
+        'QR code invalide : aucun participant ne correspond à ce badge.',
+    'Participant profile not found':
+        'Aucun profil participant pour ce badge.',
+    'QR data is required': 'QR code vide.',
+  };
+
+  Map<String, dynamic> _withFrenchMessage(Map<String, dynamic> data) {
+    final message = data['message'];
+    if (message is String) {
+      data['message'] = _scanMessages[message] ??
+          (message.startsWith('No active') || message.contains('assignment')
+              ? "Vous n'êtes affecté à aucun événement actif."
+              : message);
+    }
+    return data;
   }
 
   String _handleError(DioException e) {

@@ -92,6 +92,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/certs/
 
   # Fonts
   # TODO: Add Poppins font files to assets/fonts/ directory

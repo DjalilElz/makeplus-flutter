@@ -63,8 +63,8 @@ class EventModel {
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
-      startDate: DateTime.parse(json['start_date'] as String),
-      endDate: DateTime.parse(json['end_date'] as String),
+      startDate: DateTime.parse(json['start_date'] as String).toLocal(),
+      endDate: DateTime.parse(json['end_date'] as String).toLocal(),
       location: json['location'] as String,
       locationDetails: json['location_details'] as String?,
       logoUrl: json['logo'] as String?,
@@ -80,8 +80,8 @@ class EventModel {
       settings: json['settings'] as Map<String, dynamic>?,
       themes: json['themes'] as Map<String, dynamic>?,
       metadata: json['metadata'] as Map<String, dynamic>?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 
@@ -216,7 +216,7 @@ class SessionInfo {
     return SessionInfo(
       id: json['id'] as String,
       title: json['title'] as String,
-      startTime: DateTime.parse(json['start_time'] as String),
+      startTime: DateTime.parse(json['start_time'] as String).toLocal(),
       speakerName: json['speaker_name'] as String?,
     );
   }
@@ -285,8 +285,8 @@ class Session {
       roomName: json['room_name'] as String?,
       title: json['title'] as String,
       description: json['description'] as String? ?? '',
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
+      startTime: DateTime.parse(json['start_time'] as String).toLocal(),
+      endTime: DateTime.parse(json['end_time'] as String).toLocal(),
       speakerName: json['speaker_name'] as String?,
       speakerTitle: json['speaker_title'] as String?,
       speakerBio: json['speaker_bio'] as String?,
@@ -297,8 +297,8 @@ class Session {
       metadata: json['metadata'] as Map<String, dynamic>?,
       isLive: json['is_live'] as bool? ?? false,
       durationMinutes: json['duration_minutes'] as int? ?? 0,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 
@@ -355,7 +355,7 @@ class UserEventAssignment {
       eventId: json['event_id'] as String,
       role: json['role'] as String,
       permissions: json['permissions'] as String?,
-      assignedAt: DateTime.parse(json['assigned_at'] as String),
+      assignedAt: DateTime.parse(json['assigned_at'] as String).toLocal(),
       isActive: json['is_active'] as bool? ?? true,
     );
   }

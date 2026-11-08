@@ -124,7 +124,7 @@ class _LiveStreamScreenState extends State<LiveStreamScreen> {
     if (timestamp == null) return '';
 
     try {
-      final dateTime = DateTime.parse(timestamp);
+      final dateTime = DateTime.parse(timestamp).toLocal();
       return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return '';

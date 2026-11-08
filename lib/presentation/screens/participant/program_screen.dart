@@ -33,6 +33,7 @@ class ParticipantProgramScreen extends StatefulWidget {
 }
 
 class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
+  PDFViewController? _pdfController;
   _ProgramView _view = _ProgramView.cards;
   late final SessionService _sessionService;
 
@@ -109,13 +110,17 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
 
     try {
       final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/event_programme.pdf';
+      // One file per programme URL: a single shared name showed the previous
+      // event's programme after switching events.
+      final path = '${dir.path}/programme_${url.hashCode.toUnsigned(32)}.pdf';
       final file = File(path);
-      // The programme rarely changes -- if it's already on disk from an
-      // earlier load this session, use it directly instead of
-      // re-downloading.
-      if (!await file.exists()) {
-        await Dio().download(url, path);
+      // The programme rarely changes -- reuse a complete earlier download.
+      if (!await file.exists() || await file.length() == 0) {
+        // Download next to it and rename only when complete, so a cut-off
+        // download never leaves a broken PDF that would be reused.
+        final partial = '$path.part';
+        await Dio().download(url, partial);
+        await File(partial).rename(path);
       }
       if (!mounted) return;
       setState(() {
@@ -167,16 +172,36 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
         'id': session.id,
         'title': session.title,
         'speaker': session.speakerName ?? '',
+        'speakerTitle': session.speakerTitle ?? '',
         'room': session.roomName ?? '',
         'time':
-            '${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
+            '${_formatDay(session.startTime)} • ${_formatTime(session.startTime)} - ${_formatTime(session.endTime)}',
+        'theme': session.theme ?? '',
         'description': session.description ?? '',
+        'finished': session.displayStatus == SessionStatus.finished,
         'isLive': session.isLive,
         'hasLiveStream': (session.youtubeLiveUrl ?? '').isNotEmpty,
         'youtubeUrl': session.youtubeLiveUrl ?? '',
       },
     );
   }
+
+  static const _months = [
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ];
+
+  String _formatDay(DateTime d) => '${d.day} ${_months[d.month - 1]}';
 
   String _formatTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
@@ -274,7 +299,9 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
   List<SessionModel> _applyFilters(List<SessionModel> sessions) {
     return sessions.where((s) {
       if (_typeFilter != null && s.sessionType != _typeFilter) return false;
-      if (_statusFilter != null && s.status != _statusFilter) return false;
+      if (_statusFilter != null && s.displayStatus != _statusFilter) {
+        return false;
+      }
       if (_roomFilter != null && s.roomId != _roomFilter) return false;
       if (_dateFilter != null) {
         final d = s.startTime;
@@ -305,7 +332,7 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
 
   Widget _buildFilterBar(BuildContext context, List<SessionModel> sessions) {
     final types = sessions.map((s) => s.sessionType).toSet().toList();
-    final statuses = sessions.map((s) => s.status).toSet().toList()
+    final statuses = sessions.map((s) => s.displayStatus).toSet().toList()
       ..sort((a, b) => a.index.compareTo(b.index));
     final dates = sessions
         .map((s) =>
@@ -514,7 +541,13 @@ class _ParticipantProgramScreenState extends State<ParticipantProgramScreen> {
       );
     }
     return PDFView(
+      // Fresh view per file, opened on the first page (it sometimes
+      // opened on a later page, e.g. page 9 of the programme).
+      key: ValueKey(_pdfPath),
       filePath: _pdfPath!,
+      defaultPage: 0,
+      onViewCreated: (controller) => _pdfController = controller,
+      onRender: (_) => _pdfController?.setPage(0),
       enableSwipe: true,
       swipeHorizontal: false,
       autoSpacing: true,

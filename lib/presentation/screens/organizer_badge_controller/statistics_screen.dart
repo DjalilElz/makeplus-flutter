@@ -10,6 +10,7 @@ import '../../../logic/authentication/auth_bloc.dart';
 import '../../../routes/app_router.dart';
 import '../../widgets/navigation/bottom_nav_bar.dart';
 import '../../widgets/navigation/root_tab_pop_scope.dart';
+import '../../widgets/stats/stats_widgets.dart';
 import 'package:makeplus/core/utils/app_logger.dart';
 
 class StatisticsScreen extends StatefulWidget {
@@ -61,8 +62,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     try {
       AppLogger.d('📊 LOADING MY STATISTICS');
 
-      // Use my-room/statistics endpoint - returns controller's own scans
-      final response = await _apiClient.get('/my-room/statistics/');
+      // Use my-room/statistics endpoint - returns controller's own scans,
+      // for the event chosen at login (a controller can work on several).
+      final currentEventId = context.read<AuthBloc>().state.event?.id;
+      final response = await _apiClient.get(
+        '/my-room/statistics/',
+        queryParameters:
+            currentEventId == null ? null : {'event_id': currentEventId},
+      );
 
       // Check if we got HTML instead of JSON (authentication failed)
       if (response.data is String &&
@@ -210,56 +217,71 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             },
                           ),
                         ),
-                      _buildTotalScansBar(myCheckInsToday),
                       Expanded(
                         child: RefreshIndicator(
-                          onRefresh: () =>
-                              _loadStatistics(showSpinner: false),
-                          child: filteredScans.isEmpty
-                              ? ListView(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.6,
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.people_outline,
-                                              size: 80,
-                                              color:
-                                                  AppColors.textHint(context),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              _searchQuery.isEmpty
-                                                  ? 'Aucun scan aujourd\'hui'
-                                                  : 'Aucun résultat trouvé',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: AppColors
-                                                    .textSecondary(context),
-                                              ),
-                                            ),
-                                          ],
+                          onRefresh: () => _loadStatistics(showSpinner: false),
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              if (_searchQuery.isEmpty) ...[
+                                _buildTodaySummary(myCheckInsToday),
+                                if (HourlyBarsCard.hasData(_hourlyToday)) ...[
+                                  const SizedBox(height: 12),
+                                  HourlyBarsCard(
+                                    hourly: _hourlyToday,
+                                    peak: _asMap(_statistics?['peak_today']),
+                                    unit: 'scan',
+                                  ),
+                                ],
+                                if (_asMap(_statistics?['totals']) != null) ...[
+                                  const SizedBox(height: 12),
+                                  _buildTotalsCard(
+                                      _asMap(_statistics?['totals'])!),
+                                ],
+                                const SizedBox(height: 20),
+                              ],
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 4, bottom: 8),
+                                child: Text(
+                                  'Historique des scans',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary(context),
+                                  ),
+                                ),
+                              ),
+                              if (filteredScans.isEmpty)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 40),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.people_outline,
+                                        size: 64,
+                                        color: AppColors.textHint(context),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _searchQuery.isEmpty
+                                            ? 'Aucun scan pour le moment'
+                                            : 'Aucun résultat trouvé',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color:
+                                              AppColors.textSecondary(context),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 )
-                              : ListView.builder(
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: filteredScans.length,
-                                  itemBuilder: (context, index) {
-                                    return _buildScanCard(
-                                        filteredScans[index]);
-                                  },
-                                ),
+                              else
+                                ...filteredScans.map(_buildScanCard),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -295,28 +317,178 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildTotalScansBar(dynamic myCheckInsToday) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: AppColors.cardBackground(context),
-      child: Row(
-        children: [
-          Icon(
-            Icons.qr_code_scanner,
-            size: 18,
-            color: AppColors.eventPrimary(context),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Total Scans: $myCheckInsToday',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary(context),
+  Map<String, dynamic>? _asMap(dynamic value) =>
+      value is Map ? value.cast<String, dynamic>() : null;
+
+  Map<String, dynamic>? get _hourlyToday =>
+      _asMap(_statistics?['hourly_today']);
+
+  int _count(Map<String, dynamic>? map, String key) {
+    final value = map?[key];
+    return value is num ? value.toInt() : int.tryParse('${value ?? ''}') ?? 0;
+  }
+
+  /// Today's figures: scans, distinct people, and what the controller
+  /// decided after each scan (Laisser entrer / Refuser l'accès).
+  Widget _buildTodaySummary(dynamic myCheckInsToday) {
+    final today = _asMap(_statistics?['today']);
+    final distinct = _count(today, 'distinct');
+    final undecided = _count(today, 'undecided');
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              "CONTRÔLES EFFECTUÉS AUJOURD'HUI",
+              style: TextStyle(
+                fontSize: 11,
+                letterSpacing: 0.6,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary(context),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              '$myCheckInsToday',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w800,
+                color: AppColors.eventPrimary(context),
+              ),
+            ),
+            if (today != null)
+              Text(
+                '$distinct participant${distinct > 1 ? 's' : ''} distinct${distinct > 1 ? 's' : ''}',
+                style: TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary(context)),
+              ),
+            if (today != null) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatTile(
+                      value: '${_count(today, 'granted')}',
+                      label: 'Laissés entrer',
+                      icon: Icons.meeting_room_outlined,
+                      color: AppColors.success,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: StatTile(
+                      value: '${_count(today, 'denied')}',
+                      label: 'Accès refusé',
+                      icon: Icons.block,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatTile(
+                      value: '${_count(today, 'not_registered')}',
+                      label: 'Non inscrits',
+                      icon: Icons.warning_amber_rounded,
+                      color: AppColors.warning,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: StatTile(
+                      value: '${_count(today, 'doubles')}',
+                      label: 'Doubles scans',
+                      icon: Icons.copy_all_outlined,
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
+                ],
+              ),
+              if (undecided > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    '$undecided scan${undecided > 1 ? 's' : ''} sans décision',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary(context)),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalsCard(Map<String, dynamic> totals) {
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "DEPUIS LE DÉBUT DE L'ÉVÉNEMENT",
+                    style: TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 0.6,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_count(totals, 'granted')} entrés · ${_count(totals, 'denied')} refusés · '
+                    '${_count(totals, 'not_registered')} non inscrits',
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textPrimary(context)),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${_count(totals, 'scans')}',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: AppColors.eventPrimary(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _decisionChip(String? decision) {
+    if (decision != 'granted' && decision != 'denied') {
+      return const SizedBox.shrink();
+    }
+    final granted = decision == 'granted';
+    final color = granted ? AppColors.success : AppColors.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        granted ? 'Entré' : 'Refusé',
+        style:
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }
@@ -328,15 +500,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final scannedAt = scan['scanned_at'] ?? '';
 
     final nameParts = name.split(' ');
-    final firstInitial =
-        nameParts.isNotEmpty && nameParts[0].isNotEmpty
-            ? nameParts[0][0].toUpperCase()
-            : 'P';
+    final firstInitial = nameParts.isNotEmpty && nameParts[0].isNotEmpty
+        ? nameParts[0][0].toUpperCase()
+        : 'P';
 
     String formattedTime = '';
     if (scannedAt.isNotEmpty) {
       try {
-        final dt = DateTime.parse(scannedAt);
+        final dt = DateTime.parse(scannedAt).toLocal();
         formattedTime =
             '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
       } catch (e) {
@@ -352,6 +523,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
+        trailing: _decisionChip(scan['access_decision']?.toString()),
         leading: CircleAvatar(
           radius: 28,
           backgroundColor:
@@ -376,6 +548,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
+            if (scan['status'] == 'not_registered')
+              const Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Text(
+                  'Non inscrit à cet événement',
+                  style: TextStyle(
+                    color: AppColors.warning,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             if (email.isNotEmpty)
               Row(
                 children: [

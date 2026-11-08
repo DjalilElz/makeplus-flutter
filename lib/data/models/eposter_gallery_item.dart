@@ -30,7 +30,7 @@ class EposterGalleryItem {
       title: json['title'] as String? ?? '',
       authors: json['authors'] as String? ?? '',
       coAuthors: json['co_authors'] as String? ?? '',
-      submittedAt: DateTime.parse(json['submitted_at'] as String),
+      submittedAt: DateTime.parse(json['submitted_at'] as String).toLocal(),
       pdfUrl: json['pdf_url'] as String?,
     );
   }

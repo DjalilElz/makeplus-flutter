@@ -36,13 +36,13 @@ class SessionQuestionModel {
       sessionId: json['session'] ?? '',
       questionText: json['question_text'] ?? '',
       askedAt: json['asked_at'] != null
-          ? DateTime.parse(json['asked_at'])
+          ? DateTime.parse(json['asked_at']).toLocal()
           : DateTime.now(),
       isAnswered: json['is_answered'] ?? false,
       answerText: json['answer_text'],
       answeredBy: json['answered_by'],
       answeredAt: json['answered_at'] != null
-          ? DateTime.parse(json['answered_at'])
+          ? DateTime.parse(json['answered_at']).toLocal()
           : null,
       sessionTitle: json['session_title'],
       answeredByName: json['answered_by_name'],

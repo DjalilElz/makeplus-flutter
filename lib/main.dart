@@ -1,6 +1,10 @@
 // lib/main.dart
 
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/constants/theme/app_theme.dart';
@@ -15,6 +19,7 @@ import 'presentation/screens/splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _trustSslComRoot();
 
   runApp(const MakePlusApp());
 }
@@ -58,5 +63,23 @@ class MakePlusApp extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The event files (programme and guide PDFs, banners, logos) are served by
+/// wemakeplus.com, whose certificate chains to "SSL.com TLS RSA Root CA 2022".
+/// Android 13 and older don't ship that root, so every download from that host
+/// failed there ("Impossible de charger le PDF", missing banners). This adds
+/// that one public root to the app's trusted roots, next to the system ones.
+Future<void> _trustSslComRoot() async {
+  if (kIsWeb) return;
+  try {
+    final pem =
+        await rootBundle.load('assets/certs/sslcom_tls_rsa_root_2022.pem');
+    SecurityContext.defaultContext
+        .setTrustedCertificatesBytes(pem.buffer.asUint8List());
+  } catch (_) {
+    // Already trusted by the system (newer Android) or asset missing: the
+    // system roots still apply.
   }
 }

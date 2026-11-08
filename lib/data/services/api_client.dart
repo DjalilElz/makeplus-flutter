@@ -142,6 +142,42 @@ class ApiClient {
 
   // HTTP Methods
 
+  /// GET a list endpoint and follow its pages. The backend paginates every
+  /// list by 20 (`{count, next, results}`); reading only `results` silently
+  /// dropped everything after the 20th item (e.g. most of a programme).
+  /// Uses `?page=N` rather than the absolute `next` URL, whose scheme
+  /// depends on the proxy setup. Plain (unpaginated) lists pass through.
+  Future<List<dynamic>> getAllPages(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    int maxPages = 50,
+  }) async {
+    final items = <dynamic>[];
+    var page = 1;
+    while (true) {
+      final response = await get(path, queryParameters: {
+        ...?queryParameters,
+        // Big pages: one request for a whole programme. A backend without
+        // ?page_size= support ignores it and we simply follow the pages.
+        'page_size': 500,
+        if (page > 1) 'page': page,
+      });
+      final data = response.data;
+      if (data is List) {
+        items.addAll(data);
+        break;
+      }
+      if (data is Map && data['results'] is List) {
+        items.addAll(data['results'] as List);
+        if (data['next'] == null || page >= maxPages) break;
+        page++;
+        continue;
+      }
+      break;
+    }
+    return items;
+  }
+
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,

@@ -112,6 +112,11 @@ class ExposantScanService {
         return {
           'total_visits': data['total_visits'] ?? 0,
           'today_visits': data['today_visits'] ?? 0,
+          // Added with the stats dashboard; absent on an older backend.
+          'distinct_visitors': data['distinct_visitors'],
+          'today_distinct_visitors': data['today_distinct_visitors'],
+          'hourly_today': data['hourly_today'],
+          'peak_today': data['peak_today'],
           'scans': (data['scans'] as List?)
                   ?.map((e) => ExposantScanModel.fromJson(e))
                   .toList() ??

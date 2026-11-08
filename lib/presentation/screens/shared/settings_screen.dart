@@ -239,44 +239,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
+      // Material (not a coloured box) so the tile's tap ripple shows.
+      child: Material(
         color: AppColors.cardBackground(context),
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: (iconColor ?? AppColors.eventPrimary(context))
-                .withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (iconColor ?? AppColors.eventPrimary(context))
+                  .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor ?? AppColors.eventPrimary(context),
+              size: 24,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: iconColor ?? AppColors.eventPrimary(context),
-            size: 24,
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: textColor ?? AppColors.textPrimary(context),
+            ),
           ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: textColor ?? AppColors.textPrimary(context),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary(context),
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary(context),
+          trailing: Icon(
+            Icons.chevron_right,
+            color: AppColors.textHint(context),
           ),
+          onTap: onTap,
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: AppColors.textHint(context),
-        ),
-        onTap: onTap,
       ),
     );
   }

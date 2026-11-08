@@ -83,7 +83,8 @@ class ExposantScanModel {
       scannedParticipantId: toString(json['scanned_participant']),
       eventId: toString(json['event']),
       scannedAt: json['scanned_at'] != null
-          ? DateTime.parse(json['scanned_at'])
+          // The API sends UTC; show the device's local time (Algeria is UTC+1).
+          ? DateTime.parse(json['scanned_at']).toLocal()
           : DateTime.now(),
       notes: json['notes']?.toString(),
       participantName: getParticipantField('participant_name'),

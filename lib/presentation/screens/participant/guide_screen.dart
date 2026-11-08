@@ -23,6 +23,7 @@ class ParticipantGuideScreen extends StatefulWidget {
 }
 
 class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
+  PDFViewController? _pdfController;
   String? _pdfPath;
   bool _isLoadingPdf = false;
   String? _pdfError;
@@ -44,12 +45,17 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
 
     try {
       final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/event_guide.pdf';
+      // One file per URL: a single shared name showed the previous
+      // event's file after switching events.
+      final path = '${dir.path}/guide_${url.hashCode.toUnsigned(32)}.pdf';
       final file = File(path);
-      // The guide rarely changes -- if it's already on disk from an earlier
-      // load this session, use it directly instead of re-downloading.
-      if (!await file.exists()) {
-        await Dio().download(url, path);
+      // Rarely changes -- reuse a complete earlier download.
+      if (!await file.exists() || await file.length() == 0) {
+        // Download next to it and rename only when complete, so a
+        // cut-off download never leaves a broken PDF that is reused.
+        final partial = '$path.part';
+        await Dio().download(url, partial);
+        await File(partial).rename(path);
       }
       if (!mounted) return;
       setState(() {
@@ -189,7 +195,13 @@ class _ParticipantGuideScreenState extends State<ParticipantGuideScreen> {
       );
     }
     return PDFView(
+      // Fresh view per file, opened on the first page (it sometimes
+      // opened on a later page, e.g. page 9 of the programme).
+      key: ValueKey(_pdfPath),
       filePath: _pdfPath!,
+      defaultPage: 0,
+      onViewCreated: (controller) => _pdfController = controller,
+      onRender: (_) => _pdfController?.setPage(0),
       enableSwipe: true,
       swipeHorizontal: false,
       autoSpacing: true,

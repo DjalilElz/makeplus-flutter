@@ -19,6 +19,37 @@ class BadgeScannerScreen extends StatefulWidget {
 
 class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
   bool _isProcessing = false;
+
+  // The badge usually stays in front of the camera while the controller
+  // reads the result: once the dialog closes, the same code must not be
+  // scanned again straight away (it logged 2-3 scans per person). A
+  // different badge scans immediately.
+  // Same badge is ignored until it has left the camera's view for
+  // _goneFor (keeping the phone on it never rescans), and never within
+  // _minGap of the previous result closing.
+  static const Duration _goneFor = Duration(seconds: 2);
+  static const Duration _minGap = Duration(seconds: 3);
+  String? _lastValue;
+  DateTime? _lastFinishedAt;
+  DateTime? _lastSeenAt;
+
+  /// true when [value] is the badge just handled and it is still (or again
+  /// too soon) in front of the camera.
+  bool _isRepeatOfLastBadge(String value) {
+    final finishedAt = _lastFinishedAt;
+    if (value != _lastValue || finishedAt == null) return false;
+    final now = DateTime.now();
+    final lastSeen = _lastSeenAt ?? finishedAt;
+    _lastSeenAt = now;
+    return now.difference(lastSeen) < _goneFor ||
+        now.difference(finishedAt) < _minGap;
+  }
+
+  void _finishProcessing() {
+    _lastFinishedAt = DateTime.now();
+    if (mounted) setState(() => _isProcessing = false);
+  }
+
   final RoomService _roomService = RoomService(ApiClient());
 
   int _getCurrentIndex(BuildContext context) {
@@ -48,6 +79,10 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
 
     if (value == null || value.isEmpty) return;
 
+    if (_isRepeatOfLastBadge(value)) return;
+    _lastValue = value;
+    _lastSeenAt = null;
+
     setState(() {
       _isProcessing = true;
     });
@@ -75,31 +110,26 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
           qrData: qrData,
         );
 
-        AppLogger.d('✅ API RESPONSE RECEIVED');
-        AppLogger.d('   - status: ${response['status']}');
+        AppLogger.d('✅ API RESPONSE RECEIVED - status: ${response['status']}');
 
-        if (response['status'] == 'success') {
-          // Map API response to dialog format
-          final participant = response['participant'] as Map<String, dynamic>;
-          final event = response['event'] as Map<String, dynamic>?;
+        final participant =
+            (response['participant'] as Map?)?.cast<String, dynamic>();
+        final scanId = response['scan_id'];
+        final status = response['status'];
+
+        // success, or "not registered" (error with a participant): both are
+        // logged scans, so show the person and let the controller record
+        // "Laisser entrer" / "Refuser l'accès".
+        if (status == 'success' || (status == 'error' && participant != null)) {
           final paidItems = response['paid_items'] as List? ?? [];
-
-          AppLogger.d('💰 PAID ITEMS FROM DATABASE: ${paidItems.length}');
-          AppLogger.d('💵 TOTAL AMOUNT: ${response['total_amount']}');
-          if (event != null) {
-            AppLogger.d('🎉 EVENT: ${event['name']}');
-          }
-
-          // Create data structure for dialog
           final dialogData = {
-            'full_name': participant['name'],
-            'email': participant['email'],
-            'badge_id': participant['badge_id'],
-            'paid_items': paidItems,
-            'total_paid_items':
-                response['total_paid_items'] ?? paidItems.length,
-            'total_amount': response['total_amount'] ?? 0.0,
-            'event_name': event?['name'],
+            'full_name': participant?['name'],
+            'email': participant?['email'],
+            'badge_id': participant?['badge_id'],
+            'paid_items': status == 'success' ? paidItems : <dynamic>[],
+            'registered': status == 'success',
+            'message': response['message'],
+            'scan_id': scanId is int ? scanId : int.tryParse('${scanId ?? ''}'),
           };
 
           if (mounted) {
@@ -107,28 +137,35 @@ class _BadgeScannerScreenState extends State<BadgeScannerScreen> {
             // screen -- the camera never stops, so clearing the flag any
             // earlier lets the same still-in-frame badge retrigger a
             // second (stacked) scan before the controller can react.
-            await ParticipantVerificationDialog.show(context, dialogData);
-            if (mounted) setState(() => _isProcessing = false);
+            await ParticipantVerificationDialog.show(
+              context,
+              dialogData,
+              onDecision: (decision) => _roomService.recordScanDecision(
+                scanId: dialogData['scan_id'] as int,
+                decision: decision,
+              ),
+            );
+            _finishProcessing();
           }
-        } else if (response['status'] == 'error') {
-          await _showErrorDialog(
-              'Erreur',
-              response['message'] ??
-                  'Participant non enregistré pour cet événement');
-          if (mounted) setState(() => _isProcessing = false);
+        } else if (status == 'invalid') {
+          await _showErrorDialog('QR code invalide',
+              response['message'] ?? 'Ce QR code ne correspond à aucun badge.');
+          _finishProcessing();
         } else {
-          await _showErrorDialog('Erreur', 'QR code invalide');
-          if (mounted) setState(() => _isProcessing = false);
+          await _showErrorDialog('Erreur',
+              response['message'] ?? 'Badge non reconnu pour cet événement.');
+          _finishProcessing();
         }
       } catch (e) {
         AppLogger.d('❌ API CALL FAILED: $e');
-        await _showErrorDialog('Erreur', 'Impossible de vérifier l\'accès: $e');
-        if (mounted) setState(() => _isProcessing = false);
+        await _showErrorDialog('Erreur',
+            'Impossible de vérifier le badge. Vérifiez la connexion et réessayez.');
+        _finishProcessing();
       }
     } catch (e) {
       AppLogger.d('❌ EXCEPTION IN _verifyAccess: $e');
       await _showErrorDialog('Erreur', 'Erreur inattendue: $e');
-      if (mounted) setState(() => _isProcessing = false);
+      _finishProcessing();
     }
   }
 

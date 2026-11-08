@@ -21,6 +21,28 @@ class ExposantScannerScreen extends StatefulWidget {
 class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   bool _isProcessing = false;
+
+  // The badge stays in front of the camera while the dialog is open: once
+  // it closes, ignore that same code for a few seconds (it reopened the
+  // dialog instantly, or looped error messages for a non-badge QR).
+  static const Duration _goneFor = Duration(seconds: 2);
+  static const Duration _minGap = Duration(seconds: 3);
+  String? _lastCode;
+  DateTime? _lastFinishedAt;
+  DateTime? _lastSeenAt;
+
+  /// Same rule as the controller scanner: the code just handled is ignored
+  /// until it has left the camera's view.
+  bool _isRepeatOfLastCode(String code) {
+    final finishedAt = _lastFinishedAt;
+    if (code != _lastCode || finishedAt == null) return false;
+    final now = DateTime.now();
+    final lastSeen = _lastSeenAt ?? finishedAt;
+    _lastSeenAt = now;
+    return now.difference(lastSeen) < _goneFor ||
+        now.difference(finishedAt) < _minGap;
+  }
+
   late ExposantScanService _exposantScanService;
   late ApiClient _apiClient;
 
@@ -63,6 +85,9 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
 
     final String? code = barcodes.first.rawValue;
     if (code == null) return;
+    if (_isRepeatOfLastCode(code)) return;
+    _lastCode = code;
+    _lastSeenAt = null;
 
     setState(() {
       _isProcessing = true;
@@ -89,6 +114,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
         participantEmail: participantEmail,
       );
     } catch (e) {
+      _lastFinishedAt = DateTime.now();
       setState(() {
         _isProcessing = false;
       });
@@ -97,7 +123,9 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur de lecture du QR code: ${e.toString()}'),
+          content: Text(e.toString().contains('introuvable')
+              ? "Ce QR code ne correspond à aucun participant."
+              : 'Erreur de lecture du QR code. Réessayez.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -233,6 +261,7 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
     }
 
     // Resume scanning first (before disposing controller)
+    _lastFinishedAt = DateTime.now();
     setState(() {
       _isProcessing = false;
     });

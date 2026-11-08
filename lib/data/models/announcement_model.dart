@@ -37,12 +37,13 @@ class AnnouncementModel {
           ? json['created_by']
           : int.tryParse(json['created_by']?.toString() ?? '0') ?? 0,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+          ? DateTime.parse(json['created_at']).toLocal()
           : DateTime.now(),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
+          ? DateTime.parse(json['updated_at']).toLocal()
           : DateTime.now(),
-      creatorName: json['creator_name'],
+      // The API names it created_by_name; creator_name kept for older payloads.
+      creatorName: json['created_by_name'] ?? json['creator_name'],
     );
   }
 

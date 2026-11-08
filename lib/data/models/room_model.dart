@@ -113,6 +113,22 @@ class SessionModel extends Equatable {
     this.youtubeLiveUrl,
   });
 
+  /// The status to show people. Same as [status], except that a session
+  /// nobody started or ended in the app (still "not started" on the server)
+  /// whose end time has passed is shown as finished -- otherwise a whole
+  /// programme reads "Pas encore" after the event.
+  SessionStatus get displayStatus =>
+      status == SessionStatus.notStarted && DateTime.now().isAfter(endTime)
+          ? SessionStatus.finished
+          : status;
+
+  /// Blank texts become null: screens test for null, and an empty speaker
+  /// name crashed the programme card (first letter of an empty string).
+  static String? _text(dynamic value) {
+    final text = value?.toString().trim();
+    return (text == null || text.isEmpty) ? null : text;
+  }
+
   factory SessionModel.fromJson(Map<String, dynamic> json) {
     SessionStatus status = SessionStatus.notStarted;
     if (json['status'] != null) {
@@ -140,15 +156,15 @@ class SessionModel extends Equatable {
     return SessionModel(
       id: json['id'].toString(),
       title: json['title'] ?? '',
-      description: json['description'],
-      startTime: DateTime.parse(json['start_time']),
-      endTime: DateTime.parse(json['end_time']),
+      description: _text(json['description']),
+      startTime: DateTime.parse(json['start_time']).toLocal(),
+      endTime: DateTime.parse(json['end_time']).toLocal(),
       roomId: json['room']?.toString() ?? json['room_id']?.toString() ?? '',
-      roomName: json['room_name'],
+      roomName: _text(json['room_name']),
       eventId: json['event']?.toString() ?? '',
-      speakerName: json['speaker_name'],
-      speakerTitle: json['speaker_title'],
-      theme: json['theme'],
+      speakerName: _text(json['speaker_name']),
+      speakerTitle: _text(json['speaker_title']),
+      theme: _text(json['theme']),
       isLive: json['is_live'] ?? status == SessionStatus.inProgress,
       status: status,
       sessionType: json['session_type'] ?? 'conference',

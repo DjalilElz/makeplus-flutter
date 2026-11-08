@@ -40,21 +40,45 @@ class DjangoAuthService {
       return client;
     };
 
-    // Add interceptor to remove auth header from public endpoints
     _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // Remove Authorization header for public endpoints
-        final publicEndpoints = [
-          '/auth/token/',
-          '/auth/login/',
-          '/auth/register/',
-          '/auth/password-reset/'
-        ];
-        if (publicEndpoints
-            .any((endpoint) => options.path.contains(endpoint))) {
+      onRequest: (options, handler) async {
+        if (_isPublicEndpoint(options.path)) {
+          // Remove Authorization header for public endpoints
           options.headers.remove('Authorization');
+        } else if (!options.path.contains('/auth/select-event/')) {
+          // Always send the latest access token: ApiClient refreshes tokens
+          // in the shared secure storage too, so the copy cached at
+          // startup can be stale. select-event carries its own temp token.
+          final token = await _secureStorage.read(key: 'access_token');
+          if (token != null && token.isNotEmpty) {
+            _token = token;
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
         return handler.next(options);
+      },
+      onError: (err, handler) async {
+        // Access tokens live 1 hour: without this, reopening the app after
+        // an hour hit a 401 on /auth/me/ and logged the user out although
+        // their refresh token (7 days) was still valid.
+        final options = err.requestOptions;
+        final canRetry = err.response?.statusCode == 401 &&
+            !_isPublicEndpoint(options.path) &&
+            !options.path.contains('/auth/select-event/') &&
+            options.extra['auth_retried'] != true;
+        if (canRetry) {
+          final newAccess = await _refreshAccessToken();
+          if (newAccess != null) {
+            options.headers['Authorization'] = 'Bearer $newAccess';
+            options.extra['auth_retried'] = true;
+            try {
+              return handler.resolve(await _dio.fetch(options));
+            } on DioException catch (retryError) {
+              return handler.next(retryError);
+            }
+          }
+        }
+        return handler.next(err);
       },
     ));
 
@@ -66,6 +90,56 @@ class DjangoAuthService {
         error: true,
         requestHeader: true,
       ));
+    }
+  }
+
+  static const List<String> _publicEndpoints = [
+    '/auth/token/', // also covers /auth/token/refresh/
+    '/auth/login/',
+    '/auth/register/',
+    '/auth/password-reset/',
+  ];
+
+  static bool _isPublicEndpoint(String path) =>
+      _publicEndpoints.any((endpoint) => path.contains(endpoint));
+
+  Future<String?>? _refreshInFlight;
+
+  /// Exchanges the stored refresh token for a new access token (rotation:
+  /// the backend also returns a new refresh token). Concurrent 401s share
+  /// one refresh -- a second call with the old, now blacklisted refresh
+  /// token would fail. Returns null when the session can't be renewed.
+  Future<String?> _refreshAccessToken() {
+    return _refreshInFlight ??= _doRefresh().whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  Future<String?> _doRefresh() async {
+    final refresh = await _secureStorage.read(key: 'refresh_token');
+    if (refresh == null || refresh.isEmpty) return null;
+    try {
+      final response = await Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      )).post(
+        '${ApiConstants.baseUrl}/auth/token/refresh/',
+        data: {'refresh': refresh},
+      );
+      final access = response.data['access'] as String?;
+      if (access == null || access.isEmpty) return null;
+      await _secureStorage.write(key: 'access_token', value: access);
+      final rotated = response.data['refresh'] as String?;
+      if (rotated != null && rotated.isNotEmpty) {
+        await _secureStorage.write(key: 'refresh_token', value: rotated);
+      }
+      _token = access;
+      _dio.options.headers['Authorization'] = 'Bearer $access';
+      AppLogger.d('🔄 TOKEN REFRESHED');
+      return access;
+    } catch (e) {
+      AppLogger.d('⚠️ Token refresh failed: $e');
+      return null;
     }
   }
 
@@ -407,7 +481,12 @@ class DjangoAuthService {
   /// Logout
   Future<void> logout() async {
     try {
-      await _dio.post('/auth/logout/');
+      // Revokes the refresh token server-side (blacklist) so it can't be
+      // used again once the user has signed out.
+      final refresh = await _secureStorage.read(key: 'refresh_token');
+      if (refresh != null && refresh.isNotEmpty) {
+        await _dio.post('/auth/logout/', data: {'refresh': refresh});
+      }
     } catch (e) {
       AppLogger.d('⚠️ Logout error (ignored): $e');
     } finally {
@@ -535,11 +614,11 @@ class DjangoAuthService {
             location: _prefs?.getString('event_location'),
             startDate: _prefs?.getString('event_start_date') != null &&
                     _prefs!.getString('event_start_date')!.isNotEmpty
-                ? DateTime.parse(_prefs!.getString('event_start_date')!)
+                ? DateTime.parse(_prefs!.getString('event_start_date')!).toLocal()
                 : null,
             endDate: _prefs?.getString('event_end_date') != null &&
                     _prefs!.getString('event_end_date')!.isNotEmpty
-                ? DateTime.parse(_prefs!.getString('event_end_date')!)
+                ? DateTime.parse(_prefs!.getString('event_end_date')!).toLocal()
                 : null,
             description: _emptyToNull(_prefs?.getString('event_description')),
             logoUrl: _emptyToNull(_prefs?.getString('event_logo')),

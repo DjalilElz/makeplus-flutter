@@ -79,7 +79,8 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
             // Navigate to E-posters
             Navigator.pushNamed(context, '/participant/eposters');
           },
-          backgroundColor: AppColors.accent,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           icon: const Icon(Icons.article),
           label: const Text('E-posters'),
         ),
@@ -106,7 +107,8 @@ class _ParticipantHomeScreenState extends State<ParticipantHomeScreen> {
                 break;
               case 4:
                 // Annonces
-                Navigator.pushReplacementNamed(context, '/participant/announcements');
+                Navigator.pushReplacementNamed(
+                    context, '/participant/announcements');
                 break;
             }
           },

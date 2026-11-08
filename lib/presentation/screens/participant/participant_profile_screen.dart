@@ -172,7 +172,11 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
             AppLogger.d('✅ Session details response: ${sessionResponse.data}');
 
             final sessionData = sessionResponse.data;
-            final room = sessionData['room'] as Map<String, dynamic>?;
+            // The API sends `room` as an id plus a separate `room_name`;
+            // the old cast to Map threw and every atelier showed 'N/A'.
+            final rawRoom = sessionData['room'];
+            final roomName =
+                rawRoom is Map ? rawRoom['name'] : sessionData['room_name'];
 
             items.add({
               'id': sessionData['id'],
@@ -180,7 +184,7 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
               'title': sessionData['title'] ?? item['title'] ?? 'N/A',
               'speaker': sessionData['speaker_name'] ?? 'N/A',
               'speaker_title': sessionData['speaker_title'] ?? '',
-              'room': room?['name'] ?? 'N/A',
+              'room': (roomName ?? 'N/A').toString(),
               'time': _formatSessionTime(
                   sessionData['start_time'], sessionData['end_time']),
               'start_time': sessionData['start_time'],
@@ -266,8 +270,8 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
 
     try {
       final now = DateTime.now();
-      final start = DateTime.parse(startTime);
-      final end = DateTime.parse(endTime);
+      final start = DateTime.parse(startTime).toLocal();
+      final end = DateTime.parse(endTime).toLocal();
 
       if (now.isBefore(start)) {
         return 'pas_encore';
@@ -285,8 +289,8 @@ class _ParticipantProfileScreenState extends State<ParticipantProfileScreen> {
     if (startTime == null || endTime == null) return 'N/A';
 
     try {
-      final start = DateTime.parse(startTime);
-      final end = DateTime.parse(endTime);
+      final start = DateTime.parse(startTime).toLocal();
+      final end = DateTime.parse(endTime).toLocal();
 
       return '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')} - ${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
     } catch (e) {

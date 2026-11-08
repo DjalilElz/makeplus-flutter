@@ -27,22 +27,13 @@ class SessionService {
       if (sessionType != null) queryParams['session_type'] = sessionType;
       if (isPaid != null) queryParams['is_paid'] = isPaid;
 
-      final response = await _apiClient.get(
+      final results = await _apiClient.getAllPages(
         '/sessions/',
         queryParameters: queryParams,
       );
-
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final results = data['results'] ?? data;
-
-        if (results is List) {
-          return results.map((e) => SessionModel.fromJson(e)).toList();
-        }
-        return [];
-      } else {
-        throw Exception('Failed to load sessions');
-      }
+      return results
+          .map((e) => SessionModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw Exception(_handleError(e));
     }

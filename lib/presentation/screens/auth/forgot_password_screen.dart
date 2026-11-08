@@ -10,7 +10,15 @@ import '../../../data/services/api_client.dart';
 import '../../../routes/app_router.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  /// Prefilled (and locked) e-mail when opened from Settings > Sécurité.
+  final String? initialEmail;
+
+  /// true when a signed-in user changes their password from Settings: same
+  /// e-mailed-code flow, but it returns to Settings instead of the login page.
+  final bool changeMode;
+
+  const ForgotPasswordScreen(
+      {super.key, this.initialEmail, this.changeMode = false});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -22,6 +30,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _codeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEmail != null) {
+      _emailController.text = widget.initialEmail!;
+    }
+  }
 
   final ApiClient _apiClient = ApiClient();
 
@@ -197,13 +213,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (response.data['success'] == true) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Mot de passe réinitialisé avec succès'),
+            SnackBar(
+              content: Text(widget.changeMode
+                  ? 'Mot de passe modifié avec succès'
+                  : 'Mot de passe réinitialisé avec succès'),
               backgroundColor: AppColors.success,
             ),
           );
 
-          Navigator.of(context).pushReplacementNamed(AppRouter.login);
+          if (widget.changeMode) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushReplacementNamed(AppRouter.login);
+          }
         }
       }
     } catch (e) {
@@ -224,7 +246,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mot de passe oublié'),
+        title: Text(widget.changeMode
+            ? 'Changer le mot de passe'
+            : 'Mot de passe oublié'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -326,7 +350,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       width: 60,
       height: 2,
       margin: const EdgeInsets.only(bottom: 20),
-      color: isActive ? AppColors.eventPrimary(context) : AppColors.surfaceContainerHigh(context),
+      color: isActive
+          ? AppColors.eventPrimary(context)
+          : AppColors.surfaceContainerHigh(context),
     );
   }
 
@@ -354,6 +380,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const SizedBox(height: 32),
         TextFormField(
           controller: _emailController,
+          // Locked when changing one's own password from Settings.
+          readOnly: widget.initialEmail != null,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Email',

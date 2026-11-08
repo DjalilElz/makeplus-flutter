@@ -1,7 +1,10 @@
 // lib/presentation/screens/shared/settings/security_settings_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/theme/app_colors.dart';
+import '../../../../logic/authentication/auth_bloc.dart';
+import '../../auth/forgot_password_screen.dart';
 
 class SecuritySettingsScreen extends StatelessWidget {
   const SecuritySettingsScreen({super.key});
@@ -50,23 +53,29 @@ class SecuritySettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Pour des raisons de sécurité, le changement de mot de '
-                  'passe n\'est pas disponible directement dans '
-                  'l\'application mobile.',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textPrimary(context),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Veuillez contacter les organisateurs de votre événement '
-                  'pour effectuer cette opération.',
+                  'Un code de confirmation sera envoyé à votre adresse e-mail '
+                  'pour valider votre nouveau mot de passe.',
                   style: TextStyle(
                     fontSize: 15,
                     color: AppColors.textSecondary(context),
                     height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.password),
+                    label: const Text('Changer mon mot de passe'),
+                    onPressed: () {
+                      final email = context.read<AuthBloc>().state.user?.email;
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ForgotPasswordScreen(
+                          initialEmail: email,
+                          changeMode: true,
+                        ),
+                      ));
+                    },
                   ),
                 ),
               ],

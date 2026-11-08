@@ -3,7 +3,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:makeplus/data/models/room_model.dart';
 
-
 enum RoomStatus {
   initial,
   loading,

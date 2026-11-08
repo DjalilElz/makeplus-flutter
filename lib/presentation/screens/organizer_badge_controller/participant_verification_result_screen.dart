@@ -4,67 +4,117 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/theme/app_colors.dart';
 
+/// Result of a badge scan: who it is, what they paid for, and -- when the
+/// backend returned a `scan_id` -- the controller's decision buttons
+/// ("Laisser entrer" / "Refuser l'accès"), recorded on that scan so the
+/// dashboard knows who was let in or turned away.
 class ParticipantVerificationDialog {
+  /// [data] keys: full_name, email, badge_id, paid_items, registered (bool,
+  /// default true), message, scan_id (int?).
+  /// [onDecision] records 'granted' / 'denied'; it throws on failure so the
+  /// dialog can show the error and let the controller retry.
   static Future<void> show(
     BuildContext context,
-    Map<String, dynamic> qrData,
-  ) {
-    // Extract participant info from QR data
-    final String fullName = qrData['full_name'] ?? qrData['name'] ?? 'N/A';
-    final List<dynamic> paidItems = qrData['paid_items'] ?? [];
+    Map<String, dynamic> data, {
+    Future<void> Function(String decision)? onDecision,
+  }) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _VerificationDialog(data: data, onDecision: onDecision),
+    );
+  }
+}
 
-    // paid_items comes straight from /participants/scan/, built from the
-    // participant's completed CaisseTransaction records -- always real,
-    // always freshly queried for this scan (never a free/unpaid item, since
-    // the endpoint only ever returns items that were actually paid for).
-    final List<dynamic> actuallyPaidItems = paidItems;
+class _VerificationDialog extends StatefulWidget {
+  final Map<String, dynamic> data;
+  final Future<void> Function(String decision)? onDecision;
 
-    // Group paid items by type for better display
-    final Map<String, List<dynamic>> groupedItems = {
+  const _VerificationDialog({required this.data, this.onDecision});
+
+  @override
+  State<_VerificationDialog> createState() => _VerificationDialogState();
+}
+
+class _VerificationDialogState extends State<_VerificationDialog> {
+  String? _sending; // decision being recorded
+  String? _error;
+
+  bool get _registered => widget.data['registered'] != false;
+  bool get _canDecide =>
+      widget.onDecision != null && widget.data['scan_id'] != null;
+
+  Future<void> _decide(String decision) async {
+    setState(() {
+      _sending = decision;
+      _error = null;
+    });
+    try {
+      await widget.onDecision!(decision);
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _sending = null;
+        _error = "La décision n'a pas pu être enregistrée. Réessayez.";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
+    final String fullName =
+        (data['full_name'] ?? data['name'] ?? '').toString().trim();
+    final String email = (data['email'] ?? '').toString();
+    final String badgeId = (data['badge_id'] ?? '').toString();
+    final List<dynamic> paidItems = data['paid_items'] ?? [];
+
+    // Group paid items by type for display
+    final Map<String, List<dynamic>> grouped = {
       'session': [],
       'access': [],
       'dinner': [],
       'other': [],
     };
-
-    for (var item in actuallyPaidItems) {
+    for (final item in paidItems) {
       final type = item['type'] ?? 'other';
-      if (groupedItems.containsKey(type)) {
-        groupedItems[type]!.add(item);
-      } else {
-        groupedItems['other']!.add(item);
-      }
+      (grouped[type] ?? grouped['other']!).add(item);
     }
 
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            constraints: const BoxConstraints(
-              maxWidth: 350,
-              maxHeight: 500,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Compact Header
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.eventPrimary(dialogContext),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
+    final headerColor =
+        _registered ? AppColors.eventPrimary(context) : AppColors.warning;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360, maxHeight: 560),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header: name + email/badge
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              decoration: BoxDecoration(
+                color: headerColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    _registered
+                        ? Icons.verified_user
+                        : Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 28,
                   ),
-                  child: Text(
-                    fullName,
+                  const SizedBox(height: 4),
+                  Text(
+                    fullName.isEmpty ? 'Participant' : fullName,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -72,129 +122,232 @@ class ParticipantVerificationDialog {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                ),
-
-                // Scrollable Content
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Paid Items
-                        if (actuallyPaidItems.isNotEmpty) ...[
-                          Text(
-                            'Articles Payés (${actuallyPaidItems.length})',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Sessions
-                          if (groupedItems['session']!.isNotEmpty) ...[
-                            _buildSectionHeader('Ateliers', Icons.event),
-                            ...groupedItems['session']!
-                                .map((item) => _buildMinimalItemCard(item)),
-                          ],
-
-                          // Access
-                          if (groupedItems['access']!.isNotEmpty) ...[
-                            _buildSectionHeader('Accès', Icons.vpn_key),
-                            ...groupedItems['access']!
-                                .map((item) => _buildMinimalItemCard(item)),
-                          ],
-
-                          // Dinner
-                          if (groupedItems['dinner']!.isNotEmpty) ...[
-                            _buildSectionHeader('Repas', Icons.restaurant),
-                            ...groupedItems['dinner']!
-                                .map((item) => _buildMinimalItemCard(item)),
-                          ],
-
-                          // Other
-                          if (groupedItems['other']!.isNotEmpty) ...[
-                            _buildSectionHeader('Autres', Icons.shopping_bag),
-                            ...groupedItems['other']!
-                                .map((item) => _buildMinimalItemCard(item)),
-                          ],
-
-                          const SizedBox(height: 12),
-                        ],
-
-                        // No items
-                        if (actuallyPaidItems.isEmpty)
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceContainer(context),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Aucun accès enregistré',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary(context),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Compact Button
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.eventPrimary(dialogContext),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  if (email.isNotEmpty || badgeId.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        [email, badgeId].where((s) => s.isNotEmpty).join(' · '),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.85),
                         ),
-                        elevation: 0,
+                        textAlign: TextAlign.center,
                       ),
-                      child: const Text(
-                        'Fermer',
+                    ),
+                ],
+              ),
+            ),
+
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_registered)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.warning),
+                        ),
+                        child: Text(
+                          (data['message'] ??
+                                  "Ce participant n'est pas inscrit à cet événement.")
+                              .toString(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                      ),
+                    if (paidItems.isNotEmpty) ...[
+                      Text(
+                        'Articles payés (${paidItems.length})',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
-                    ),
-                  ),
+                      const SizedBox(height: 8),
+                      if (grouped['session']!.isNotEmpty) ...[
+                        _sectionHeader('Ateliers', Icons.event),
+                        ...grouped['session']!.map(_itemCard),
+                      ],
+                      if (grouped['access']!.isNotEmpty) ...[
+                        _sectionHeader('Accès', Icons.vpn_key),
+                        ...grouped['access']!.map(_itemCard),
+                      ],
+                      if (grouped['dinner']!.isNotEmpty) ...[
+                        _sectionHeader('Repas', Icons.restaurant),
+                        ...grouped['dinner']!.map(_itemCard),
+                      ],
+                      if (grouped['other']!.isNotEmpty) ...[
+                        _sectionHeader('Autres', Icons.shopping_bag),
+                        ...grouped['other']!.map(_itemCard),
+                      ],
+                    ] else if (_registered)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainer(context),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Aucun accès payant enregistré',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary(context),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _canDecide ? _decisionButtons() : _closeButton(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  // Minimal section header
-  static Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _decisionButtons() {
+    final busy = _sending != null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _decisionButton(
+                label: "Refuser l'accès",
+                icon: Icons.block,
+                color: AppColors.error,
+                decision: 'denied',
+                busy: busy,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _decisionButton(
+                label: 'Laisser entrer',
+                icon: Icons.meeting_room,
+                color: AppColors.success,
+                decision: 'granted',
+                busy: busy,
+              ),
+            ),
+          ],
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
+            ),
+          ),
+        TextButton(
+          onPressed: busy ? null : () => Navigator.pop(context),
+          child: Text(
+            'Fermer sans décision',
+            style: TextStyle(color: AppColors.textSecondary(context)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _decisionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required String decision,
+    required bool busy,
+  }) {
+    return ElevatedButton(
+      onPressed: busy ? null : () => _decide(decision),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: color.withValues(alpha: 0.5),
+        disabledForegroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 0,
+      ),
+      child: _sending == decision
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
+            )
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _closeButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () => Navigator.pop(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.eventPrimary(context),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+        ),
+        child: const Text(
+          'Fermer',
+          style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6, top: 8),
       child: Row(
         children: [
-          Icon(icon, color: Colors.black45, size: 14),
+          Icon(icon, color: AppColors.textSecondary(context), size: 14),
           const SizedBox(width: 4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.black45,
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -202,10 +355,12 @@ class ParticipantVerificationDialog {
     );
   }
 
-  // Minimal item card without icon
-  static Widget _buildMinimalItemCard(Map<String, dynamic> item) {
-    final String title = item['title'] ?? 'N/A';
-    final double amountPaid = (item['amount_paid'] ?? 0).toDouble();
+  Widget _itemCard(dynamic item) {
+    final String title = (item['title'] ?? 'N/A').toString();
+    final num rawAmount = item['amount_paid'] is num
+        ? item['amount_paid'] as num
+        : num.tryParse('${item['amount_paid'] ?? 0}') ?? 0;
+    final double amountPaid = rawAmount.toDouble();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -213,10 +368,7 @@ class ParticipantVerificationDialog {
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.success,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.success, width: 1),
       ),
       child: Row(
         children: [
@@ -226,28 +378,23 @@ class ParticipantVerificationDialog {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 if (amountPaid > 0)
                   Text(
                     '${amountPaid.toStringAsFixed(0)} DA',
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
+                        fontSize: 11, color: AppColors.textSecondary(context)),
                   ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 2,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: AppColors.success,
               borderRadius: BorderRadius.circular(10),
@@ -255,10 +402,9 @@ class ParticipantVerificationDialog {
             child: const Text(
               'PAYÉ',
               style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
           ),
         ],
