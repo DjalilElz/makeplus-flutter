@@ -495,10 +495,28 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
 
   Widget _buildSessionCard(SessionModel session) {
     // Format date and time
-    final dateFormat = DateFormat('EEE, dd MMM yyyy');
     final timeFormat = DateFormat('HH:mm');
 
-    final sessionDate = dateFormat.format(session.startTime);
+    // French, like the rest of the app ("mer. 28 oct. 2026"; DateFormat
+    // without a locale printed "Wed, 28 Oct 2026").
+    const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    const months = [
+      'janv.',
+      'févr.',
+      'mars',
+      'avr.',
+      'mai',
+      'juin',
+      'juil.',
+      'août',
+      'sept.',
+      'oct.',
+      'nov.',
+      'déc.',
+    ];
+    final d = session.startTime;
+    final sessionDate =
+        '${days[d.weekday - 1]} ${d.day} ${months[d.month - 1]} ${d.year}';
     final startTime = timeFormat.format(session.startTime);
     final endTime = timeFormat.format(session.endTime);
 
