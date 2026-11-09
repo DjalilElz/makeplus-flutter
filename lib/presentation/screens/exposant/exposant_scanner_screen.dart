@@ -353,8 +353,10 @@ class _ExposantScannerScreenState extends State<ExposantScannerScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        // Short: with the flash and camera buttons, "Scanner un badge" was
+        // cut to "Scanner un bad...".
         title: const Text(
-          'Scanner un badge',
+          'Scanner',
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,

@@ -162,15 +162,25 @@ class _ExposantHomeScreenState extends State<ExposantHomeScreen> {
                   Row(
                     children: [
                       if (logoUrl != null && logoUrl.isNotEmpty) ...[
-                        ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: logoUrl,
-                            width: 64,
-                            height: 64,
-                            fit: BoxFit.cover,
-                            fadeInDuration: const Duration(milliseconds: 150),
-                            errorWidget: (context, url, error) =>
-                                const SizedBox.shrink(),
+                        // White disc behind the logo: a transparent PNG in
+                        // the event colour (e.g. SARM's green logo) vanished
+                        // on the green card. contain = the whole logo shows.
+                        Container(
+                          width: 64,
+                          height: 64,
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: logoUrl,
+                              fit: BoxFit.contain,
+                              fadeInDuration: const Duration(milliseconds: 150),
+                              errorWidget: (context, url, error) =>
+                                  const SizedBox.shrink(),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),

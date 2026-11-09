@@ -17,7 +17,7 @@ class EventDetailsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Details de l\'evenement'),
+        title: const Text('Détails de l\'événement'),
       ),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, authState) {
@@ -32,7 +32,7 @@ class EventDetailsScreen extends StatelessWidget {
                       size: 64, color: AppColors.textHint(context)),
                   const SizedBox(height: 16),
                   Text(
-                    'Aucun evenement selectionne',
+                    'Aucun événement sélectionné',
                     style: TextStyle(color: AppColors.textSecondary(context)),
                   ),
                 ],

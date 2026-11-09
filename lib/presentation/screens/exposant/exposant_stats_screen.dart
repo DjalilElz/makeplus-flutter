@@ -230,7 +230,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
                 ),
               ),
               SizedBox(width: 16),
-              Text('Preparation du fichier...'),
+              Text('Préparation du fichier…'),
             ],
           ),
           backgroundColor: AppColors.eventPrimary(context),
@@ -275,7 +275,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       if (result.status == ShareResultStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Fichier partage avec succes'),
+            content: Text('Fichier partagé avec succès'),
             backgroundColor: AppColors.success,
             duration: Duration(seconds: 3),
           ),
@@ -286,7 +286,7 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       } else if (result.status == ShareResultStatus.dismissed) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Partage annule'),
+            content: Text('Partage annulé'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -299,7 +299,8 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur d\'export: ${e.toString()}'),
+          content: Text(
+              'Erreur d\'export : ${e.toString().replaceFirst('Exception: ', '')}'),
           backgroundColor: AppColors.error,
           action: SnackBarAction(
             label: 'Réessayer',
