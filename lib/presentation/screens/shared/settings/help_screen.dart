@@ -38,14 +38,14 @@ class HelpScreen extends StatelessWidget {
     ),
     (
       question: 'Comment contacter le support ?',
-      answer: 'Écrivez-nous à support@makeplus.com, ou contactez '
+      answer: 'Écrivez-nous à support@wemakeplus.com, ou contactez '
           'directement les organisateurs de votre événement pour toute '
           'question spécifique (mot de passe, inscription, badge).',
     ),
   ];
 
   Future<void> _emailSupport() async {
-    final uri = Uri(scheme: 'mailto', path: 'support@makeplus.com');
+    final uri = Uri(scheme: 'mailto', path: 'support@wemakeplus.com');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
@@ -109,7 +109,7 @@ class HelpScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'support@makeplus.com',
+                            'support@wemakeplus.com',
                             style: TextStyle(
                               fontSize: 13,
                               color: AppColors.eventPrimary(context),

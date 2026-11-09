@@ -49,7 +49,7 @@
 	     (App Review Guideline 5.1.1) and questions permissions the app never uses.
 	     NSMicrophoneUsageDescription was removed: the app records no audio. -->
 	<key>NSCameraUsageDescription</key>
-	<string>MakePlus utilise la caméra pour scanner les QR codes des badges des participants et vérifier leur accès aux salles et aux sessions.</string>
+	<string>DendrIQ utilise la caméra pour scanner les QR codes des badges (contrôle d’accès aux salles et visites des stands).</string>
 
 	<!-- The app only talks to its backend over HTTPS, which is exempt encryption.
 	     Declaring this here avoids the export-compliance prompt on every upload. -->

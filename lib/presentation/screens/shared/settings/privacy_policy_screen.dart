@@ -68,8 +68,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'supprimer votre inscription, vos accès et vos questions posées '
           'pour un événement particulier, sans supprimer votre compte ni '
           'vos autres événements. Vous pouvez aussi supprimer '
-          'définitivement votre compte et les données associées depuis '
-          'Paramètres > Compte > Supprimer mon compte.',
+          'définitivement votre compte (vos nom, e-mail et mot de passe '
+          'sont effacés ; les traces de participation restent, anonymes) '
+          'depuis Paramètres > Compte > Supprimer mon compte.',
     ),
     (
       icon: Icons.child_care_outlined,
@@ -151,7 +152,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Pour toute question concernant vos données, '
-                    'contactez-nous à support@makeplus.com.',
+                    'contactez-nous à support@wemakeplus.com.',
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,

@@ -10,7 +10,7 @@ class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   Future<void> _emailSupport() async {
-    final uri = Uri(scheme: 'mailto', path: 'support@makeplus.com');
+    final uri = Uri(scheme: 'mailto', path: 'support@wemakeplus.com');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
@@ -106,7 +106,7 @@ class AboutScreen extends StatelessWidget {
                 child: _InfoRow(
                   icon: Icons.mail_outline,
                   label: 'Contact',
-                  value: 'support@makeplus.com',
+                  value: 'support@wemakeplus.com',
                   valueColor: AppColors.eventPrimary(context),
                   trailing: Icon(
                     Icons.chevron_right,

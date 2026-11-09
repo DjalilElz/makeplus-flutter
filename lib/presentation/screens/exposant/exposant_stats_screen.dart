@@ -260,9 +260,13 @@ class _ExposantStatsScreenState extends State<ExposantStatsScreen> {
       // Hide loading snackbar
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-      // Share using native share sheet
+      // Share using native share sheet. iPad needs an anchor rectangle for
+      // the share popover (it throws without one).
+      final box = context.findRenderObject() as RenderBox?;
       final result = await SharePlus.instance.share(
         ShareParams(
+          sharePositionOrigin:
+              box != null ? box.localToGlobal(Offset.zero) & box.size : null,
           files: [XFile(filePath)],
           text: 'Statistiques des visiteurs du stand',
           subject: 'Export Excel - Statistiques',

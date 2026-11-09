@@ -43,8 +43,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await file.writeAsString(pretty);
 
       if (!context.mounted) return;
+      // iPad needs an anchor rectangle for the share popover.
+      final box = context.findRenderObject() as RenderBox?;
       await SharePlus.instance.share(
         ShareParams(
+          sharePositionOrigin:
+              box != null ? box.localToGlobal(Offset.zero) & box.size : null,
           files: [XFile(file.path)],
           text: 'Mes données DendrIQ',
           subject: 'Export de données DendrIQ',

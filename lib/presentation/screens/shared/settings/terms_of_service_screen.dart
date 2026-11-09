@@ -146,7 +146,7 @@ class TermsOfServiceScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Pour toute question concernant ces conditions, '
-                    'contactez-nous à support@makeplus.com.',
+                    'contactez-nous à support@wemakeplus.com.',
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
